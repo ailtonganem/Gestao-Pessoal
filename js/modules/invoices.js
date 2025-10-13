@@ -1,5 +1,7 @@
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO
+// Corrigido o caminho de importação para ser consistente com os outros módulos.
 import {
     collection,
     query,
@@ -11,7 +13,8 @@ import {
     doc,
     updateDoc,
     writeBatch
-} from "https://www.gstatic.com/firebase/v9.6.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// FIM DA ALTERAÇÃO
 
 const INVOICES_COLLECTION = 'invoices';
 const TRANSACTIONS_COLLECTION = 'transactions';
@@ -137,7 +140,6 @@ async function getInvoiceTransactions(invoiceId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Marca uma fatura como paga e cria a transação de despesa correspondente.
  * @param {object} invoice - O objeto da fatura a ser paga.
@@ -159,15 +161,13 @@ async function payInvoice(invoice, card) {
             amount: invoice.totalAmount,
             type: 'expense',
             category: 'Fatura de Cartão',
-            paymentMethod: 'debit', // Assume que o pagamento da fatura sai do débito/conta
+            paymentMethod: 'debit',
             userId: invoice.userId,
             createdAt: Timestamp.now()
         };
-        // Cria uma nova referência de documento dentro da coleção principal
         const newTransactionRef = doc(transactionsRef);
         batch.set(newTransactionRef, paymentTransactionData);
         
-        // Executa as duas operações atomicamente
         await batch.commit();
         console.log(`Fatura ${invoice.id} paga e transação de débito criada.`);
 
@@ -176,7 +176,6 @@ async function payInvoice(invoice, card) {
         throw new Error("Ocorreu um erro ao registrar o pagamento da fatura.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 // Exporta as funções para serem utilizadas em outros módulos.
 export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice };
