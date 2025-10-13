@@ -1,7 +1,7 @@
 // Importa as funções de autenticação e o monitor de estado do nosso módulo auth.
 import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
-// ATUALIZAÇÃO: Importa todas as funções do nosso módulo db.
-import { addTransaction, getTransactions, deleteTransaction } from './modules/db.js';
+// ALTERAÇÃO: Importa as funções do novo módulo 'transactions.js'.
+import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from './modules/transactions.js';
 
 // --- Variável de Estado ---
 let currentUser = null;
@@ -34,8 +34,15 @@ const totalExpensesEl = document.getElementById('total-expenses');
 const finalBalanceEl = document.getElementById('final-balance');
 const transactionsListEl = document.getElementById('transactions-list');
 
-// ADIÇÃO: Contêiner de notificações
+// Contêiner de notificações e Modal
 const notificationContainer = document.getElementById('notification-container');
+const editModal = document.getElementById('edit-modal');
+const closeButton = document.querySelector('.close-button');
+const editTransactionForm = document.getElementById('edit-transaction-form');
+const editTransactionIdInput = document.getElementById('edit-transaction-id');
+const editTransactionDescriptionInput = document.getElementById('edit-transaction-description');
+const editTransactionAmountInput = document.getElementById('edit-transaction-amount');
+
 
 // --- Funções de Manipulação da UI ---
 
@@ -48,17 +55,26 @@ function showNotification(message, type = 'success') {
     const toast = document.createElement('div');
     toast.classList.add('toast', type);
     toast.textContent = message;
-
     notificationContainer.appendChild(toast);
-
-    // Define um tempo para remover a notificação
     setTimeout(() => {
         toast.classList.add('fade-out');
-        // Remove o elemento do DOM após a animação de saída
-        toast.addEventListener('animationend', () => {
-            toast.remove();
-        });
-    }, 3000); // A notificação some após 3 segundos
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3000);
+}
+
+/** Abre e preenche o modal de edição com os dados da transação. */
+function openEditModal(transaction) {
+    editTransactionIdInput.value = transaction.id;
+    editTransactionDescriptionInput.value = transaction.description;
+    editTransactionAmountInput.value = transaction.amount;
+    // Marca o radio button correspondente ao tipo
+    document.querySelector(`input[name="edit-transaction-type"][value="${transaction.type}"]`).checked = true;
+    editModal.style.display = 'flex';
+}
+
+/** Fecha o modal de edição. */
+function closeEditModal() {
+    editModal.style.display = 'none';
 }
 
 /** Formata um número para o padrão de moeda BRL. */
@@ -66,10 +82,7 @@ function formatCurrency(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/**
- * Renderiza o dashboard: calcula totais e exibe a lista de transações.
- * @param {Array} transactions - A lista de transações do usuário.
- */
+/** Renderiza o dashboard: calcula totais e exibe a lista de transações. */
 function updateDashboard(transactions) {
     let totalRevenue = 0;
     let totalExpenses = 0;
@@ -98,14 +111,22 @@ function updateDashboard(transactions) {
             transactionInfo.appendChild(descriptionSpan);
             transactionInfo.appendChild(amountSpan);
 
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'transaction-actions';
+
+            const editButton = document.createElement('button');
+            editButton.innerHTML = '&#9998;'; // Código HTML para lápis
+            editButton.classList.add('action-btn', 'edit-btn');
+            editButton.onclick = () => openEditModal(transaction);
+            
             const deleteButton = document.createElement('button');
-            deleteButton.textContent = 'X';
-            deleteButton.classList.add('delete-btn');
+            deleteButton.innerHTML = '&times;'; // Código HTML para 'X'
+            deleteButton.classList.add('action-btn', 'delete-btn');
             deleteButton.onclick = async () => {
                 if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
                     try {
                         await deleteTransaction(transaction.id);
-                        showNotification('Transação excluída com sucesso!', 'success');
+                        showNotification('Transação excluída com sucesso!');
                         loadUserDashboard();
                     } catch (error) {
                         showNotification(error.message, 'error');
@@ -113,8 +134,10 @@ function updateDashboard(transactions) {
                 }
             };
 
+            actionsDiv.appendChild(editButton);
+            actionsDiv.appendChild(deleteButton);
             li.appendChild(transactionInfo);
-            li.appendChild(deleteButton);
+            li.appendChild(actionsDiv);
             transactionsListEl.appendChild(li);
         });
     }
@@ -147,6 +170,8 @@ function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(true); });
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(false); });
 logoutButton.addEventListener('click', () => { logoutUser().catch(error => showNotification(error.message, 'error')); });
+closeButton.addEventListener('click', closeEditModal);
+window.addEventListener('click', (event) => { if (event.target == editModal) { closeEditModal(); } });
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -171,23 +196,40 @@ registerForm.addEventListener('submit', async (e) => {
 addTransactionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) { showNotification("Você precisa estar logado.", 'error'); return; }
-
     const transactionData = {
         description: transactionDescriptionInput.value,
         amount: parseFloat(transactionAmountInput.value),
         type: document.querySelector('input[name="transaction-type"]:checked').value,
         userId: currentUser.uid
     };
-
     try {
         await addTransaction(transactionData);
-        showNotification("Transação adicionada com sucesso!", 'success');
+        showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
         loadUserDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
 });
+
+editTransactionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const transactionId = editTransactionIdInput.value;
+    const updatedData = {
+        description: editTransactionDescriptionInput.value,
+        amount: parseFloat(editTransactionAmountInput.value),
+        type: document.querySelector('input[name="edit-transaction-type"]:checked').value,
+    };
+    try {
+        await updateTransaction(transactionId, updatedData);
+        showNotification('Transação atualizada com sucesso!');
+        closeEditModal();
+        loadUserDashboard();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+});
+
 
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
