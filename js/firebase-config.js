@@ -2,18 +2,17 @@
 // Estamos usando os URLs do CDN oficial do Firebase para importar como módulos ES6.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-// ADIÇÃO: Importa o serviço do Firestore.
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-// Objeto de configuração do seu aplicativo web do Firebase.
-// SUBSTITUA OS VALORES ABAIXO PELOS DADOS DO SEU PROJETO.
+// SUBSTITUA TODO O BLOCO ABAIXO PELO CÓDIGO QUE VOCÊ COPIOU DO CONSOLE DO FIREBASE.
+// O seu código terá valores reais no lugar de "COLE_SUA_API_KEY_AQUI", etc.
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE_BUCKET",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyBqFoSqX-DQKkp8ovKcnQaXvFyXGXm5c74",
+  authDomain: "gestao-pessoal-27a6e.firebaseapp.com",
+  projectId: "gestao-pessoal-27a6e",
+  storageBucket: "gestao-pessoal-27a6e.firebasestorage.app",
+  messagingSenderId: "541609699147",
+  appId: "1:541609699147:web:c0dbaf8862e2c0c4796ace"
 };
 
 // Inicializa o Firebase com as configurações fornecidas.
@@ -22,9 +21,8 @@ const app = initializeApp(firebaseConfig);
 // Inicializa o serviço de Autenticação do Firebase e o torna disponível para uso.
 const auth = getAuth(app);
 
-// ADIÇÃO: Inicializa o serviço do Cloud Firestore e o torna disponível para uso.
+// Inicializa o serviço do Cloud Firestore e o torna disponível para uso.
 const db = getFirestore(app);
 
 // Exporta as instâncias dos serviços que serão usados em outros módulos da aplicação.
-// ATUALIZAÇÃO: Exporta também a instância do 'db'.
 export { auth, db };
