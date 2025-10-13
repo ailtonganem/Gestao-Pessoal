@@ -342,17 +342,36 @@ addTransactionForm.addEventListener('submit', async (e) => {
         userId: currentUser.uid
     };
 
+    // INÍCIO DA ALTERAÇÃO
+    let cardData = null;
+    if (transactionData.paymentMethod === 'credit_card') {
+        const cardId = creditCardSelect.value;
+        if (!cardId) return showNotification("Por favor, selecione um cartão de crédito.", 'error');
+        
+        transactionData.cardId = cardId;
+        // Encontra os dados completos do cartão selecionado no nosso cache
+        cardData = userCreditCards.find(card => card.id === cardId);
+    }
+    
     try {
-        await addTransaction(transactionData);
+        // Passa os dados do cartão para a função addTransaction
+        await addTransaction(transactionData, cardData);
+        
         showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
         newCategoryWrapper.style.display = 'none';
         creditCardWrapper.style.display = 'none';
         populateCategories('expense', transactionCategorySelect);
-        loadUserDashboard();
+        
+        // Só recarrega o dashboard principal se não for uma transação de cartão de crédito.
+        // Se for, a lógica da fatura já foi tratada, não há necessidade de recarregar a lista principal.
+        if (transactionData.paymentMethod !== 'credit_card') {
+            loadUserDashboard();
+        }
     } catch (error) {
         showNotification(error.message, 'error');
     }
+    // FIM DA ALTERAÇÃO
 });
 
 editTransactionForm.addEventListener('submit', async (e) => {
