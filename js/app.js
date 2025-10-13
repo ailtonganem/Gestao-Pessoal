@@ -7,7 +7,7 @@ import { getCategories } from './modules/categories.js';
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 // Importa as funções de faturas.
-import { getInvoices, getInvoiceTransactions, payInvoice } from './modules/invoices.js';
+import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices } from './modules/invoices.js';
 
 // --- Variáveis de Estado ---
 let currentUser = null;
@@ -74,7 +74,6 @@ const invoiceStatus = document.getElementById('invoice-status');
 const invoiceTransactionsList = document.getElementById('invoice-transactions-list');
 const payInvoiceButton = document.getElementById('pay-invoice-button');
 
-
 // --- Funções de Manipulação da UI ---
 
 /** Popula um elemento <select> com as categorias apropriadas. */
@@ -129,7 +128,7 @@ async function displayInvoiceDetails(invoice) {
     invoiceStatus.className = 'status-badge';
     invoiceStatus.classList.add(invoice.status);
 
-    payInvoiceButton.disabled = invoice.status !== 'open';
+    payInvoiceButton.disabled = invoice.status !== 'closed';
 
     invoiceTransactionsList.innerHTML = '<li>Carregando...</li>';
     try {
@@ -273,8 +272,14 @@ function closeEditModal() {
     editModal.style.display = 'none';
 }
 
-/** Abre o modal de gerenciamento de cartões. */
-function openCardModal() {
+/** Abre o modal de gerenciamento de cartões e verifica faturas vencidas. */
+async function openCardModal() {
+    if (currentUser) {
+        await closeOverdueInvoices(currentUser.uid);
+        if (selectedCardForInvoiceView) {
+            await loadAndDisplayInvoices(selectedCardForInvoiceView);
+        }
+    }
     showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
@@ -555,6 +560,9 @@ function initializeApp() {
         if (user) {
             currentUser = user;
             showApp();
+            
+            await closeOverdueInvoices(user.uid);
+
             populateCategories('expense', transactionCategorySelect);
             await Promise.all([
                 loadUserDashboard(),
