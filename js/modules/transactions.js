@@ -76,14 +76,13 @@ async function getTransactions(userId, filters = {}) {
         
         // Constrói a base da consulta
         let queryConstraints = [
-            where("userId", "==", userId),
-            where("paymentMethod", "!=", "credit_card")
+            where("userId", "==", userId)
         ];
 
         // Adiciona filtros de data se fornecidos
         if (year && month && month !== 'all') {
             const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0, 23, 59, 59); // Último dia do mês
+            const endDate = new Date(year, month, 0, 23, 59, 59);
             
             queryConstraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
             queryConstraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
@@ -96,14 +95,7 @@ async function getTransactions(userId, filters = {}) {
         }
 
         // Adiciona a ordenação
-        // O Firestore exige que a primeira ordenação seja no campo da primeira desigualdade ou filtro de range
-        if(year) {
-            queryConstraints.push(orderBy("createdAt", "desc"));
-            queryConstraints.push(orderBy("paymentMethod"));
-        } else {
-            queryConstraints.push(orderBy("paymentMethod"));
-            queryConstraints.push(orderBy("createdAt", "desc"));
-        }
+        queryConstraints.push(orderBy("createdAt", "desc"));
 
         const q = query(transactionsCollectionRef, ...queryConstraints);
         
@@ -112,7 +104,10 @@ async function getTransactions(userId, filters = {}) {
         querySnapshot.forEach((doc) => {
             transactions.push({ id: doc.id, ...doc.data() });
         });
-        return transactions;
+        
+        // Filtra no lado do cliente para remover transações de cartão de crédito
+        return transactions.filter(t => t.paymentMethod !== 'credit_card');
+
     } catch (error) {
         console.error("Erro ao buscar transações:", error);
         throw new Error("Não foi possível buscar as transações.");
