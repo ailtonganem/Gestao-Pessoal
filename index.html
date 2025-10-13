@@ -18,18 +18,63 @@
 
     <!-- Contêiner de Autenticação -->
     <main id="auth-container" style="display: none;">
-        <!-- Formulários de Login e Cadastro -->
+        <section id="login-form">
+            <h1>Acesse sua conta</h1>
+            <form>
+                <div class="form-control">
+                    <label for="login-email">E-mail</label>
+                    <input type="email" id="login-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-control">
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" placeholder="Sua senha" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <p>Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
+        </section>
+        <section id="register-form" style="display: none;">
+            <h1>Crie sua conta</h1>
+            <form>
+                <div class="form-control">
+                    <label for="register-email">E-mail</label>
+                    <input type="email" id="register-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-control">
+                    <label for="register-password">Senha</label>
+                    <input type="password" id="register-password" placeholder="Crie uma senha forte" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <p>Já tem uma conta? <a href="#" id="show-login-link">Faça Login</a></p>
+        </section>
     </main>
 
     <!-- Contêiner Principal da Aplicação (Dashboard) -->
     <div id="app-container" style="display: none;">
         <header>
             <h1>Dashboard</h1>
-            <button id="logout-button">Sair</button>
+            <!-- INÍCIO DA ALTERAÇÃO -->
+            <div class="header-buttons">
+                <button id="manage-cards-button" class="button-secondary">Gerenciar Cartões</button>
+                <button id="logout-button">Sair</button>
+            </div>
+            <!-- FIM DA ALTERAÇÃO -->
         </header>
         <main id="app-content">
             <section id="summary-section">
-                <!-- Cards de Resumo (Receitas, Despesas, Saldo) -->
+                <div class="summary-card">
+                    <h3>Receitas</h3>
+                    <p id="total-revenue">R$ 0,00</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Despesas</h3>
+                    <p id="total-expenses">R$ 0,00</p>
+                </div>
+                <div class="summary-card balance">
+                    <h3>Saldo</h3>
+                    <p id="final-balance">R$ 0,00</p>
+                </div>
             </section>
 
             <section id="transaction-form-section">
@@ -48,26 +93,20 @@
                         <div class="radio-container">
                             <input type="radio" id="type-revenue" name="transaction-type" value="revenue" required>
                             <label for="type-revenue">Receita</label>
-                            
                             <input type="radio" id="type-expense" name="transaction-type" value="expense" checked>
                             <label for="type-expense">Despesa</label>
                         </div>
                     </div>
-
-                    <!-- INÍCIO DAS ALTERAÇÕES -->
                     <div class="form-control">
                         <label for="transaction-category">Categoria</label>
                         <select id="transaction-category" required>
-                            <!-- Opções de categoria serão preenchidas via JS -->
                             <option value="outra">Outra...</option>
                         </select>
                     </div>
-
                     <div id="new-category-wrapper" class="form-control" style="display: none;">
                         <label for="new-transaction-category">Nova Categoria</label>
                         <input type="text" id="new-transaction-category" placeholder="Ex: Lazer">
                     </div>
-
                     <div class="form-control">
                         <label for="payment-method">Método de Pagamento</label>
                         <select id="payment-method" required>
@@ -77,25 +116,19 @@
                             <option value="credit_card">Cartão de Crédito</option>
                         </select>
                     </div>
-
-                    <!-- Campo para selecionar o cartão, será usado futuramente -->
                     <div id="credit-card-wrapper" class="form-control" style="display: none;">
                         <label for="credit-card-select">Cartão</label>
                         <select id="credit-card-select">
-                            <option>Carregando cartões...</option>
+                            <option>Nenhum cartão cadastrado</option>
                         </select>
                     </div>
-                    <!-- FIM DAS ALTERAÇÕES -->
-                    
                     <button type="submit">Adicionar</button>
                 </form>
             </section>
             
             <section id="transactions-list-section">
                 <h2>Histórico</h2>
-                <ul id="transactions-list">
-                    <!-- As transações serão inseridas aqui via JavaScript -->
-                </ul>
+                <ul id="transactions-list"></ul>
             </section>
         </main>
     </div>
@@ -110,55 +143,47 @@
             <h2>Editar Transação</h2>
             <form id="edit-transaction-form">
                 <input type="hidden" id="edit-transaction-id">
-                <div class="form-control">
-                    <label for="edit-transaction-description">Descrição</label>
-                    <input type="text" id="edit-transaction-description" required>
-                </div>
-                <div class="form-control">
-                    <label for="edit-transaction-amount">Valor (R$)</label>
-                    <input type="number" id="edit-transaction-amount" step="0.01" required>
-                </div>
-                <div class="form-control">
-                    <label>Tipo</label>
-                    <div class="radio-container">
-                        <input type="radio" id="edit-type-revenue" name="edit-transaction-type" value="revenue" required>
-                        <label for="edit-type-revenue">Receita</label>
-                        <input type="radio" id="edit-type-expense" name="edit-transaction-type" value="expense">
-                        <label for="edit-type-expense">Despesa</label>
-                    </div>
-                </div>
-
-                <!-- INÍCIO DAS ALTERAÇÕES (Modal) -->
-                <div class="form-control">
-                    <label for="edit-transaction-category">Categoria</label>
-                    <select id="edit-transaction-category" required>
-                        <!-- Opções também preenchidas via JS -->
-                    </select>
-                </div>
-
-                <div class="form-control">
-                    <label for="edit-payment-method">Método de Pagamento</label>
-                    <select id="edit-payment-method" required>
-                        <option value="pix">PIX</option>
-                        <option value="debit">Débito</option>
-                        <option value="cash">Dinheiro</option>
-                        <option value="credit_card">Cartão de Crédito</option>
-                    </select>
-                </div>
-
-                <!-- Campo para selecionar o cartão na edição, será usado futuramente -->
-                <div id="edit-credit-card-wrapper" class="form-control" style="display: none;">
-                    <label for="edit-credit-card-select">Cartão</label>
-                    <select id="edit-credit-card-select">
-                        <!-- Opções também preenchidas via JS -->
-                    </select>
-                </div>
-                <!-- FIM DAS ALTERAÇÕES (Modal) -->
-
-                <button type="submit">Salvar Alterações</button>
+                <!-- Campos do formulário de edição -->
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <!-- Modal para Gerenciamento de Cartões de Crédito -->
+    <div id="credit-card-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-card-modal-button">&times;</span>
+            <h2>Meus Cartões</h2>
+            
+            <section id="card-list-section">
+                <h3>Cartões Cadastrados</h3>
+                <ul id="credit-card-list">
+                    <!-- Cartões serão listados aqui via JS -->
+                    <li>Nenhum cartão cadastrado.</li>
+                </ul>
+            </section>
+            
+            <section id="add-card-form-section">
+                <h3>Adicionar Novo Cartão</h3>
+                <form id="add-credit-card-form">
+                    <div class="form-control">
+                        <label for="card-name">Nome do Cartão</label>
+                        <input type="text" id="card-name" placeholder="Ex: NuBank Gold" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="card-closing-day">Dia do Fechamento (1-31)</label>
+                        <input type="number" id="card-closing-day" min="1" max="31" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="card-due-day">Dia do Vencimento (1-31)</label>
+                        <input type="number" id="card-due-day" min="1" max="31" required>
+                    </div>
+                    <button type="submit">Adicionar Cartão</button>
+                </form>
+            </section>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
