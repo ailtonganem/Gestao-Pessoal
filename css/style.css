@@ -9,7 +9,6 @@
     --success-color: #2ecc71;
     --revenue-color: var(--success-color);
     --expense-color: var(--error-color);
-    /* ADIÇÃO: Cor para status 'pago' */
     --paid-color: #95a5a6;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -52,31 +51,14 @@ main, #app-container {
 }
 
 /* Estilos dos cabeçalhos */
-h1 {
-    margin-bottom: 1.5rem;
+h1, h2, h3, h4 {
+    text-align: left;
     color: var(--primary-color);
 }
-
-h2 {
-    margin-bottom: 1rem;
-    color: var(--primary-color);
-    text-align: left;
-    border-bottom: 2px solid var(--background-color);
-    padding-bottom: 0.5rem;
-}
-
-h3 {
-    text-align: left;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-}
-
-h4 {
-    text-align: left;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--primary-color);
-}
+h1 { margin-bottom: 1.5rem; }
+h2 { margin-bottom: 1rem; border-bottom: 2px solid var(--background-color); padding-bottom: 0.5rem; }
+h3 { margin-bottom: 0.5rem; color: var(--text-color); }
+h4 { margin-top: 1.5rem; margin-bottom: 0.5rem; }
 
 /* Estilos dos formulários */
 form {
@@ -159,7 +141,6 @@ button:disabled {
     background-color: #6c7a7d;
 }
 
-
 /* Estilos para os links e subtítulos */
 p {
     margin-top: 1.5rem;
@@ -184,10 +165,7 @@ a:hover {
 }
 
 /* Estilos do Dashboard (App) */
-#app-container {
-    display: none; /* Controlado via JS */
-}
-
+#app-container { display: none; }
 #app-container header {
     display: flex;
     justify-content: space-between;
@@ -196,74 +174,33 @@ a:hover {
     padding-bottom: 1rem;
     border-bottom: 1px solid #bdc3c7;
 }
-
-.header-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-#app-container header h1 {
-    margin-bottom: 0;
-}
-
+.header-buttons { display: flex; gap: 0.5rem; }
+#app-container header h1 { margin-bottom: 0; }
 #logout-button {
     background-color: var(--error-color);
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
 }
-
-#logout-button:hover {
-    background-color: #c0392b;
-}
-
-#app-content section {
-    margin-bottom: 2rem;
-}
+#logout-button:hover { background-color: #c0392b; }
+#app-content section { margin-bottom: 2rem; }
 
 /* Estilos da Seção de Resumo Financeiro */
-#summary-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
+#summary-section { display: flex; flex-direction: column; gap: 1rem; }
 .summary-card {
     background-color: var(--container-bg-color);
     padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-
-.summary-card h3 {
-    font-size: 1rem;
-    color: #7f8c8d;
-    margin-bottom: 0.5rem;
-}
-
-.summary-card p {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-top: 0;
-}
-
+.summary-card h3 { font-size: 1rem; color: #7f8c8d; margin-bottom: 0.5rem; }
+.summary-card p { font-size: 1.5rem; font-weight: bold; margin-top: 0; }
 #total-revenue { color: var(--revenue-color); }
 #total-expenses { color: var(--expense-color); }
-
-.summary-card.balance {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.summary-card.balance h3 {
-    color: #bdc3c7;
-}
+.summary-card.balance { background-color: var(--primary-color); color: white; }
+.summary-card.balance h3 { color: #bdc3c7; }
 
 /* Estilos da Lista de Histórico de Transações */
-#transactions-list {
-    list-style-type: none;
-    padding: 0;
-}
-
+#transactions-list { list-style-type: none; padding: 0; }
 #transactions-list li {
     background-color: var(--container-bg-color);
     padding: 1rem;
@@ -275,18 +212,13 @@ a:hover {
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     border-right: 5px solid;
 }
-
 #transactions-list li.revenue { border-right-color: var(--revenue-color); }
 #transactions-list li.expense { border-right-color: var(--expense-color); }
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
 /* Estilos dos Botões de Ação na Lista */
-.transaction-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
+.transaction-actions { display: flex; gap: 0.5rem; }
 .action-btn {
     background: none;
     border: none;
@@ -295,32 +227,19 @@ a:hover {
     padding: 0.2rem;
     transition: transform 0.2s ease;
 }
-
 .action-btn:hover { transform: scale(1.2); }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
 /* Estilos de Notificações (Toasts) */
 #notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
 }
 .toast {
-    background-color: var(--container-bg-color);
-    color: var(--text-color);
-    padding: 15px 20px;
-    border-radius: 5px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-left: 5px solid;
-    animation: slideIn 0.3s ease-out forwards;
-    opacity: 0;
-    transform: translateX(100%);
+    background-color: var(--container-bg-color); color: var(--text-color); padding: 15px 20px;
+    border-radius: 5px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border-left: 5px solid;
+    animation: slideIn 0.3s ease-out forwards; opacity: 0; transform: translateX(100%);
 }
 .toast.success { border-left-color: var(--success-color); }
 .toast.error { border-left-color: var(--error-color); }
@@ -330,115 +249,55 @@ a:hover {
 
 /* Estilos dos Modais */
 .modal {
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: fixed; z-index: 2000; left: 0; top: 0;
+    width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);
+    display: flex; justify-content: center; align-items: center;
 }
 .modal-content {
-    background-color: var(--container-bg-color);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    position: relative;
-    width: 90%;
-    max-width: 500px;
-    animation: modalOpen 0.4s ease-out;
+    background-color: var(--container-bg-color); padding: 2rem; border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); position: relative;
+    width: 90%; max-width: 500px; animation: modalOpen 0.4s ease-out;
 }
-@keyframes modalOpen {
-    from { opacity: 0; transform: translateY(-50px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+@keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 .close-button, .close-card-modal-button {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    color: #aaa;
-    font-size: 2rem;
-    font-weight: bold;
-    cursor: pointer;
+    position: absolute; top: 10px; right: 15px; color: #aaa;
+    font-size: 2rem; font-weight: bold; cursor: pointer;
 }
-.close-button:hover,
-.close-button:focus,
-.close-card-modal-button:hover,
-.close-card-modal-button:focus {
-    color: var(--text-color);
-}
+.close-button:hover, .close-button:focus, .close-card-modal-button:hover, .close-card-modal-button:focus { color: var(--text-color); }
 
 /* Estilos Específicos do Modal de Cartões */
-#card-list-section {
-    margin-bottom: 2rem;
-}
-#credit-card-list {
-    list-style-type: none;
-    padding: 0;
-    max-height: 150px;
-    overflow-y: auto;
-}
+#card-list-section { margin-bottom: 2rem; }
+#credit-card-list { list-style-type: none; padding: 0; max-height: 150px; overflow-y: auto; }
 #credit-card-list li {
-    background-color: var(--background-color);
-    padding: 0.8rem;
-    margin-bottom: 0.5rem;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    background-color: var(--background-color); padding: 0.8rem; margin-bottom: 0.5rem;
+    border-radius: 5px; display: flex; justify-content: space-between;
+    align-items: center; text-align: left;
 }
-#credit-card-list li:hover {
-    background-color: #dcdde1;
-}
-
 /* INÍCIO DAS ALTERAÇÕES */
+#credit-card-list li .card-info {
+    flex-grow: 1;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+#credit-card-list li .card-info:hover {
+    color: var(--secondary-color);
+}
+/* FIM DAS ALTERAÇÕES */
+
 /* Estilos da Visão de Detalhes da Fatura */
-#invoice-details-view h3 {
-    margin-bottom: 0.5rem;
-}
-
-#back-to-cards-button {
-    margin-bottom: 1.5rem;
-}
-
-#invoice-summary {
-    text-align: left;
-    margin: 1rem 0;
-}
-
-#invoice-summary p {
-    margin: 0.5rem 0;
-    font-size: 1rem;
-}
-
+#invoice-details-view h3 { margin-bottom: 0.5rem; }
+#back-to-cards-button { margin-bottom: 1.5rem; }
+#invoice-summary { text-align: left; margin: 1rem 0; }
+#invoice-summary p { margin: 0.5rem 0; font-size: 1rem; }
 .status-badge {
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    color: white;
-    font-weight: bold;
+    padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
+    color: white; font-weight: bold;
 }
 .status-badge.open { background-color: var(--secondary-color); }
 .status-badge.closed { background-color: var(--error-color); }
 .status-badge.paid { background-color: var(--paid-color); }
-
-#invoice-transactions-list {
-    list-style-type: none;
-    padding: 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
+#invoice-transactions-list { list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; }
 #invoice-transactions-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
+    display: flex; justify-content: space-between; padding: 0.5rem;
     border-bottom: 1px solid var(--background-color);
 }
-/* FIM DAS ALTERAÇÕES */
