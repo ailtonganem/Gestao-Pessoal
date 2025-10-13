@@ -1,5 +1,11 @@
 // Importa as funções de autenticação e o monitor de estado do nosso módulo auth.
 import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
+// ADIÇÃO: Importa a função para adicionar transações do nosso módulo db.
+import { addTransaction } from './modules/db.js';
+
+// --- Variável de Estado ---
+// Armazena o objeto do usuário atualmente logado.
+let currentUser = null;
 
 // --- Seleção de Elementos do DOM ---
 // Contêineres principais
@@ -7,7 +13,7 @@ const loadingDiv = document.getElementById('loading');
 const authContainer = document.getElementById('auth-container');
 const appContainer = document.getElementById('app-container');
 
-// Seções de formulário
+// Seções de formulário de autenticação
 const loginSection = document.getElementById('login-form');
 const registerSection = document.getElementById('register-form');
 
@@ -15,16 +21,21 @@ const registerSection = document.getElementById('register-form');
 const loginForm = loginSection.querySelector('form');
 const registerForm = registerSection.querySelector('form');
 
-// Inputs
+// Inputs de autenticação
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const registerEmailInput = document.getElementById('register-email');
 const registerPasswordInput = document.getElementById('register-password');
 
-// Links e Botões
+// Links e Botões de autenticação
 const showRegisterLink = document.getElementById('show-register-link');
 const showLoginLink = document.getElementById('show-login-link');
 const logoutButton = document.getElementById('logout-button');
+
+// ADIÇÃO: Elementos do formulário de transação
+const addTransactionForm = document.getElementById('add-transaction-form');
+const transactionDescriptionInput = document.getElementById('transaction-description');
+const transactionAmountInput = document.getElementById('transaction-amount');
 
 // --- Funções de Manipulação da UI ---
 
@@ -60,11 +71,11 @@ function toggleAuthForms(showRegister) {
     }
 }
 
-// --- Lógica de Autenticação e Eventos ---
+// --- Lógica de Negócios e Eventos ---
 
 // Event listener para o link "Cadastre-se"
 showRegisterLink.addEventListener('click', (e) => {
-    e.preventDefault(); // Impede que o link recarregue a página
+    e.preventDefault();
     toggleAuthForms(true);
 });
 
@@ -81,10 +92,8 @@ loginForm.addEventListener('submit', async (e) => {
     const password = loginPasswordInput.value;
     try {
         await loginUser(email, password);
-        // Não precisamos fazer nada aqui, o monitorAuthState cuidará de mostrar o app
         loginForm.reset();
     } catch (error) {
-        // Em um app real, mostraríamos isso em um elemento de UI, não em um alert.
         alert(`Erro ao fazer login: ${error.message}`);
     }
 });
@@ -96,7 +105,6 @@ registerForm.addEventListener('submit', async (e) => {
     const password = registerPasswordInput.value;
     try {
         await registerUser(email, password);
-        // O monitorAuthState cuidará de mostrar o app
         registerForm.reset();
     } catch (error) {
         alert(`Erro ao cadastrar: ${error.message}`);
@@ -110,20 +118,54 @@ logoutButton.addEventListener('click', () => {
     });
 });
 
+// ADIÇÃO: Event listener para a submissão do formulário de nova transação
+addTransactionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser) {
+        alert("Você precisa estar logado para adicionar uma transação.");
+        return;
+    }
+
+    // Captura os valores do formulário
+    const description = transactionDescriptionInput.value;
+    const amount = parseFloat(transactionAmountInput.value);
+    const type = document.querySelector('input[name="transaction-type"]:checked').value;
+
+    const transactionData = {
+        description,
+        amount,
+        type,
+        userId: currentUser.uid // Associa a transação ao usuário logado
+    };
+
+    try {
+        await addTransaction(transactionData);
+        alert("Transação adicionada com sucesso!");
+        addTransactionForm.reset();
+        // Futuramente, aqui chamaremos a função para recarregar a lista de transações na tela.
+    } catch (error) {
+        alert(`Erro ao adicionar transação: ${error.message}`);
+    }
+});
+
+
 // --- Ponto de Entrada da Aplicação ---
 
 /**
  * Função principal que inicializa o monitoramento de estado de autenticação.
- * Esta é a primeira coisa que executa e define qual tela o usuário verá.
  */
 function initializeApp() {
     showLoading();
     monitorAuthState((user) => {
         if (user) {
+            currentUser = user; // ATUALIZAÇÃO: Armazena os dados do usuário
             showApp();
+            // Futuramente, aqui chamaremos a função para carregar as transações do usuário.
         } else {
+            currentUser = null; // ATUALIZAÇÃO: Limpa os dados do usuário ao deslogar
             showAuthForms();
-            toggleAuthForms(false); // Garante que o form de login seja o padrão
+            toggleAuthForms(false);
         }
     });
 }
