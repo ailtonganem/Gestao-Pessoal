@@ -6,14 +6,14 @@ import { addTransaction, getTransactions, deleteTransaction, updateTransaction }
 import { getCategories } from './modules/categories.js';
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
-// Importa as novas funções de faturas.
-import { getInvoices, getInvoiceTransactions } from './modules/invoices.js';
+// Importa as funções de faturas, incluindo a nova 'payInvoice'.
+import { getInvoices, getInvoiceTransactions, payInvoice } from './modules/invoices.js';
 
 // --- Variáveis de Estado ---
 let currentUser = null;
 let userCreditCards = []; 
 let selectedCardForInvoiceView = null;
-let currentCardInvoices = []; // Cache para as faturas do cartão selecionado
+let currentCardInvoices = [];
 
 // --- Seleção de Elementos do DOM ---
 // Contêineres principais
@@ -116,6 +116,7 @@ function populateCreditCardSelects() {
     const editCreditCardSelect = document.getElementById('edit-credit-card-select');
     editCreditCardSelect.innerHTML = '';
 
+
     if (userCreditCards.length === 0) {
         const option = document.createElement('option');
         option.textContent = 'Nenhum cartão cadastrado';
@@ -142,7 +143,7 @@ async function displayInvoiceDetails(invoice) {
     invoiceStatus.className = 'status-badge';
     invoiceStatus.classList.add(invoice.status);
 
-    payInvoiceButton.disabled = invoice.status !== 'closed';
+    payInvoiceButton.disabled = invoice.status !== 'open'; // Habilita o botão se a fatura estiver 'open'
 
     invoiceTransactionsList.innerHTML = '<li>Carregando...</li>';
     try {
@@ -182,6 +183,7 @@ async function loadAndDisplayInvoices(card) {
             invoiceStatus.textContent = '--';
             invoiceStatus.className = 'status-badge';
             invoiceTransactionsList.innerHTML = '<li>Nenhum lançamento.</li>';
+            payInvoiceButton.disabled = true;
         } else {
             currentCardInvoices.forEach(invoice => {
                 const option = document.createElement('option');
@@ -406,6 +408,25 @@ invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoice = currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
     if (selectedInvoice) {
         displayInvoiceDetails(selectedInvoice);
+    }
+});
+
+payInvoiceButton.addEventListener('click', async () => {
+    const selectedInvoiceId = invoicePeriodSelect.value;
+    const selectedInvoice = currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
+
+    if (selectedInvoice && selectedCardForInvoiceView) {
+        if (confirm(`Confirma o pagamento da fatura de ${formatCurrency(selectedInvoice.totalAmount)}?`)) {
+            try {
+                await payInvoice(selectedInvoice, selectedCardForInvoiceView);
+                showNotification("Fatura paga com sucesso!");
+                // Recarrega os dados para refletir as mudanças
+                loadAndDisplayInvoices(selectedCardForInvoiceView);
+                loadUserDashboard();
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
     }
 });
 
