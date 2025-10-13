@@ -7,6 +7,10 @@
     
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Adiciona a biblioteca Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script type="module" src="js/app.js" defer></script>
 </head>
 <body>
@@ -72,6 +76,13 @@
                 <div class="summary-card balance">
                     <h3>Saldo</h3>
                     <p id="final-balance">R$ 0,00</p>
+                </div>
+            </section>
+
+            <section id="chart-section">
+                <h2>Análise de Despesas por Categoria</h2>
+                <div class="chart-container">
+                    <canvas id="expenses-chart"></canvas>
                 </div>
             </section>
 
