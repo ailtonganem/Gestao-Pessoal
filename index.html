@@ -16,7 +16,7 @@
         <p>Carregando...</p>
     </div>
 
-    <!-- Contêiner de Autenticação (conteúdo omitido por repetição) -->
+    <!-- Contêiner de Autenticação -->
     <main id="auth-container" style="display: none;">
         <section id="login-form">
             <h1>Acesse sua conta</h1>
@@ -36,7 +36,15 @@
         <section id="register-form" style="display: none;">
             <h1>Crie sua conta</h1>
             <form>
-                <!-- Formulário de Cadastro -->
+                <div class="form-control">
+                    <label for="register-email">E-mail</label>
+                    <input type="email" id="register-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-control">
+                    <label for="register-password">Senha</label>
+                    <input type="password" id="register-password" placeholder="Crie uma senha forte" required>
+                </div>
+                <button type="submit">Cadastrar</button>
             </form>
             <p>Já tem uma conta? <a href="#" id="show-login-link">Faça Login</a></p>
         </section>
@@ -52,9 +60,70 @@
             </div>
         </header>
         <main id="app-content">
-            <!-- Seções de Resumo e Adicionar Transação (conteúdo omitido por repetição) -->
-            <section id="summary-section"><!-- ... --></section>
-            <section id="transaction-form-section"><!-- ... --></section>
+            <section id="summary-section">
+                <div class="summary-card">
+                    <h3>Receitas</h3>
+                    <p id="total-revenue">R$ 0,00</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Despesas</h3>
+                    <p id="total-expenses">R$ 0,00</p>
+                </div>
+                <div class="summary-card balance">
+                    <h3>Saldo</h3>
+                    <p id="final-balance">R$ 0,00</p>
+                </div>
+            </section>
+
+            <section id="transaction-form-section">
+                <h2>Adicionar Transação</h2>
+                <form id="add-transaction-form">
+                    <div class="form-control">
+                        <label for="transaction-description">Descrição</label>
+                        <input type="text" id="transaction-description" placeholder="Ex: Salário, Almoço" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="transaction-amount">Valor (R$)</label>
+                        <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="form-control">
+                        <label>Tipo</label>
+                        <div class="radio-container">
+                            <input type="radio" id="type-revenue" name="transaction-type" value="revenue" required>
+                            <label for="type-revenue">Receita</label>
+                            <input type="radio" id="type-expense" name="transaction-type" value="expense" checked>
+                            <label for="type-expense">Despesa</label>
+                        </div>
+                    </div>
+                    <div class="form-control">
+                        <label for="transaction-category">Categoria</label>
+                        <select id="transaction-category" required>
+                            <option value="outra">Outra...</option>
+                        </select>
+                    </div>
+                    <div id="new-category-wrapper" class="form-control" style="display: none;">
+                        <label for="new-transaction-category">Nova Categoria</label>
+                        <input type="text" id="new-transaction-category" placeholder="Ex: Lazer">
+                    </div>
+                    <div class="form-control">
+                        <label for="payment-method">Método de Pagamento</label>
+                        <select id="payment-method" required>
+                            <option value="pix">PIX</option>
+                            <option value="debit">Débito</option>
+                            <option value="cash">Dinheiro</option>
+                            <option value="credit_card">Cartão de Crédito</option>
+                        </select>
+                    </div>
+                    <div id="credit-card-wrapper" class="form-control" style="display: none;">
+                        <label for="credit-card-select">Cartão</label>
+                        <select id="credit-card-select">
+                            <option>Nenhum cartão cadastrado</option>
+                        </select>
+                    </div>
+                    <button type="submit">Adicionar</button>
+                </form>
+            </section>
+            
             <section id="transactions-list-section">
                 <h2>Histórico</h2>
                 <ul id="transactions-list"></ul>
@@ -65,8 +134,51 @@
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
-    <!-- Modal para Edição de Transação (conteúdo omitido por repetição) -->
-    <div id="edit-modal" class="modal" style="display: none;"><!-- ... --></div>
+    <!-- Modal para Edição de Transação -->
+    <div id="edit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Editar Transação</h2>
+            <form id="edit-transaction-form">
+                <input type="hidden" id="edit-transaction-id">
+                <div class="form-control">
+                    <label for="edit-transaction-description">Descrição</label>
+                    <input type="text" id="edit-transaction-description" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transaction-amount">Valor (R$)</label>
+                    <input type="number" id="edit-transaction-amount" step="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label>Tipo</label>
+                    <div class="radio-container">
+                        <input type="radio" id="edit-type-revenue" name="edit-transaction-type" value="revenue" required>
+                        <label for="edit-type-revenue">Receita</label>
+                        <input type="radio" id="edit-type-expense" name="edit-transaction-type" value="expense">
+                        <label for="edit-type-expense">Despesa</label>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transaction-category">Categoria</label>
+                    <select id="edit-transaction-category" required></select>
+                </div>
+                <div class="form-control">
+                    <label for="edit-payment-method">Método de Pagamento</label>
+                    <select id="edit-payment-method" required>
+                        <option value="pix">PIX</option>
+                        <option value="debit">Débito</option>
+                        <option value="cash">Dinheiro</option>
+                        <option value="credit_card">Cartão de Crédito</option>
+                    </select>
+                </div>
+                <div id="edit-credit-card-wrapper" class="form-control" style="display: none;">
+                    <label for="edit-credit-card-select">Cartão</label>
+                    <select id="edit-credit-card-select"></select>
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal para Gerenciamento de Cartões de Crédito -->
     <div id="credit-card-modal" class="modal" style="display: none;">
@@ -74,9 +186,6 @@
             <span class="close-card-modal-button">&times;</span>
             <h2>Meus Cartões</h2>
             
-            <!-- INÍCIO DAS ALTERAÇÕES -->
-
-            <!-- VISÃO 1: Lista de Cartões e Formulário de Adição -->
             <div id="card-management-view">
                 <section id="card-list-section">
                     <h3>Cartões Cadastrados</h3>
@@ -106,16 +215,13 @@
                 </section>
             </div>
 
-            <!-- VISÃO 2: Detalhes da Fatura (inicialmente oculta) -->
             <div id="invoice-details-view" style="display: none;">
                 <h3 id="invoice-card-name">Faturas - [Nome do Cartão]</h3>
                 <button id="back-to-cards-button" class="button-secondary">&larr; Voltar</button>
 
                 <div class="form-control">
                     <label for="invoice-period-select">Selecionar Fatura</label>
-                    <select id="invoice-period-select">
-                        <!-- Períodos das faturas serão carregados aqui -->
-                    </select>
+                    <select id="invoice-period-select"></select>
                 </div>
 
                 <div id="invoice-summary" class="summary-card">
@@ -125,14 +231,10 @@
                 </div>
                 
                 <h4>Lançamentos da Fatura</h4>
-                <ul id="invoice-transactions-list">
-                    <!-- Lançamentos da fatura selecionada serão listados aqui -->
-                </ul>
+                <ul id="invoice-transactions-list"></ul>
 
                 <button id="pay-invoice-button" disabled>Pagar Fatura</button>
             </div>
-
-            <!-- FIM DAS ALTERAÇÕES -->
         </div>
     </div>
 
