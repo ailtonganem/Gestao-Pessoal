@@ -203,12 +203,28 @@ a:hover { text-decoration: underline; }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
 /* INÍCIO DA ALTERAÇÃO */
-.close-button, .close-card-modal-button, .close-settings-modal-button {
-    position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
-    font-weight: bold; cursor: pointer;
+/* Unifica os estilos para todos os botões de fechar dos modais */
+.close-button, 
+.close-card-modal-button, 
+.close-settings-modal-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1; /* Adicionado para melhor alinhamento vertical */
 }
-.close-button:hover, .close-button:focus, .close-card-modal-button:hover, .close-card-modal-button:focus, .close-settings-modal-button:hover, .close-settings-modal-button:focus { 
-    color: var(--text-color); 
+
+/* Efeito hover unificado */
+.close-button:hover, 
+.close-button:focus,
+.close-card-modal-button:hover, 
+.close-card-modal-button:focus,
+.close-settings-modal-button:hover, 
+.close-settings-modal-button:focus {
+    color: var(--text-color);
 }
 /* FIM DA ALTERAÇÃO */
 
