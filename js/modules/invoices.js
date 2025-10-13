@@ -1,7 +1,5 @@
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO
-// Corrigido o caminho de importação para ser consistente com os outros módulos.
 import {
     collection,
     query,
@@ -14,7 +12,6 @@ import {
     updateDoc,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-// FIM DA ALTERAÇÃO
 
 const INVOICES_COLLECTION = 'invoices';
 const TRANSACTIONS_COLLECTION = 'transactions';
@@ -62,11 +59,8 @@ async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
 
     if (!querySnapshot.empty) {
         const invoiceDoc = querySnapshot.docs[0];
-        console.log(`Fatura existente encontrada: ${invoiceDoc.id}`);
         return invoiceDoc.id;
     }
-
-    console.log(`Nenhuma fatura encontrada para ${month}/${year}. Criando uma nova...`);
     
     const dueDate = new Date(year, month - 1, cardData.dueDay);
 
@@ -82,7 +76,6 @@ async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
     };
 
     const docRef = await addDoc(invoicesRef, newInvoiceData);
-    console.log(`Nova fatura criada com ID: ${docRef.id}`);
     return docRef.id;
 }
 
@@ -103,11 +96,7 @@ async function getInvoices(cardId) {
         const invoices = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            invoices.push({
-                id: doc.id,
-                ...data,
-                dueDate: data.dueDate.toDate()
-            });
+            invoices.push({ id: doc.id, ...data, dueDate: data.dueDate.toDate() });
         });
         return invoices;
     } catch (error) {
@@ -127,12 +116,7 @@ async function getInvoiceTransactions(invoiceId) {
         const q = query(invoiceTransactionsRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const transactions = [];
-        querySnapshot.forEach((doc) => {
-            transactions.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
+        querySnapshot.forEach((doc) => { transactions.push({ id: doc.id, ...doc.data() }); });
         return transactions;
     } catch (error) {
         console.error("Erro ao buscar lançamentos da fatura:", error);
@@ -150,11 +134,9 @@ async function payInvoice(invoice, card) {
     try {
         const batch = writeBatch(db);
 
-        // 1. Atualiza o status da fatura para 'paid'
         const invoiceRef = doc(db, INVOICES_COLLECTION, invoice.id);
         batch.update(invoiceRef, { status: 'paid' });
 
-        // 2. Cria uma nova transação de despesa na coleção principal
         const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
         const paymentTransactionData = {
             description: `Pagamento Fatura ${card.name} (${invoice.month}/${invoice.year})`,
@@ -169,7 +151,6 @@ async function payInvoice(invoice, card) {
         batch.set(newTransactionRef, paymentTransactionData);
         
         await batch.commit();
-        console.log(`Fatura ${invoice.id} paga e transação de débito criada.`);
 
     } catch (error) {
         console.error("Erro ao pagar fatura:", error);
@@ -177,5 +158,46 @@ async function payInvoice(invoice, card) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Verifica todas as faturas abertas de um usuário e fecha aquelas cuja data de vencimento já passou.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<void>}
+ */
+async function closeOverdueInvoices(userId) {
+    try {
+        const invoicesRef = collection(db, INVOICES_COLLECTION);
+        const now = new Date();
+
+        // Consulta para buscar faturas abertas e vencidas do usuário
+        const q = query(invoicesRef,
+            where("userId", "==", userId),
+            where("status", "==", "open"),
+            where("dueDate", "<", Timestamp.fromDate(now))
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            console.log("Nenhuma fatura vencida para fechar.");
+            return;
+        }
+
+        const batch = writeBatch(db);
+        querySnapshot.forEach((doc) => {
+            console.log(`Fechando fatura vencida: ${doc.id}`);
+            const invoiceRef = doc.ref;
+            batch.update(invoiceRef, { status: 'closed' });
+        });
+
+        await batch.commit();
+        console.log(`${querySnapshot.size} fatura(s) foram fechadas.`);
+    } catch (error) {
+        console.error("Erro ao fechar faturas vencidas:", error);
+        // Não lançamos um erro para o usuário, pois esta é uma operação de fundo.
+    }
+}
+// FIM DA ALTERAÇÃO
+
 // Exporta as funções para serem utilizadas em outros módulos.
-export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice };
+export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices };
