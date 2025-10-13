@@ -6,10 +6,12 @@ import { addTransaction, getTransactions, deleteTransaction, updateTransaction }
 import { getCategories } from './modules/categories.js';
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
+// A lógica de faturas é chamada indiretamente através de 'addTransaction'.
 
-// --- Variável de Estado ---
+// --- Variáveis de Estado ---
 let currentUser = null;
-let userCreditCards = []; // Cache para os cartões do usuário
+let userCreditCards = []; 
+let selectedCardForInvoiceView = null; // Armazena o cartão selecionado para ver faturas
 
 // --- Seleção de Elementos do DOM ---
 // Contêineres principais
@@ -71,6 +73,18 @@ const cardNameInput = document.getElementById('card-name');
 const cardClosingDayInput = document.getElementById('card-closing-day');
 const cardDueDayInput = document.getElementById('card-due-day');
 
+// Seletores da Visão de Faturas
+const cardManagementView = document.getElementById('card-management-view');
+const invoiceDetailsView = document.getElementById('invoice-details-view');
+const backToCardsButton = document.getElementById('back-to-cards-button');
+const invoiceCardName = document.getElementById('invoice-card-name');
+const invoicePeriodSelect = document.getElementById('invoice-period-select');
+const invoiceTotalAmount = document.getElementById('invoice-total-amount');
+const invoiceDueDate = document.getElementById('invoice-due-date');
+const invoiceStatus = document.getElementById('invoice-status');
+const invoiceTransactionsList = document.getElementById('invoice-transactions-list');
+const payInvoiceButton = document.getElementById('pay-invoice-button');
+
 
 // --- Funções de Manipulação da UI ---
 
@@ -97,23 +111,52 @@ function populateCategories(type, selectElement, isEditForm = false) {
 /** Popula os <select> de cartão de crédito com os cartões do usuário. */
 function populateCreditCardSelects() {
     creditCardSelect.innerHTML = '';
+    const editCreditCardSelect = document.getElementById('edit-credit-card-select');
+    editCreditCardSelect.innerHTML = '';
+
 
     if (userCreditCards.length === 0) {
         const option = document.createElement('option');
         option.textContent = 'Nenhum cartão cadastrado';
         option.disabled = true;
         creditCardSelect.appendChild(option);
+        editCreditCardSelect.appendChild(option.cloneNode(true));
+
     } else {
         userCreditCards.forEach(card => {
             const option = document.createElement('option');
             option.value = card.id;
             option.textContent = card.name;
             creditCardSelect.appendChild(option.cloneNode(true));
+            editCreditCardSelect.appendChild(option.cloneNode(true));
         });
     }
 }
 
-/** Renderiza a lista de cartões no modal de gerenciamento. */
+/** Troca a visão no modal de cartões para a de detalhes da fatura. */
+function showInvoiceDetailsView(card) {
+    selectedCardForInvoiceView = card;
+    invoiceCardName.textContent = `Faturas - ${card.name}`;
+    
+    // Placeholder: Futuramente, buscaremos e popularemos as faturas aqui
+    invoicePeriodSelect.innerHTML = '<option>Novembro/2025 (Atual)</option>';
+    invoiceTotalAmount.textContent = 'Carregando...';
+    invoiceDueDate.textContent = '--/--/----';
+    invoiceStatus.textContent = '...';
+    invoiceTransactionsList.innerHTML = '<li>Carregando lançamentos...</li>';
+
+    cardManagementView.style.display = 'none';
+    invoiceDetailsView.style.display = 'block';
+}
+
+/** Troca a visão no modal de cartões de volta para a lista de cartões. */
+function showCardManagementView() {
+    selectedCardForInvoiceView = null;
+    cardManagementView.style.display = 'block';
+    invoiceDetailsView.style.display = 'none';
+}
+
+/** Renderiza a lista de cartões no modal, adicionando o evento de clique. */
 function renderCreditCardList() {
     creditCardList.innerHTML = '';
     if (userCreditCards.length === 0) {
@@ -122,6 +165,7 @@ function renderCreditCardList() {
         userCreditCards.forEach(card => {
             const li = document.createElement('li');
             li.textContent = `${card.name} (Fecha dia ${card.closingDay}, Vence dia ${card.dueDay})`;
+            li.addEventListener('click', () => showInvoiceDetailsView(card));
             creditCardList.appendChild(li);
         });
     }
@@ -162,6 +206,7 @@ function closeEditModal() {
 
 /** Abre o modal de gerenciamento de cartões. */
 function openCardModal() {
+    showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
 
@@ -297,6 +342,7 @@ window.addEventListener('click', (event) => { if (event.target == editModal) { c
 manageCardsButton.addEventListener('click', openCardModal);
 closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
+backToCardsButton.addEventListener('click', showCardManagementView);
 
 transactionTypeRadios.forEach(radio => { radio.addEventListener('change', (e) => populateCategories(e.target.value, transactionCategorySelect)); });
 transactionCategorySelect.addEventListener('change', (e) => { newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none'; });
@@ -342,36 +388,29 @@ addTransactionForm.addEventListener('submit', async (e) => {
         userId: currentUser.uid
     };
 
-    // INÍCIO DA ALTERAÇÃO
     let cardData = null;
     if (transactionData.paymentMethod === 'credit_card') {
         const cardId = creditCardSelect.value;
-        if (!cardId) return showNotification("Por favor, selecione um cartão de crédito.", 'error');
+        if (!cardId || creditCardSelect.disabled) return showNotification("Por favor, selecione um cartão de crédito válido.", 'error');
         
         transactionData.cardId = cardId;
-        // Encontra os dados completos do cartão selecionado no nosso cache
         cardData = userCreditCards.find(card => card.id === cardId);
     }
     
     try {
-        // Passa os dados do cartão para a função addTransaction
         await addTransaction(transactionData, cardData);
-        
         showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
         newCategoryWrapper.style.display = 'none';
         creditCardWrapper.style.display = 'none';
         populateCategories('expense', transactionCategorySelect);
         
-        // Só recarrega o dashboard principal se não for uma transação de cartão de crédito.
-        // Se for, a lógica da fatura já foi tratada, não há necessidade de recarregar a lista principal.
         if (transactionData.paymentMethod !== 'credit_card') {
             loadUserDashboard();
         }
     } catch (error) {
         showNotification(error.message, 'error');
     }
-    // FIM DA ALTERAÇÃO
 });
 
 editTransactionForm.addEventListener('submit', async (e) => {
