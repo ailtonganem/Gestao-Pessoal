@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minhas Finanças</title>
     
-    <!-- Adiciona la referencia para el ícono de la página. Esto elimina el error 404 en la consola. -->
+    <!-- Adiciona a referência para o ícone da página. Isso elimina o erro 404 no console. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
     <!-- Futuramente, aqui entrará o link para o CSS -->
@@ -67,7 +67,6 @@
             <button id="logout-button">Sair</button>
         </header>
         <main id="app-content">
-            <!-- INÍCIO DAS ALTERAÇÕES -->
             <section id="summary-section">
                 <div class="summary-card">
                     <h3>Receitas</h3>
@@ -82,7 +81,6 @@
                     <p id="final-balance">R$ 0,00</p>
                 </div>
             </section>
-            <!-- FIM DAS ALTERAÇÕES -->
 
             <section id="transaction-form-section">
                 <h2>Adicionar Transação</h2>
@@ -118,6 +116,11 @@
             </section>
         </main>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <!-- Contêiner para notificações (toasts) -->
+    <div id="notification-container"></div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
