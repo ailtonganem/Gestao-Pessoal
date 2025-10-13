@@ -21,15 +21,17 @@
 }
 
 html, body {
-    height: 100%;
+    min-height: 100%; /* Garante que o body ocupe pelo menos a altura da tela */
     font-family: var(--font-family);
     background-color: var(--background-color);
     color: var(--text-color);
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Alinha no topo para telas maiores */
+    /* INÍCIO DA ALTERAÇÃO: Alinha ao topo por padrão (mobile-first) */
+    align-items: flex-start;
+    /* FIM DA ALTERAÇÃO */
     text-align: center;
-    overflow-y: auto; /* Permite scroll na página inteira se necessário */
+    overflow-y: auto;
 }
 
 /* Estilo do Indicador de Carregamento */
@@ -207,7 +209,9 @@ a:hover { text-decoration: underline; }
 /* ============================================= */
 @media (min-width: 768px) {
     body {
-        align-items: center; /* Centraliza o conteúdo verticalmente em telas maiores */
+        /* INÍCIO DA ALTERAÇÃO: Centraliza verticalmente apenas em telas maiores */
+        align-items: center;
+        /* FIM DA ALTERAÇÃO */
     }
 
     /* Aumenta a largura máxima dos contêineres principais */
@@ -218,29 +222,15 @@ a:hover { text-decoration: underline; }
     /* Ajusta o layout do dashboard para duas colunas */
     #app-content {
         display: grid;
-        grid-template-columns: 1fr 1.5fr; /* Coluna da esquerda menor que a da direita */
+        grid-template-columns: 1fr 1.5fr;
         gap: 2rem;
         align-items: flex-start;
     }
 
     /* Posiciona as seções na grade */
-    #transaction-form-section {
-        grid-column: 1 / 2;
-        margin-bottom: 0; /* Remove a margem inferior desnecessária no grid */
-    }
-
-    #transactions-list-section {
-        grid-column: 2 / 3;
-        grid-row: 1 / 3; /* Faz a lista ocupar a altura das duas seções da esquerda */
-        margin-bottom: 0;
-    }
-
-    /* Faz a lista de histórico usar a altura disponível */
-    #transactions-list {
-        max-height: 500px;
-        overflow-y: auto;
-        padding-right: 0.5rem; /* Espaço para a barra de rolagem */
-    }
+    #transaction-form-section { grid-column: 1 / 2; margin-bottom: 0; }
+    #transactions-list-section { grid-column: 2 / 3; grid-row: 1 / 3; margin-bottom: 0; }
+    #transactions-list { max-height: 500px; overflow-y: auto; padding-right: 0.5rem; }
     
     /* Coloca os cards de resumo em linha */
     #summary-section {
@@ -249,9 +239,7 @@ a:hover { text-decoration: underline; }
         justify-content: space-between;
     }
 
-    .summary-card {
-        flex: 1; /* Faz os cards ocuparem o espaço igualmente */
-    }
+    .summary-card { flex: 1; }
 
     /* Aumenta a largura dos modais em telas maiores */
     .modal-content {
