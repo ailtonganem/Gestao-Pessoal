@@ -59,6 +59,8 @@
         <header>
             <h1>Dashboard</h1>
             <div class="header-buttons">
+                <!-- BOTÃO DE CONFIGURAÇÕES ADICIONADO AQUI -->
+                <button id="settings-button" class="button-secondary">Configurações</button>
                 <button id="manage-cards-button" class="button-secondary">Gerenciar Cartões</button>
                 <button id="logout-button">Sair</button>
             </div>
@@ -273,6 +275,18 @@
                 <ul id="invoice-transactions-list"></ul>
 
                 <button id="pay-invoice-button" disabled>Pagar Fatura</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DO NOVO MODAL DE CONFIGURAÇÕES ADICIONADA AQUI -->
+    <div id="settings-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-settings-modal-button">&times;</span>
+            <h2>Configurações</h2>
+            <div id="settings-content">
+                <p>As opções de configuração aparecerão aqui em breve.</p>
+                <!-- O conteúdo (gerenciar categorias, tema, etc.) será adicionado aqui futuramente -->
             </div>
         </div>
     </div>
