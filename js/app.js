@@ -6,12 +6,14 @@ import { addTransaction, getTransactions, deleteTransaction, updateTransaction }
 import { getCategories } from './modules/categories.js';
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
-// A lógica de faturas é chamada indiretamente através de 'addTransaction'.
+// Importa as novas funções de faturas.
+import { getInvoices, getInvoiceTransactions } from './modules/invoices.js';
 
 // --- Variáveis de Estado ---
 let currentUser = null;
 let userCreditCards = []; 
-let selectedCardForInvoiceView = null; // Armazena o cartão selecionado para ver faturas
+let selectedCardForInvoiceView = null;
+let currentCardInvoices = []; // Cache para as faturas do cartão selecionado
 
 // --- Seleção de Elementos do DOM ---
 // Contêineres principais
@@ -91,7 +93,7 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 /** Popula um elemento <select> com as categorias apropriadas. */
 function populateCategories(type, selectElement, isEditForm = false) {
     const categories = getCategories(type);
-    selectElement.innerHTML = ''; // Limpa opções existentes
+    selectElement.innerHTML = '';
 
     categories.forEach(category => {
         const option = document.createElement('option');
@@ -114,14 +116,12 @@ function populateCreditCardSelects() {
     const editCreditCardSelect = document.getElementById('edit-credit-card-select');
     editCreditCardSelect.innerHTML = '';
 
-
     if (userCreditCards.length === 0) {
         const option = document.createElement('option');
         option.textContent = 'Nenhum cartão cadastrado';
         option.disabled = true;
         creditCardSelect.appendChild(option);
         editCreditCardSelect.appendChild(option.cloneNode(true));
-
     } else {
         userCreditCards.forEach(card => {
             const option = document.createElement('option');
@@ -133,25 +133,83 @@ function populateCreditCardSelects() {
     }
 }
 
-/** Troca a visão no modal de cartões para a de detalhes da fatura. */
+/** Exibe os detalhes de uma fatura selecionada. */
+async function displayInvoiceDetails(invoice) {
+    invoiceTotalAmount.textContent = formatCurrency(invoice.totalAmount);
+    invoiceDueDate.textContent = invoice.dueDate.toLocaleDateString('pt-BR');
+    
+    invoiceStatus.textContent = invoice.status;
+    invoiceStatus.className = 'status-badge';
+    invoiceStatus.classList.add(invoice.status);
+
+    payInvoiceButton.disabled = invoice.status !== 'closed';
+
+    invoiceTransactionsList.innerHTML = '<li>Carregando...</li>';
+    try {
+        const transactions = await getInvoiceTransactions(invoice.id);
+        invoiceTransactionsList.innerHTML = '';
+        if (transactions.length === 0) {
+            invoiceTransactionsList.innerHTML = '<li>Nenhum lançamento nesta fatura.</li>';
+        } else {
+            transactions.forEach(tx => {
+                const li = document.createElement('li');
+                const descriptionSpan = document.createElement('span');
+                descriptionSpan.textContent = tx.description;
+                const amountSpan = document.createElement('span');
+                amountSpan.textContent = formatCurrency(tx.amount);
+                li.appendChild(descriptionSpan);
+                li.appendChild(amountSpan);
+                invoiceTransactionsList.appendChild(li);
+            });
+        }
+    } catch (error) {
+        showNotification(error.message, 'error');
+        invoiceTransactionsList.innerHTML = '<li>Erro ao carregar lançamentos.</li>';
+    }
+}
+
+/** Carrega as faturas de um cartão e popula o dropdown de seleção. */
+async function loadAndDisplayInvoices(card) {
+    invoicePeriodSelect.innerHTML = '<option>Carregando faturas...</option>';
+    try {
+        currentCardInvoices = await getInvoices(card.id);
+        invoicePeriodSelect.innerHTML = '';
+
+        if (currentCardInvoices.length === 0) {
+            invoicePeriodSelect.innerHTML = '<option>Nenhuma fatura encontrada</option>';
+            invoiceTotalAmount.textContent = formatCurrency(0);
+            invoiceDueDate.textContent = '--/--/----';
+            invoiceStatus.textContent = '--';
+            invoiceStatus.className = 'status-badge';
+            invoiceTransactionsList.innerHTML = '<li>Nenhum lançamento.</li>';
+        } else {
+            currentCardInvoices.forEach(invoice => {
+                const option = document.createElement('option');
+                option.value = invoice.id;
+                option.textContent = `${invoice.month.toString().padStart(2, '0')}/${invoice.year} (${invoice.status})`;
+                invoicePeriodSelect.appendChild(option);
+            });
+            displayInvoiceDetails(currentCardInvoices[0]);
+        }
+    } catch (error) {
+        showNotification(error.message, 'error');
+        invoicePeriodSelect.innerHTML = '<option>Erro ao carregar faturas</option>';
+    }
+}
+
+/** Troca a visão no modal para a de detalhes da fatura e inicia o carregamento. */
 function showInvoiceDetailsView(card) {
     selectedCardForInvoiceView = card;
     invoiceCardName.textContent = `Faturas - ${card.name}`;
-    
-    // Placeholder: Futuramente, buscaremos e popularemos as faturas aqui
-    invoicePeriodSelect.innerHTML = '<option>Novembro/2025 (Atual)</option>';
-    invoiceTotalAmount.textContent = 'Carregando...';
-    invoiceDueDate.textContent = '--/--/----';
-    invoiceStatus.textContent = '...';
-    invoiceTransactionsList.innerHTML = '<li>Carregando lançamentos...</li>';
-
+    loadAndDisplayInvoices(card);
     cardManagementView.style.display = 'none';
     invoiceDetailsView.style.display = 'block';
 }
 
-/** Troca a visão no modal de cartões de volta para a lista de cartões. */
+/** Troca a visão no modal de volta para a lista de cartões. */
 function showCardManagementView() {
     selectedCardForInvoiceView = null;
+    currentCardInvoices = [];
     cardManagementView.style.display = 'block';
     invoiceDetailsView.style.display = 'none';
 }
@@ -343,6 +401,13 @@ manageCardsButton.addEventListener('click', openCardModal);
 closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 backToCardsButton.addEventListener('click', showCardManagementView);
+invoicePeriodSelect.addEventListener('change', (e) => {
+    const selectedInvoiceId = e.target.value;
+    const selectedInvoice = currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
+    if (selectedInvoice) {
+        displayInvoiceDetails(selectedInvoice);
+    }
+});
 
 transactionTypeRadios.forEach(radio => { radio.addEventListener('change', (e) => populateCategories(e.target.value, transactionCategorySelect)); });
 transactionCategorySelect.addEventListener('change', (e) => { newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none'; });
