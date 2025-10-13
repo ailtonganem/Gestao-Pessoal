@@ -417,6 +417,7 @@ manageCardsButton.addEventListener('click', openCardModal);
 closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 backToCardsButton.addEventListener('click', showCardManagementView);
+
 invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoiceId = e.target.value;
     const selectedInvoice = currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
@@ -470,12 +471,26 @@ registerForm.addEventListener('submit', async (e) => {
 
 addTransactionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) return showNotification("Você precisa estar logado.", 'error');
+    const submitButton = addTransactionForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Salvando...';
+
+    if (!currentUser) {
+        showNotification("Você precisa estar logado.", 'error');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Adicionar';
+        return;
+    }
     
     let category = transactionCategorySelect.value;
     if (category === 'outra') {
         category = newCategoryInput.value.trim();
-        if (!category) return showNotification("Por favor, informe o nome da nova categoria.", 'error');
+        if (!category) {
+            showNotification("Por favor, informe o nome da nova categoria.", 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Adicionar';
+            return;
+        }
     }
 
     const transactionData = {
@@ -490,8 +505,12 @@ addTransactionForm.addEventListener('submit', async (e) => {
     let cardData = null;
     if (transactionData.paymentMethod === 'credit_card') {
         const cardId = creditCardSelect.value;
-        if (!cardId || creditCardSelect.disabled) return showNotification("Por favor, selecione um cartão de crédito válido.", 'error');
-        
+        if (!cardId || creditCardSelect.disabled) {
+            showNotification("Por favor, selecione um cartão de crédito válido.", 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Adicionar';
+            return;
+        }
         transactionData.cardId = cardId;
         cardData = userCreditCards.find(card => card.id === cardId);
     }
@@ -509,11 +528,18 @@ addTransactionForm.addEventListener('submit', async (e) => {
         }
     } catch (error) {
         showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Adicionar';
     }
 });
 
 editTransactionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submitButton = editTransactionForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Salvando...';
+
     const transactionId = editTransactionIdInput.value;
     const updatedData = {
         description: editTransactionDescriptionInput.value,
@@ -529,12 +555,24 @@ editTransactionForm.addEventListener('submit', async (e) => {
         loadUserDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Salvar Alterações';
     }
 });
 
 addCreditCardForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) return showNotification("Você precisa estar logado.", 'error');
+    const submitButton = addCreditCardForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Adicionando...';
+
+    if (!currentUser) {
+        showNotification("Você precisa estar logado.", 'error');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Adicionar Cartão';
+        return;
+    }
 
     const cardData = {
         name: cardNameInput.value,
@@ -550,6 +588,9 @@ addCreditCardForm.addEventListener('submit', async (e) => {
         await loadUserCreditCards();
     } catch (error) {
         showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Adicionar Cartão';
     }
 });
 
