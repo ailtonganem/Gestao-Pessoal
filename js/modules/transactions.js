@@ -1,6 +1,6 @@
 // Importa a instância do Firestore.
 import { db } from '../firebase-config.js';
-// ADIÇÃO: Importa a lógica de faturas.
+// Importa a lógica de faturas.
 import { findOrCreateInvoice } from './invoices.js';
 
 // Importa as funções do Firestore necessárias.
@@ -15,7 +15,6 @@ import {
     doc,
     deleteDoc,
     updateDoc,
-    // ADIÇÃO: Funções para transações e atualizações atômicas.
     writeBatch,
     increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
@@ -48,8 +47,7 @@ async function addTransaction(transactionData, cardData = null) {
                 category: transactionData.category,
                 createdAt: serverTimestamp()
             };
-            // Precisamos de uma nova referência de documento para a transação que será adicionada
-            const newTransactionRef = doc(collection(invoiceTransactionsRef));
+            const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
             
             // 2. Atualiza o valor total da fatura de forma atômica
@@ -92,8 +90,8 @@ async function getTransactions(userId) {
         const q = query(
             transactionsCollectionRef,
             where("userId", "==", userId),
-            // ADIÇÃO: Filtra para não incluir as de cartão de crédito na lista principal.
             where("paymentMethod", "!=", "credit_card"),
+            orderBy("paymentMethod"), // O Firestore exige um orderBy para o campo da desigualdade
             orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(q);
@@ -111,10 +109,37 @@ async function getTransactions(userId) {
     }
 }
 
-// As funções delete e update permanecem as mesmas por enquanto,
-// pois a edição/exclusão de transações de cartão será uma lógica mais complexa
-// a ser implementada no futuro.
-async function deleteTransaction(transactionId) { /* ...código inalterado... */ }
-async function updateTransaction(transactionId, updatedData) { /* ...código inalterado... */ }
+/**
+ * Exclui uma transação do Firestore.
+ * @param {string} transactionId - O ID do documento da transação a ser excluída.
+ * @returns {Promise<void>}
+ */
+async function deleteTransaction(transactionId) {
+    try {
+        const transactionDocRef = doc(db, 'transactions', transactionId);
+        await deleteDoc(transactionDocRef);
+        console.log(`Transação com ID ${transactionId} foi excluída.`);
+    } catch (error) {
+        console.error("Erro ao excluir transação:", error);
+        throw new Error("Não foi possível excluir a transação.");
+    }
+}
+
+/**
+ * Atualiza uma transação existente no Firestore.
+ * @param {string} transactionId - O ID do documento a ser atualizado.
+ * @param {object} updatedData - Um objeto com os campos a serem atualizados.
+ * @returns {Promise<void>}
+ */
+async function updateTransaction(transactionId, updatedData) {
+    try {
+        const transactionDocRef = doc(db, 'transactions', transactionId);
+        await updateDoc(transactionDocRef, updatedData);
+        console.log(`Transação com ID ${transactionId} foi atualizada.`);
+    } catch (error) {
+        console.error("Erro ao atualizar transação:", error);
+        throw new Error("Não foi possível salvar as alterações.");
+    }
+}
 
 export { addTransaction, getTransactions, deleteTransaction, updateTransaction };
