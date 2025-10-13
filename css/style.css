@@ -122,7 +122,6 @@ a:hover { text-decoration: underline; }
 .summary-card.balance { background-color: var(--primary-color); color: white; }
 .summary-card.balance h3 { color: #bdc3c7; }
 
-/* INÍCIO DAS ALTERAÇÕES */
 /* Estilos da Seção de Gráfico */
 #chart-section {
     margin-bottom: 2rem;
@@ -154,7 +153,6 @@ a:hover { text-decoration: underline; }
 .filter-controls .form-control label {
     font-size: 0.9rem;
 }
-/* FIM DAS ALTERAÇÕES */
 
 
 /* Estilos da Lista de Histórico de Transações */
@@ -203,11 +201,16 @@ a:hover { text-decoration: underline; }
     animation: modalOpen 0.4s ease-out;
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
-.close-button, .close-card-modal-button {
+
+/* INÍCIO DA ALTERAÇÃO */
+.close-button, .close-card-modal-button, .close-settings-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer;
 }
-.close-button:hover, .close-button:focus, .close-card-modal-button:hover, .close-card-modal-button:focus { color: var(--text-color); }
+.close-button:hover, .close-button:focus, .close-card-modal-button:hover, .close-card-modal-button:focus, .close-settings-modal-button:hover, .close-settings-modal-button:focus { 
+    color: var(--text-color); 
+}
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos Específicos do Modal de Cartões */
 #card-list-section { margin-bottom: 2rem; }
