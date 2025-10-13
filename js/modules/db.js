@@ -9,7 +9,10 @@ import {
     query,
     where,
     getDocs,
-    orderBy
+    orderBy,
+    // ADIÇÃO: Funções para deletar um documento
+    doc,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -48,7 +51,6 @@ async function addTransaction(transactionData) {
 
 /**
  * Busca todas as transações de um usuário específico, ordenadas pela data de criação.
- * (Esta função será usada na próxima fase para exibir o histórico).
  * @param {string} userId - O ID do usuário cujas transações devem ser buscadas.
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
@@ -59,7 +61,7 @@ async function getTransactions(userId) {
         // Cria uma consulta para buscar documentos onde o campo 'userId'
         // seja igual ao ID do usuário logado.
         const q = query(
-            transactionsCollection_ref,
+            transactionsCollectionRef, // Corrigido de transactionsCollection_ref para transactionsCollectionRef
             where("userId", "==", userId),
             orderBy("createdAt", "desc") // Ordena das mais novas para as mais antigas
         );
@@ -82,5 +84,26 @@ async function getTransactions(userId) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Exclui uma transação do Firestore com base no seu ID.
+ * @param {string} transactionId - O ID do documento da transação a ser excluída.
+ * @returns {Promise<void>}
+ * @throws {Error} Lança um erro se a exclusão falhar.
+ */
+async function deleteTransaction(transactionId) {
+    try {
+        // Cria uma referência direta ao documento que queremos excluir.
+        const transactionDocRef = doc(db, 'transactions', transactionId);
+        await deleteDoc(transactionDocRef);
+        console.log(`Transação com ID ${transactionId} foi excluída.`);
+    } catch (error) {
+        console.error("Erro ao excluir transação:", error);
+        throw new Error("Não foi possível excluir a transação.");
+    }
+}
+// FIM DA ALTERAÇÃO
+
 // Exporta as funções para serem usadas em outros lugares da aplicação.
-export { addTransaction, getTransactions };
+// ATUALIZAÇÃO: Exporta a nova função.
+export { addTransaction, getTransactions, deleteTransaction };
