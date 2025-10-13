@@ -16,7 +16,8 @@ import {
     deleteDoc,
     updateDoc,
     writeBatch,
-    increment
+    increment,
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -27,20 +28,13 @@ import {
  * @returns {Promise<void>}
  */
 async function addTransaction(transactionData, cardData = null) {
-    // Se for uma transação de cartão de crédito
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         try {
-            const transactionDate = new Date(); // Usa a data atual para a transação
+            const transactionDate = new Date();
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
-
-            // Cria uma referência para a subcoleção de transações dentro da fatura
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
-            
-            // Prepara a atualização da fatura e a adição da nova transação
             const batch = writeBatch(db);
-
-            // 1. Adiciona a nova transação na subcoleção da fatura
             const newTransactionInInvoice = {
                 description: transactionData.description,
                 amount: transactionData.amount,
@@ -49,29 +43,16 @@ async function addTransaction(transactionData, cardData = null) {
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
-            
-            // 2. Atualiza o valor total da fatura de forma atômica
-            batch.update(invoiceRef, {
-                totalAmount: increment(transactionData.amount)
-            });
-
-            // Executa as duas operações em conjunto
+            batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
             await batch.commit();
-            console.log(`Transação de crédito adicionada à fatura ${invoiceId}`);
-
         } catch (error) {
             console.error("Erro ao adicionar transação de crédito:", error);
             throw new Error("Não foi possível salvar a transação no cartão.");
         }
     } else {
-        // Lógica original para transações que não são de cartão de crédito
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
-            await addDoc(transactionsCollectionRef, {
-                ...transactionData,
-                createdAt: serverTimestamp()
-            });
-            console.log("Transação adicionada com sucesso.");
+            await addDoc(transactionsCollectionRef, { ...transactionData, createdAt: serverTimestamp() });
         } catch (error) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
@@ -79,28 +60,57 @@ async function addTransaction(transactionData, cardData = null) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
 /**
- * Busca todas as transações de um usuário (exceto as de cartão de crédito, que estão em faturas).
+ * Busca todas as transações de fluxo de caixa de um usuário, com filtros opcionais de data.
  * @param {string} userId - O ID do usuário.
+ * @param {object} filters - Objeto com os filtros.
+ * @param {number|null} filters.month - O mês para filtrar (1-12).
+ * @param {number|null} filters.year - O ano para filtrar.
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
-async function getTransactions(userId) {
+async function getTransactions(userId, filters = {}) {
+    const { month, year } = filters;
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
-        const q = query(
-            transactionsCollectionRef,
+        
+        // Constrói a base da consulta
+        let queryConstraints = [
             where("userId", "==", userId),
-            where("paymentMethod", "!=", "credit_card"),
-            orderBy("paymentMethod"), // O Firestore exige um orderBy para o campo da desigualdade
-            orderBy("createdAt", "desc")
-        );
+            where("paymentMethod", "!=", "credit_card")
+        ];
+
+        // Adiciona filtros de data se fornecidos
+        if (year && month && month !== 'all') {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0, 23, 59, 59); // Último dia do mês
+            
+            queryConstraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
+            queryConstraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
+        } else if (year) {
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+            queryConstraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
+            queryConstraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
+        }
+
+        // Adiciona a ordenação
+        // O Firestore exige que a primeira ordenação seja no campo da primeira desigualdade ou filtro de range
+        if(year) {
+            queryConstraints.push(orderBy("createdAt", "desc"));
+            queryConstraints.push(orderBy("paymentMethod"));
+        } else {
+            queryConstraints.push(orderBy("paymentMethod"));
+            queryConstraints.push(orderBy("createdAt", "desc"));
+        }
+
+        const q = query(transactionsCollectionRef, ...queryConstraints);
+        
         const querySnapshot = await getDocs(q);
         const transactions = [];
         querySnapshot.forEach((doc) => {
-            transactions.push({
-                id: doc.id,
-                ...doc.data()
-            });
+            transactions.push({ id: doc.id, ...doc.data() });
         });
         return transactions;
     } catch (error) {
@@ -108,34 +118,22 @@ async function getTransactions(userId) {
         throw new Error("Não foi possível buscar as transações.");
     }
 }
+// FIM DA ALTERAÇÃO
 
-/**
- * Exclui uma transação do Firestore.
- * @param {string} transactionId - O ID do documento da transação a ser excluída.
- * @returns {Promise<void>}
- */
 async function deleteTransaction(transactionId) {
     try {
         const transactionDocRef = doc(db, 'transactions', transactionId);
         await deleteDoc(transactionDocRef);
-        console.log(`Transação com ID ${transactionId} foi excluída.`);
     } catch (error) {
         console.error("Erro ao excluir transação:", error);
         throw new Error("Não foi possível excluir a transação.");
     }
 }
 
-/**
- * Atualiza uma transação existente no Firestore.
- * @param {string} transactionId - O ID do documento a ser atualizado.
- * @param {object} updatedData - Um objeto com os campos a serem atualizados.
- * @returns {Promise<void>}
- */
 async function updateTransaction(transactionId, updatedData) {
     try {
         const transactionDocRef = doc(db, 'transactions', transactionId);
         await updateDoc(transactionDocRef, updatedData);
-        console.log(`Transação com ID ${transactionId} foi atualizada.`);
     } catch (error) {
         console.error("Erro ao atualizar transação:", error);
         throw new Error("Não foi possível salvar as alterações.");
