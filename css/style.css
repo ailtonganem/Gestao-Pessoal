@@ -63,6 +63,12 @@ h2 {
     padding-bottom: 0.5rem;
 }
 
+h3 {
+    text-align: left;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
 /* Estilos dos formulários */
 form {
     display: flex;
@@ -83,15 +89,18 @@ form {
 .form-control input[type="email"],
 .form-control input[type="password"],
 .form-control input[type="text"],
-.form-control input[type="number"] {
+.form-control input[type="number"],
+.form-control select {
     width: 100%;
     padding: 0.8rem;
     border: 1px solid #bdc3c7;
     border-radius: 5px;
     font-size: 1rem;
+    font-family: var(--font-family);
 }
 
-.form-control input:focus {
+.form-control input:focus,
+.form-control select:focus {
     outline: none;
     border-color: var(--secondary-color);
     box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
@@ -126,6 +135,19 @@ button:hover {
     background-color: #2980b9;
 }
 
+/* INÍCIO DAS ALTERAÇÕES */
+.button-secondary {
+    background-color: #7f8c8d;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+.button-secondary:hover {
+    background-color: #6c7a7d;
+}
+/* FIM DAS ALTERAÇÕES */
+
+
 /* Estilos para os links de alternância de formulário */
 p {
     margin-top: 1.5rem;
@@ -154,6 +176,13 @@ a:hover {
     padding-bottom: 1rem;
     border-bottom: 1px solid #bdc3c7;
 }
+
+/* INÍCIO DAS ALTERAÇÕES */
+.header-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+/* FIM DAS ALTERAÇÕES */
 
 #app-container header h1 {
     margin-bottom: 0;
@@ -226,7 +255,7 @@ a:hover {
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    border-right: 5px solid; /* A cor será definida pelas classes .revenue ou .expense */
+    border-right: 5px solid;
 }
 
 #transactions-list li.revenue {
@@ -245,6 +274,28 @@ a:hover {
     font-family: monospace;
     font-size: 1.1rem;
 }
+
+/* Estilos dos Botões de Ação na Lista */
+.transaction-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.2rem;
+    transition: transform 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: scale(1.2);
+}
+
+.edit-btn { color: var(--secondary-color); }
+.delete-btn { color: var(--error-color); }
 
 /* Contêiner das Notificações (Toasts) */
 #notification-container {
@@ -279,30 +330,6 @@ a:hover {
 
 @keyframes slideOut { to { opacity: 0; transform: translateX(120%); } }
 
-/* INÍCIO DAS ALTERAÇÕES */
-
-/* Estilos dos Botões de Ação na Lista */
-.transaction-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0.2rem;
-    transition: transform 0.2s ease;
-}
-
-.action-btn:hover {
-    transform: scale(1.2);
-}
-
-.edit-btn { color: var(--secondary-color); }
-.delete-btn { color: var(--error-color); }
-
 /* Estilos do Modal de Edição */
 .modal {
     position: fixed;
@@ -333,7 +360,7 @@ a:hover {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.close-button {
+.close-button, .close-card-modal-button {
     position: absolute;
     top: 10px;
     right: 15px;
@@ -344,7 +371,33 @@ a:hover {
 }
 
 .close-button:hover,
-.close-button:focus {
+.close-button:focus,
+.close-card-modal-button:hover,
+.close-card-modal-button:focus {
     color: var(--text-color);
+}
+
+/* INÍCIO DAS ALTERAÇÕES */
+/* Estilos Específicos do Modal de Cartões */
+#card-list-section {
+    margin-bottom: 2rem;
+}
+
+#credit-card-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#credit-card-list li {
+    background-color: var(--background-color);
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
 }
 /* FIM DAS ALTERAÇÕES */
