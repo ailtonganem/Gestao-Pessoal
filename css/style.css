@@ -9,6 +9,8 @@
     --success-color: #2ecc71;
     --revenue-color: var(--success-color);
     --expense-color: var(--error-color);
+    /* ADIÇÃO: Cor para status 'pago' */
+    --paid-color: #95a5a6;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -67,6 +69,13 @@ h3 {
     text-align: left;
     margin-bottom: 0.5rem;
     color: var(--text-color);
+}
+
+h4 {
+    text-align: left;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
 }
 
 /* Estilos dos formulários */
@@ -135,7 +144,11 @@ button:hover {
     background-color: #2980b9;
 }
 
-/* INÍCIO DAS ALTERAÇÕES */
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
 .button-secondary {
     background-color: #7f8c8d;
     font-size: 0.9rem;
@@ -145,12 +158,19 @@ button:hover {
 .button-secondary:hover {
     background-color: #6c7a7d;
 }
-/* FIM DAS ALTERAÇÕES */
 
 
-/* Estilos para os links de alternância de formulário */
+/* Estilos para os links e subtítulos */
 p {
     margin-top: 1.5rem;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    text-align: left;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
 }
 
 a {
@@ -177,12 +197,10 @@ a:hover {
     border-bottom: 1px solid #bdc3c7;
 }
 
-/* INÍCIO DAS ALTERAÇÕES */
 .header-buttons {
     display: flex;
     gap: 0.5rem;
 }
-/* FIM DAS ALTERAÇÕES */
 
 #app-container header h1 {
     margin-bottom: 0;
@@ -258,22 +276,10 @@ a:hover {
     border-right: 5px solid;
 }
 
-#transactions-list li.revenue {
-    border-right-color: var(--revenue-color);
-}
-
-#transactions-list li.expense {
-    border-right-color: var(--expense-color);
-}
-
-#transactions-list .transaction-description {
-    font-weight: bold;
-}
-
-#transactions-list .transaction-amount {
-    font-family: monospace;
-    font-size: 1.1rem;
-}
+#transactions-list li.revenue { border-right-color: var(--revenue-color); }
+#transactions-list li.expense { border-right-color: var(--expense-color); }
+#transactions-list .transaction-description { font-weight: bold; }
+#transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
 /* Estilos dos Botões de Ação na Lista */
 .transaction-actions {
@@ -290,14 +296,11 @@ a:hover {
     transition: transform 0.2s ease;
 }
 
-.action-btn:hover {
-    transform: scale(1.2);
-}
-
+.action-btn:hover { transform: scale(1.2); }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
-/* Contêiner das Notificações (Toasts) */
+/* Estilos de Notificações (Toasts) */
 #notification-container {
     position: fixed;
     top: 20px;
@@ -308,7 +311,6 @@ a:hover {
     align-items: flex-end;
     gap: 10px;
 }
-
 .toast {
     background-color: var(--container-bg-color);
     color: var(--text-color);
@@ -320,17 +322,13 @@ a:hover {
     opacity: 0;
     transform: translateX(100%);
 }
-
 .toast.success { border-left-color: var(--success-color); }
 .toast.error { border-left-color: var(--error-color); }
-
 @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-
 .toast.fade-out { animation: slideOut 0.5s ease-in forwards; }
-
 @keyframes slideOut { to { opacity: 0; transform: translateX(120%); } }
 
-/* Estilos do Modal de Edição */
+/* Estilos dos Modais */
 .modal {
     position: fixed;
     z-index: 2000;
@@ -343,7 +341,6 @@ a:hover {
     justify-content: center;
     align-items: center;
 }
-
 .modal-content {
     background-color: var(--container-bg-color);
     padding: 2rem;
@@ -354,12 +351,10 @@ a:hover {
     max-width: 500px;
     animation: modalOpen 0.4s ease-out;
 }
-
 @keyframes modalOpen {
     from { opacity: 0; transform: translateY(-50px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
 .close-button, .close-card-modal-button {
     position: absolute;
     top: 10px;
@@ -369,7 +364,6 @@ a:hover {
     font-weight: bold;
     cursor: pointer;
 }
-
 .close-button:hover,
 .close-button:focus,
 .close-card-modal-button:hover,
@@ -377,19 +371,16 @@ a:hover {
     color: var(--text-color);
 }
 
-/* INÍCIO DAS ALTERAÇÕES */
 /* Estilos Específicos do Modal de Cartões */
 #card-list-section {
     margin-bottom: 2rem;
 }
-
 #credit-card-list {
     list-style-type: none;
     padding: 0;
     max-height: 150px;
     overflow-y: auto;
 }
-
 #credit-card-list li {
     background-color: var(--background-color);
     padding: 0.8rem;
@@ -399,5 +390,55 @@ a:hover {
     justify-content: space-between;
     align-items: center;
     text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#credit-card-list li:hover {
+    background-color: #dcdde1;
+}
+
+/* INÍCIO DAS ALTERAÇÕES */
+/* Estilos da Visão de Detalhes da Fatura */
+#invoice-details-view h3 {
+    margin-bottom: 0.5rem;
+}
+
+#back-to-cards-button {
+    margin-bottom: 1.5rem;
+}
+
+#invoice-summary {
+    text-align: left;
+    margin: 1rem 0;
+}
+
+#invoice-summary p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+}
+
+.status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: white;
+    font-weight: bold;
+}
+.status-badge.open { background-color: var(--secondary-color); }
+.status-badge.closed { background-color: var(--error-color); }
+.status-badge.paid { background-color: var(--paid-color); }
+
+#invoice-transactions-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#invoice-transactions-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--background-color);
 }
 /* FIM DAS ALTERAÇÕES */
