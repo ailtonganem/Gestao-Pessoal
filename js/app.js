@@ -2,11 +2,14 @@
 import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
 // Importa as funções de transações.
 import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from './modules/transactions.js';
-// ADIÇÃO: Importa a função de categorias.
+// Importa a função de categorias.
 import { getCategories } from './modules/categories.js';
+// Importa as funções de cartão de crédito.
+import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 
 // --- Variável de Estado ---
 let currentUser = null;
+let userCreditCards = []; // Cache para os cartões do usuário
 
 // --- Seleção de Elementos do DOM ---
 // Contêineres principais
@@ -14,21 +17,15 @@ const loadingDiv = document.getElementById('loading');
 const authContainer = document.getElementById('auth-container');
 const appContainer = document.getElementById('app-container');
 
-// Seções de formulário de autenticação
+// Seções e Formulários de autenticação
 const loginSection = document.getElementById('login-form');
 const registerSection = document.getElementById('register-form');
-
-// Formulários de autenticação
 const loginForm = loginSection.querySelector('form');
 const registerForm = registerSection.querySelector('form');
-
-// Inputs de autenticação
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const registerEmailInput = document.getElementById('register-email');
 const registerPasswordInput = document.getElementById('register-password');
-
-// Links e Botões de autenticação
 const showRegisterLink = document.getElementById('show-register-link');
 const showLoginLink = document.getElementById('show-login-link');
 const logoutButton = document.getElementById('logout-button');
@@ -43,6 +40,7 @@ const newCategoryWrapper = document.getElementById('new-category-wrapper');
 const newCategoryInput = document.getElementById('new-transaction-category');
 const paymentMethodSelect = document.getElementById('payment-method');
 const creditCardWrapper = document.getElementById('credit-card-wrapper');
+const creditCardSelect = document.getElementById('credit-card-select');
 
 // Dashboard e Lista
 const totalRevenueEl = document.getElementById('total-revenue');
@@ -63,6 +61,17 @@ const editTransactionCategorySelect = document.getElementById('edit-transaction-
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
 
+// Modal de Cartão de Crédito
+const manageCardsButton = document.getElementById('manage-cards-button');
+const creditCardModal = document.getElementById('credit-card-modal');
+const closeCardModalButton = document.querySelector('.close-card-modal-button');
+const creditCardList = document.getElementById('credit-card-list');
+const addCreditCardForm = document.getElementById('add-credit-card-form');
+const cardNameInput = document.getElementById('card-name');
+const cardClosingDayInput = document.getElementById('card-closing-day');
+const cardDueDayInput = document.getElementById('card-due-day');
+
+
 // --- Funções de Manipulação da UI ---
 
 /** Popula um elemento <select> com as categorias apropriadas. */
@@ -77,12 +86,44 @@ function populateCategories(type, selectElement, isEditForm = false) {
         selectElement.appendChild(option);
     });
 
-    // Adiciona a opção "Outra" apenas no formulário de adicionar
     if (!isEditForm) {
         const otherOption = document.createElement('option');
         otherOption.value = 'outra';
         otherOption.textContent = 'Outra...';
         selectElement.appendChild(otherOption);
+    }
+}
+
+/** Popula os <select> de cartão de crédito com os cartões do usuário. */
+function populateCreditCardSelects() {
+    creditCardSelect.innerHTML = '';
+
+    if (userCreditCards.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'Nenhum cartão cadastrado';
+        option.disabled = true;
+        creditCardSelect.appendChild(option);
+    } else {
+        userCreditCards.forEach(card => {
+            const option = document.createElement('option');
+            option.value = card.id;
+            option.textContent = card.name;
+            creditCardSelect.appendChild(option.cloneNode(true));
+        });
+    }
+}
+
+/** Renderiza a lista de cartões no modal de gerenciamento. */
+function renderCreditCardList() {
+    creditCardList.innerHTML = '';
+    if (userCreditCards.length === 0) {
+        creditCardList.innerHTML = '<li>Nenhum cartão cadastrado.</li>';
+    } else {
+        userCreditCards.forEach(card => {
+            const li = document.createElement('li');
+            li.textContent = `${card.name} (Fecha dia ${card.closingDay}, Vence dia ${card.dueDay})`;
+            creditCardList.appendChild(li);
+        });
     }
 }
 
@@ -117,6 +158,16 @@ function openEditModal(transaction) {
 /** Fecha o modal de edição. */
 function closeEditModal() {
     editModal.style.display = 'none';
+}
+
+/** Abre o modal de gerenciamento de cartões. */
+function openCardModal() {
+    creditCardModal.style.display = 'flex';
+}
+
+/** Fecha o modal de gerenciamento de cartões. */
+function closeCardModal() {
+    creditCardModal.style.display = 'none';
 }
 
 /** Formata um número para o padrão de moeda BRL. */
@@ -169,12 +220,12 @@ function updateDashboard(transactions) {
             actionsDiv.className = 'transaction-actions';
             
             const editButton = document.createElement('button');
-            editButton.innerHTML = '&#9998;'; // Código HTML para lápis
+            editButton.innerHTML = '&#9998;';
             editButton.classList.add('action-btn', 'edit-btn');
             editButton.onclick = () => openEditModal(transaction);
             
             const deleteButton = document.createElement('button');
-            deleteButton.innerHTML = '&times;'; // Código HTML para 'X'
+            deleteButton.innerHTML = '&times;';
             deleteButton.classList.add('action-btn', 'delete-btn');
             deleteButton.onclick = async () => {
                 if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
@@ -218,8 +269,20 @@ async function loadUserDashboard() {
     }
 }
 
+/** Busca os cartões de crédito do usuário e atualiza a UI. */
+async function loadUserCreditCards() {
+    if (!currentUser) return;
+    try {
+        userCreditCards = await getCreditCards(currentUser.uid);
+        populateCreditCardSelects();
+        renderCreditCardList();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
-function showAuthForms() { loadingDiv.style.display = 'none'; authContainer.style.display = 'block'; appContainer.style.display = 'none'; loginSection.style.display = 'block'; registerSection.style.display = 'none';}
+function showAuthForms() { loadingDiv.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none';}
 function showApp() { loadingDiv.style.display = 'none'; authContainer.style.display = 'none'; appContainer.style.display = 'block'; }
 function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.display = 'none'; registerSection.style.display = 'block'; } else { loginSection.style.display = 'block'; registerSection.style.display = 'none'; } }
 
@@ -231,23 +294,14 @@ logoutButton.addEventListener('click', () => { logoutUser().catch(error => showN
 closeButton.addEventListener('click', closeEditModal);
 window.addEventListener('click', (event) => { if (event.target == editModal) { closeEditModal(); } });
 
-transactionTypeRadios.forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        populateCategories(e.target.value, transactionCategorySelect);
-    });
-});
+manageCardsButton.addEventListener('click', openCardModal);
+closeCardModalButton.addEventListener('click', closeCardModal);
+window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 
-transactionCategorySelect.addEventListener('change', (e) => {
-    newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none';
-});
-
-paymentMethodSelect.addEventListener('change', (e) => {
-    creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none';
-});
-
-editPaymentMethodSelect.addEventListener('change', (e) => {
-    editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none';
-});
+transactionTypeRadios.forEach(radio => { radio.addEventListener('change', (e) => populateCategories(e.target.value, transactionCategorySelect)); });
+transactionCategorySelect.addEventListener('change', (e) => { newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none'; });
+paymentMethodSelect.addEventListener('change', (e) => { creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
+editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -321,17 +375,42 @@ editTransactionForm.addEventListener('submit', async (e) => {
     }
 });
 
+addCreditCardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) return showNotification("Você precisa estar logado.", 'error');
+
+    const cardData = {
+        name: cardNameInput.value,
+        closingDay: parseInt(cardClosingDayInput.value),
+        dueDay: parseInt(cardDueDayInput.value),
+        userId: currentUser.uid
+    };
+
+    try {
+        await addCreditCard(cardData);
+        showNotification("Cartão adicionado com sucesso!");
+        addCreditCardForm.reset();
+        await loadUserCreditCards();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+});
+
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
     showLoading();
-    monitorAuthState((user) => {
+    monitorAuthState(async (user) => {
         if (user) {
             currentUser = user;
             showApp();
             populateCategories('expense', transactionCategorySelect);
-            loadUserDashboard();
+            await Promise.all([
+                loadUserDashboard(),
+                loadUserCreditCards()
+            ]);
         } else {
             currentUser = null;
+            userCreditCards = [];
             showAuthForms();
         }
     });
