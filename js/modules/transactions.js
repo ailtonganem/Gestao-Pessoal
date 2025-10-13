@@ -18,11 +18,18 @@ import {
 /**
  * Adiciona um novo documento de transação na coleção 'transactions'.
  * @param {object} transactionData - Os dados da transação.
+ *      - description: string
+ *      - amount: number
+ *      - type: 'revenue' | 'expense'
+ *      - userId: string
+ *      - category: string (NOVO)
+ *      - paymentMethod: string (NOVO)
  * @returns {Promise<DocumentReference>} A referência do documento criado.
  */
 async function addTransaction(transactionData) {
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
+        // A 'transactionData' agora contém os novos campos, que são salvos diretamente.
         const docRef = await addDoc(transactionsCollectionRef, {
             ...transactionData,
             createdAt: serverTimestamp() // Adiciona data/hora do servidor
@@ -83,11 +90,17 @@ async function deleteTransaction(transactionId) {
  * Atualiza uma transação existente no Firestore.
  * @param {string} transactionId - O ID do documento a ser atualizado.
  * @param {object} updatedData - Um objeto com os campos a serem atualizados.
+ *      - description?: string
+ *      - amount?: number
+ *      - type?: 'revenue' | 'expense'
+ *      - category?: string (NOVO)
+ *      - paymentMethod?: string (NOVO)
  * @returns {Promise<void>}
  */
 async function updateTransaction(transactionId, updatedData) {
     try {
         const transactionDocRef = doc(db, 'transactions', transactionId);
+        // O objeto 'updatedData' agora pode conter os novos campos.
         await updateDoc(transactionDocRef, updatedData);
         console.log(`Transação com ID ${transactionId} foi atualizada.`);
     } catch (error) {
