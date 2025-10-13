@@ -2,7 +2,8 @@
 // Estamos usando os URLs do CDN oficial do Firebase para importar como módulos ES6.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-// Futuramente, importaremos outros serviços aqui, como o getFirestore.
+// ADIÇÃO: Importa o serviço do Firestore.
+import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // Objeto de configuração do seu aplicativo web do Firebase.
 // SUBSTITUA OS VALORES ABAIXO PELOS DADOS DO SEU PROJETO.
@@ -21,5 +22,9 @@ const app = initializeApp(firebaseConfig);
 // Inicializa o serviço de Autenticação do Firebase e o torna disponível para uso.
 const auth = getAuth(app);
 
+// ADIÇÃO: Inicializa o serviço do Cloud Firestore e o torna disponível para uso.
+const db = getFirestore(app);
+
 // Exporta as instâncias dos serviços que serão usados em outros módulos da aplicação.
-export { auth };
+// ATUALIZAÇÃO: Exporta também a instância do 'db'.
+export { auth, db };
