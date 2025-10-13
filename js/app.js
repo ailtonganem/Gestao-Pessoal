@@ -14,6 +14,7 @@ let currentUser = null;
 let userCreditCards = []; 
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
+let expensesChart = null; // Variável para a instância do gráfico
 
 // --- Seleção de Elementos do DOM ---
 const loadingDiv = document.getElementById('loading');
@@ -73,8 +74,68 @@ const invoiceDueDate = document.getElementById('invoice-due-date');
 const invoiceStatus = document.getElementById('invoice-status');
 const invoiceTransactionsList = document.getElementById('invoice-transactions-list');
 const payInvoiceButton = document.getElementById('pay-invoice-button');
+const filterMonthSelect = document.getElementById('filter-month');
+const filterYearSelect = document.getElementById('filter-year');
+const chartCanvas = document.getElementById('expenses-chart');
 
-// --- Funções de Manipulação da UI ---
+// --- Funções de Manipulação da UI e Gráfico ---
+
+/** Renderiza o gráfico de despesas por categoria. */
+function renderExpensesChart(transactions) {
+    const expenses = transactions.filter(t => t.type === 'expense');
+    
+    const spendingByCategory = expenses.reduce((acc, transaction) => {
+        const { category, amount } = transaction;
+        if (!acc[category]) {
+            acc[category] = 0;
+        }
+        acc[category] += amount;
+        return acc;
+    }, {});
+
+    const labels = Object.keys(spendingByCategory);
+    const data = Object.values(spendingByCategory);
+
+    if (expensesChart) {
+        expensesChart.destroy();
+    }
+
+    if (labels.length === 0) {
+        return;
+    }
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Despesas por Categoria',
+            data: data,
+            backgroundColor: labels.map(() => `hsl(${Math.random() * 360}, 70%, 50%)`),
+            hoverOffset: 4
+        }]
+    };
+
+    expensesChart = new Chart(chartCanvas, {
+        type: 'pie',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+        }
+    });
+}
+
+/** Popula o dropdown de anos. */
+function populateYearFilter() {
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 5;
+    filterYearSelect.innerHTML = '';
+    for (let year = currentYear; year >= startYear; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        filterYearSelect.appendChild(option);
+    }
+}
 
 /** Popula um elemento <select> com as categorias apropriadas. */
 function populateCategories(type, selectElement, isEditForm = false) {
@@ -294,14 +355,14 @@ function formatCurrency(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/** Renderiza o dashboard: calcula totais e exibe a lista de transações. */
+/** Renderiza o dashboard: calcula totais, exibe a lista e atualiza o gráfico. */
 function updateDashboard(transactions) {
     let totalRevenue = 0;
     let totalExpenses = 0;
     transactionsListEl.innerHTML = '';
 
     if (transactions.length === 0) {
-        transactionsListEl.innerHTML = '<li>Nenhuma transação registrada.</li>';
+        transactionsListEl.innerHTML = '<li>Nenhuma transação registrada para este período.</li>';
     } else {
         transactions.forEach(transaction => {
             if (transaction.type === 'revenue') {
@@ -370,18 +431,25 @@ function updateDashboard(transactions) {
         });
     }
 
-    const finalBalance = totalRevenue - totalExpenses;
     totalRevenueEl.textContent = formatCurrency(totalRevenue);
     totalExpensesEl.textContent = formatCurrency(totalExpenses);
-    finalBalanceEl.textContent = formatCurrency(finalBalance);
+    finalBalanceEl.textContent = formatCurrency(totalRevenue - totalExpenses);
+
+    renderExpensesChart(transactions);
 }
 
-/** Busca os dados do usuário e chama a função para atualizar o dashboard. */
+/** Busca os dados do usuário com filtros e chama a função para atualizar o dashboard. */
 async function loadUserDashboard() {
     if (!currentUser) return;
     transactionsListEl.innerHTML = '<li>Carregando transações...</li>';
+    
+    const filters = {
+        month: filterMonthSelect.value,
+        year: filterYearSelect.value
+    };
+
     try {
-        const transactions = await getTransactions(currentUser.uid);
+        const transactions = await getTransactions(currentUser.uid, filters);
         updateDashboard(transactions);
     } catch (error) {
         showNotification(error.message, 'error');
@@ -443,6 +511,9 @@ payInvoiceButton.addEventListener('click', async () => {
         }
     }
 });
+
+filterMonthSelect.addEventListener('change', loadUserDashboard);
+filterYearSelect.addEventListener('change', loadUserDashboard);
 
 transactionTypeRadios.forEach(radio => { radio.addEventListener('change', (e) => populateCategories(e.target.value, transactionCategorySelect)); });
 transactionCategorySelect.addEventListener('change', (e) => { newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none'; });
@@ -605,6 +676,8 @@ function initializeApp() {
             await closeOverdueInvoices(user.uid);
 
             populateCategories('expense', transactionCategorySelect);
+            populateYearFilter();
+            
             await Promise.all([
                 loadUserDashboard(),
                 loadUserCreditCards()
