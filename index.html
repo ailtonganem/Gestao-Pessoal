@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Finanças</title>
+    <!-- Futuramente, aqui entrará o link para o CSS -->
+    <!-- <link rel="stylesheet" href="css/style.css"> -->
+
+    <!-- Carrega o script principal da aplicação como um módulo -->
+    <!-- O atributo 'defer' garante que o script seja executado após o HTML ser analisado -->
+    <!-- <script type="module" src="js/app.js" defer></script> -->
+</head>
+<body>
+
+    <!-- Indicador de Carregamento: será exibido enquanto o estado de autenticação é verificado -->
+    <div id="loading">
+        <p>Carregando...</p>
+    </div>
+
+    <!-- Contêiner de Autenticação: agrupa as telas de login e cadastro -->
+    <main id="auth-container" style="display: none;">
+        <!-- Formulário de Login -->
+        <section id="login-form">
+            <h1>Acesse sua conta</h1>
+            <form>
+                <div class="form-control">
+                    <label for="login-email">E-mail</label>
+                    <input type="email" id="login-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-control">
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" placeholder="Sua senha" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <p>Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
+        </section>
+
+        <!-- Formulário de Cadastro (inicialmente oculto) -->
+        <section id="register-form" style="display: none;">
+            <h1>Crie sua conta</h1>
+            <form>
+                <div class="form-control">
+                    <label for="register-email">E-mail</label>
+                    <input type="email" id="register-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-control">
+                    <label for="register-password">Senha</label>
+                    <input type="password" id="register-password" placeholder="Crie uma senha forte" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <p>Já tem uma conta? <a href="#" id="show-login-link">Faça Login</a></p>
+        </section>
+    </main>
+
+    <!-- Contêiner Principal da Aplicação (Dashboard) -->
+    <!-- Será exibido apenas quando o usuário estiver autenticado -->
+    <div id="app-container" style="display: none;">
+        <header>
+            <h1>Dashboard</h1>
+            <button id="logout-button">Sair</button>
+        </header>
+        <main id="app-content">
+            <!-- O conteúdo principal (transações, etc.) será inserido aqui -->
+            <p>Bem-vindo ao seu painel financeiro!</p>
+        </main>
+    </div>
+
+</body>
+</html>
