@@ -6,7 +6,7 @@ import { addTransaction, getTransactions, deleteTransaction, updateTransaction }
 import { getCategories } from './modules/categories.js';
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
-// Importa as funções de faturas, incluindo a nova 'payInvoice'.
+// Importa as funções de faturas.
 import { getInvoices, getInvoiceTransactions, payInvoice } from './modules/invoices.js';
 
 // --- Variáveis de Estado ---
@@ -16,12 +16,9 @@ let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 
 // --- Seleção de Elementos do DOM ---
-// Contêineres principais
 const loadingDiv = document.getElementById('loading');
 const authContainer = document.getElementById('auth-container');
 const appContainer = document.getElementById('app-container');
-
-// Seções e Formulários de autenticação
 const loginSection = document.getElementById('login-form');
 const registerSection = document.getElementById('register-form');
 const loginForm = loginSection.querySelector('form');
@@ -33,8 +30,6 @@ const registerPasswordInput = document.getElementById('register-password');
 const showRegisterLink = document.getElementById('show-register-link');
 const showLoginLink = document.getElementById('show-login-link');
 const logoutButton = document.getElementById('logout-button');
-
-// Formulário de Adicionar Transação
 const addTransactionForm = document.getElementById('add-transaction-form');
 const transactionDescriptionInput = document.getElementById('transaction-description');
 const transactionAmountInput = document.getElementById('transaction-amount');
@@ -45,14 +40,10 @@ const newCategoryInput = document.getElementById('new-transaction-category');
 const paymentMethodSelect = document.getElementById('payment-method');
 const creditCardWrapper = document.getElementById('credit-card-wrapper');
 const creditCardSelect = document.getElementById('credit-card-select');
-
-// Dashboard e Lista
 const totalRevenueEl = document.getElementById('total-revenue');
 const totalExpensesEl = document.getElementById('total-expenses');
 const finalBalanceEl = document.getElementById('final-balance');
 const transactionsListEl = document.getElementById('transactions-list');
-
-// Notificações e Modal de Edição
 const notificationContainer = document.getElementById('notification-container');
 const editModal = document.getElementById('edit-modal');
 const closeButton = document.querySelector('.close-button');
@@ -64,8 +55,6 @@ const editTransactionTypeRadios = document.querySelectorAll('input[name="edit-tr
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
-
-// Modal de Cartão de Crédito
 const manageCardsButton = document.getElementById('manage-cards-button');
 const creditCardModal = document.getElementById('credit-card-modal');
 const closeCardModalButton = document.querySelector('.close-card-modal-button');
@@ -74,8 +63,6 @@ const addCreditCardForm = document.getElementById('add-credit-card-form');
 const cardNameInput = document.getElementById('card-name');
 const cardClosingDayInput = document.getElementById('card-closing-day');
 const cardDueDayInput = document.getElementById('card-due-day');
-
-// Seletores da Visão de Faturas
 const cardManagementView = document.getElementById('card-management-view');
 const invoiceDetailsView = document.getElementById('invoice-details-view');
 const backToCardsButton = document.getElementById('back-to-cards-button');
@@ -116,7 +103,6 @@ function populateCreditCardSelects() {
     const editCreditCardSelect = document.getElementById('edit-credit-card-select');
     editCreditCardSelect.innerHTML = '';
 
-
     if (userCreditCards.length === 0) {
         const option = document.createElement('option');
         option.textContent = 'Nenhum cartão cadastrado';
@@ -143,7 +129,7 @@ async function displayInvoiceDetails(invoice) {
     invoiceStatus.className = 'status-badge';
     invoiceStatus.classList.add(invoice.status);
 
-    payInvoiceButton.disabled = invoice.status !== 'open'; // Habilita o botão se a fatura estiver 'open'
+    payInvoiceButton.disabled = invoice.status !== 'open';
 
     invoiceTransactionsList.innerHTML = '<li>Carregando...</li>';
     try {
@@ -216,7 +202,7 @@ function showCardManagementView() {
     invoiceDetailsView.style.display = 'none';
 }
 
-/** Renderiza a lista de cartões no modal, adicionando o evento de clique. */
+/** Renderiza a lista de cartões no modal, adicionando eventos de clique para ver faturas e excluir. */
 function renderCreditCardList() {
     creditCardList.innerHTML = '';
     if (userCreditCards.length === 0) {
@@ -224,8 +210,31 @@ function renderCreditCardList() {
     } else {
         userCreditCards.forEach(card => {
             const li = document.createElement('li');
-            li.textContent = `${card.name} (Fecha dia ${card.closingDay}, Vence dia ${card.dueDay})`;
-            li.addEventListener('click', () => showInvoiceDetailsView(card));
+
+            const cardInfo = document.createElement('div');
+            cardInfo.className = 'card-info';
+            cardInfo.textContent = `${card.name} (Fecha dia ${card.closingDay}, Vence dia ${card.dueDay})`;
+            cardInfo.addEventListener('click', () => showInvoiceDetailsView(card));
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '&times;';
+            deleteButton.classList.add('action-btn', 'delete-btn');
+            deleteButton.title = 'Excluir cartão';
+            deleteButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm(`Tem certeza que deseja excluir o cartão "${card.name}"? Esta ação não pode ser desfeita.`)) {
+                    try {
+                        await deleteCreditCard(card.id);
+                        showNotification('Cartão excluído com sucesso!');
+                        loadUserCreditCards();
+                    } catch (error) {
+                        showNotification(error.message, 'error');
+                    }
+                }
+            });
+
+            li.appendChild(cardInfo);
+            li.appendChild(deleteButton);
             creditCardList.appendChild(li);
         });
     }
@@ -420,7 +429,6 @@ payInvoiceButton.addEventListener('click', async () => {
             try {
                 await payInvoice(selectedInvoice, selectedCardForInvoiceView);
                 showNotification("Fatura paga com sucesso!");
-                // Recarrega os dados para refletir as mudanças
                 loadAndDisplayInvoices(selectedCardForInvoiceView);
                 loadUserDashboard();
             } catch (error) {
