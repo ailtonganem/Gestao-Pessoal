@@ -5,26 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minhas Finanças</title>
     
-    <!-- Adiciona a referência para o ícone da página. Isso elimina o erro 404 no console. -->
+    <!-- Adiciona a referência para o ícone da página. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <!-- Link para a folha de estilos CSS. -->
     <link rel="stylesheet" href="css/style.css">
 
     <!-- Carrega o script principal da aplicação como um módulo. -->
-    <!-- O atributo 'defer' garante que o script seja executado após o HTML ser analisado. -->
     <script type="module" src="js/app.js" defer></script>
-    <!-- FIM DA ALTERAÇÃO -->
 </head>
 <body>
 
-    <!-- Indicador de Carregamento: será exibido enquanto o estado de autenticação é verificado -->
+    <!-- Indicador de Carregamento -->
     <div id="loading">
         <p>Carregando...</p>
     </div>
 
-    <!-- Contêiner de Autenticação: agrupa as telas de login e cadastro -->
+    <!-- Contêiner de Autenticação -->
     <main id="auth-container" style="display: none;">
         <!-- Formulário de Login -->
         <section id="login-form">
@@ -43,7 +40,7 @@
             <p>Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
         </section>
 
-        <!-- Formulário de Cadastro (inicialmente oculto) -->
+        <!-- Formulário de Cadastro -->
         <section id="register-form" style="display: none;">
             <h1>Crie sua conta</h1>
             <form>
@@ -62,7 +59,6 @@
     </main>
 
     <!-- Contêiner Principal da Aplicação (Dashboard) -->
-    <!-- Será exibido apenas quando o usuário estiver autenticado -->
     <div id="app-container" style="display: none;">
         <header>
             <h1>Dashboard</h1>
@@ -113,7 +109,6 @@
                 <h2>Histórico</h2>
                 <ul id="transactions-list">
                     <!-- As transações serão inseridas aqui via JavaScript -->
-                    <li>Nenhuma transação registrada.</li>
                 </ul>
             </section>
         </main>
@@ -121,6 +116,40 @@
 
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <!-- Modal para Edição de Transação -->
+    <div id="edit-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Editar Transação</h2>
+            <form id="edit-transaction-form">
+                <!-- Campo oculto para armazenar o ID da transação -->
+                <input type="hidden" id="edit-transaction-id">
+
+                <div class="form-control">
+                    <label for="edit-transaction-description">Descrição</label>
+                    <input type="text" id="edit-transaction-description" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transaction-amount">Valor (R$)</label>
+                    <input type="number" id="edit-transaction-amount" step="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label>Tipo</label>
+                    <div class="radio-container">
+                        <input type="radio" id="edit-type-revenue" name="edit-transaction-type" value="revenue" required>
+                        <label for="edit-type-revenue">Receita</label>
+                        
+                        <input type="radio" id="edit-type-expense" name="edit-transaction-type" value="expense">
+                        <label for="edit-type-expense">Despesa</label>
+                    </div>
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
