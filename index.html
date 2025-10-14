@@ -294,17 +294,19 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO - Modal de Configurações reestruturado com abas -->
+    <!-- Modal de Configurações -->
     <div id="settings-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
             
-            <!-- Navegação por Abas -->
+            <!-- INÍCIO DA ALTERAÇÃO - Adição da nova aba -->
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
+                <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
+            <!-- FIM DA ALTERAÇÃO -->
 
             <div id="settings-content">
                 <!-- Conteúdo da Aba 1: Gerenciar Categorias -->
@@ -343,19 +345,59 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba 2: Gerenciar Usuários (para Admin) -->
+                <!-- INÍCIO DA ALTERAÇÃO - Conteúdo da nova aba de recorrências -->
+                <div id="recurring-management-tab" class="tab-content">
+                    <h3>Gerenciar Transações Recorrentes</h3>
+                    <p class="subtitle">Cadastre transações que se repetem todo mês, como salários ou assinaturas.</p>
+
+                    <form id="add-recurring-form">
+                        <h4>Adicionar Nova Recorrência</h4>
+                        <div class="form-control">
+                            <label for="recurring-description">Descrição</label>
+                            <input type="text" id="recurring-description" placeholder="Ex: Salário, Aluguel" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="recurring-amount">Valor (R$)</label>
+                            <input type="number" id="recurring-amount" step="0.01" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="recurring-day">Dia do Mês para Lançamento (1-31)</label>
+                            <input type="number" id="recurring-day" min="1" max="31" required>
+                        </div>
+                        <div class="form-control">
+                            <label>Tipo</label>
+                            <div class="radio-container">
+                                <input type="radio" id="recurring-type-revenue" name="recurring-type" value="revenue" required>
+                                <label for="recurring-type-revenue">Receita</label>
+                                <input type="radio" id="recurring-type-expense" name="recurring-type" value="expense" checked>
+                                <label for="recurring-type-expense">Despesa</label>
+                            </div>
+                        </div>
+                        <div class="form-control">
+                            <label for="recurring-category">Categoria</label>
+                            <select id="recurring-category" required></select>
+                        </div>
+                        <button type="submit">Adicionar Recorrência</button>
+                    </form>
+
+                    <h4>Recorrências Cadastradas</h4>
+                    <ul id="recurring-list">
+                        <!-- Lista de recorrências será renderizada aqui -->
+                    </ul>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
+
+                <!-- Conteúdo da Aba 3: Gerenciar Usuários (para Admin) -->
                 <div id="user-management-tab" class="tab-content">
                     <h3>Gerenciar Usuários</h3>
                     <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
                     <ul id="user-list">
-                        <!-- A lista de usuários será renderizada aqui pelo app.js -->
                         <li>Carregando usuários...</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
