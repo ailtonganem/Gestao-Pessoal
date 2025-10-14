@@ -59,7 +59,6 @@
         <header>
             <h1>Dashboard</h1>
             <div class="header-buttons">
-                <!-- BOTÃO DE CONFIGURAÇÕES ADICIONADO AQUI -->
                 <button id="settings-button" class="button-secondary">Configurações</button>
                 <button id="manage-cards-button" class="button-secondary">Gerenciar Cartões</button>
                 <button id="logout-button">Sair</button>
@@ -111,7 +110,7 @@
                     <div class="form-control">
                         <label for="transaction-category">Categoria</label>
                         <select id="transaction-category" required>
-                            <option value="outra">Outra...</option>
+                            <!-- Categorias do usuário serão carregadas aqui -->
                         </select>
                     </div>
                     <div id="new-category-wrapper" class="form-control" style="display: none;">
@@ -279,17 +278,54 @@
         </div>
     </div>
 
-    <!-- ESTRUTURA DO NOVO MODAL DE CONFIGURAÇÕES ADICIONADA AQUI -->
+    <!-- INÍCIO DA ALTERAÇÃO - Estrutura do Modal de Configurações -->
     <div id="settings-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
+            
             <div id="settings-content">
-                <p>As opções de configuração aparecerão aqui em breve.</p>
-                <!-- O conteúdo (gerenciar categorias, tema, etc.) será adicionado aqui futuramente -->
+                <section id="category-management-section">
+                    <h3>Gerenciar Categorias</h3>
+                    
+                    <form id="add-category-form">
+                        <h4>Adicionar Nova Categoria</h4>
+                        <div class="form-control">
+                            <label for="new-category-name">Nome da Categoria</label>
+                            <input type="text" id="new-category-name" placeholder="Ex: Investimentos" required>
+                        </div>
+                        <div class="form-control">
+                            <label>Tipo</label>
+                            <div class="radio-container">
+                                <input type="radio" id="new-category-type-revenue" name="new-category-type" value="revenue" required>
+                                <label for="new-category-type-revenue">Receita</label>
+                                <input type="radio" id="new-category-type-expense" name="new-category-type" value="expense" checked>
+                                <label for="new-category-type-expense">Despesa</label>
+                            </div>
+                        </div>
+                        <button type="submit">Adicionar Categoria</button>
+                    </form>
+                    
+                    <div id="category-lists-container" style="display: flex; gap: 2rem; margin-top: 2rem;">
+                        <div style="flex: 1;">
+                            <h4>Receitas</h4>
+                            <ul id="revenue-categories-list" class="category-list">
+                                <!-- Categorias de receita serão renderizadas aqui -->
+                            </ul>
+                        </div>
+                        <div style="flex: 1;">
+                            <h4>Despesas</h4>
+                            <ul id="expense-categories-list" class="category-list">
+                                <!-- Categorias de despesa serão renderizadas aqui -->
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <!-- Outras seções de configuração (Tema, Moeda, etc.) podem ser adicionadas aqui no futuro -->
             </div>
         </div>
     </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
