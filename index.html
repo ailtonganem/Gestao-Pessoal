@@ -106,16 +106,13 @@
                 </div>
             </section>
             
-            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o progresso dos orçamentos -->
             <section id="budget-progress-section">
                 <h2>Acompanhamento de Orçamentos</h2>
                 <p class="subtitle" style="text-align: left;">Progresso dos seus gastos em relação aos limites definidos para o mês atual.</p>
                 <ul id="budget-progress-list">
-                    <!-- O progresso dos orçamentos será renderizado aqui pelo app.js -->
                     <li>Carregando orçamentos...</li>
                 </ul>
             </section>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <section id="transaction-form-section">
                 <h2>Adicionar Transação</h2>
@@ -342,6 +339,19 @@
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
             
+            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o tema -->
+            <section id="theme-settings-section">
+                <h4>Aparência</h4>
+                <div class="form-control theme-switcher">
+                    <span>Modo Escuro</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </section>
+            <!-- FIM DA ALTERAÇÃO -->
+
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
@@ -354,7 +364,6 @@
                 <div id="category-management-tab" class="tab-content active">
                     <section>
                         <h3>Gerenciar Categorias</h3>
-                        
                         <form id="add-category-form">
                             <h4>Adicionar Nova Categoria</h4>
                             <div class="form-control">
@@ -372,7 +381,6 @@
                             </div>
                             <button type="submit">Adicionar Categoria</button>
                         </form>
-                        
                         <div id="category-lists-container" style="display: flex; gap: 2rem; margin-top: 2rem;">
                             <div style="flex: 1;">
                                 <h4>Receitas</h4>
@@ -391,7 +399,6 @@
                     <section>
                         <h3>Gerenciar Orçamentos Mensais</h3>
                         <p class="subtitle">Defina limites de gastos para suas categorias de despesa.</p>
-
                         <form id="set-budget-form">
                             <h4>Definir/Atualizar Orçamento</h4>
                             <div class="form-control">
@@ -404,7 +411,6 @@
                             </div>
                             <button type="submit">Salvar Orçamento</button>
                         </form>
-
                         <h4>Orçamentos Ativos</h4>
                         <ul id="budget-list"></ul>
                     </section>
@@ -415,7 +421,6 @@
                     <section>
                         <h3>Gerenciar Transações Recorrentes</h3>
                         <p class="subtitle">Cadastre transações que se repetem todo mês, como salários ou assinaturas.</p>
-
                         <form id="add-recurring-form">
                             <h4>Adicionar Nova Recorrência</h4>
                             <div class="form-control">
@@ -445,7 +450,6 @@
                             </div>
                             <button type="submit">Adicionar Recorrência</button>
                         </form>
-
                         <h4>Recorrências Cadastradas</h4>
                         <ul id="recurring-list"></ul>
                     </section>
