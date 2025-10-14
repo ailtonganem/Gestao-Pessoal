@@ -105,6 +105,17 @@
                     <canvas id="trends-chart"></canvas>
                 </div>
             </section>
+            
+            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o progresso dos orçamentos -->
+            <section id="budget-progress-section">
+                <h2>Acompanhamento de Orçamentos</h2>
+                <p class="subtitle" style="text-align: left;">Progresso dos seus gastos em relação aos limites definidos para o mês atual.</p>
+                <ul id="budget-progress-list">
+                    <!-- O progresso dos orçamentos será renderizado aqui pelo app.js -->
+                    <li>Carregando orçamentos...</li>
+                </ul>
+            </section>
+            <!-- FIM DA ALTERAÇÃO -->
 
             <section id="transaction-form-section">
                 <h2>Adicionar Transação</h2>
@@ -333,15 +344,13 @@
             
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
-                <!-- FIM DA ALTERAÇÃO -->
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
 
             <div id="settings-content">
-                <!-- Conteúdo da Aba 1: Gerenciar Categorias -->
+                <!-- Conteúdo da Aba: Gerenciar Categorias -->
                 <div id="category-management-tab" class="tab-content active">
                     <section>
                         <h3>Gerenciar Categorias</h3>
@@ -377,7 +386,7 @@
                     </section>
                 </div>
 
-                <!-- INÍCIO DA ALTERAÇÃO - Conteúdo da nova aba de orçamentos -->
+                <!-- Conteúdo da Aba: Gerenciar Orçamentos -->
                 <div id="budget-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Orçamentos Mensais</h3>
@@ -397,14 +406,11 @@
                         </form>
 
                         <h4>Orçamentos Ativos</h4>
-                        <ul id="budget-list">
-                            <!-- Lista de orçamentos será renderizada aqui -->
-                        </ul>
+                        <ul id="budget-list"></ul>
                     </section>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
 
-                <!-- Conteúdo da Aba 3: Gerenciar Recorrências -->
+                <!-- Conteúdo da Aba: Gerenciar Recorrências -->
                 <div id="recurring-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Transações Recorrentes</h3>
@@ -445,7 +451,7 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba 4: Gerenciar Usuários (para Admin) -->
+                <!-- Conteúdo da Aba: Gerenciar Usuários (para Admin) -->
                 <div id="user-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Usuários</h3>
