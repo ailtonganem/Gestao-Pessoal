@@ -33,45 +33,76 @@ function parseDateString(dateString) {
 /**
  * Adiciona um novo documento de transação.
  * Se for cartão de crédito, associa a uma fatura.
+ * Se for parcelado, distribui as parcelas nas faturas futuras.
  * @param {object} transactionData - Os dados da transação.
  * @param {object|null} cardData - Dados do cartão de crédito, se aplicável.
  * @returns {Promise<void>}
  */
 async function addTransaction(transactionData, cardData = null) {
-    // Converte a string de data do formulário para um objeto Date.
     const transactionDate = parseDateString(transactionData.date);
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
-        try {
-            // Usa a data fornecida pelo usuário para encontrar a fatura correta.
+        const batch = writeBatch(db);
+
+        // INÍCIO DA ALTERAÇÃO - Lógica para compras parceladas
+        if (transactionData.isInstallment && transactionData.installments > 1) {
+            const totalAmount = transactionData.amount;
+            // Arredonda para 2 casas decimais para evitar problemas com dízimas
+            const installmentAmount = parseFloat((totalAmount / transactionData.installments).toFixed(2));
+
+            for (let i = 0; i < transactionData.installments; i++) {
+                // Calcula a data da compra para a parcela atual (avança um mês a cada iteração)
+                const currentInstallmentDate = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + i, transactionDate.getDate());
+                
+                // Encontra ou cria a fatura para o mês da parcela atual
+                const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, currentInstallmentDate);
+                const invoiceRef = doc(db, 'invoices', invoiceId);
+                const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
+                
+                const newTransactionInInvoice = {
+                    description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
+                    amount: installmentAmount,
+                    category: transactionData.category,
+                    createdAt: serverTimestamp()
+                };
+                
+                const newTransactionRef = doc(invoiceTransactionsRef);
+                batch.set(newTransactionRef, newTransactionInInvoice);
+                batch.update(invoiceRef, { totalAmount: increment(installmentAmount) });
+            }
+        // FIM DA ALTERAÇÃO
+        } else {
+            // Lógica para compra à vista no cartão (como era antes)
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
-            const batch = writeBatch(db);
             
-            // O lançamento na fatura usa o serverTimestamp para ordenação interna.
             const newTransactionInInvoice = {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
-                createdAt: serverTimestamp() 
+                createdAt: serverTimestamp()
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
             batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
+        }
+
+        try {
             await batch.commit();
         } catch (error) {
-            console.error("Erro ao adicionar transação de crédito:", error);
+            console.error("Erro ao salvar transação de crédito:", error);
             throw new Error("Não foi possível salvar a transação no cartão.");
         }
+
     } else {
+        // Lógica para transações que não são de cartão de crédito (PIX, débito, etc.)
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
-            // Prepara os dados para salvar, incluindo o novo campo 'date' como Timestamp.
             const dataToSave = {
                 ...transactionData,
-                date: Timestamp.fromDate(transactionDate), // Campo principal para data da transação
-                createdAt: serverTimestamp() // Mantido para auditoria
+                date: Timestamp.fromDate(transactionDate),
+                createdAt: serverTimestamp()
             };
             await addDoc(transactionsCollectionRef, dataToSave);
         } catch (error) {
@@ -97,9 +128,7 @@ async function getTransactions(userId, filters = {}) {
         
         let queryConstraints = [
             where("userId", "==", userId),
-            // INÍCIO DA ALTERAÇÃO - Substitui o filtro '!=' por 'in' para ser compatível com o filtro de data.
             where("paymentMethod", "in", ["pix", "debit", "cash"])
-            // FIM DA ALTERAÇÃO
         ];
 
         if (year && month && month !== 'all') {
@@ -127,7 +156,6 @@ async function getTransactions(userId, filters = {}) {
             transactions.push({ 
                 id: doc.id, 
                 ...data,
-                // Converte o Timestamp de volta para objeto Date para facilitar o uso no frontend
                 date: data.date.toDate() 
             });
         });
