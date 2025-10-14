@@ -14,9 +14,10 @@ import * as creditCard from './modules/creditCard.js';
 import * as invoices from './modules/invoices.js';
 import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
-// INÍCIO DA CORREÇÃO - O caminho para app.js foi corrigido de '../app.js' para './app.js'
-import * as app from './app.js'; // Importa o app principal para acessar as funções de recarregamento de dados
-// FIM DA CORREÇÃO
+// INÍCIO DA ALTERAÇÃO - Importa o módulo de admin
+import * as admin from './modules/admin.js';
+// FIM DA ALTERAÇÃO
+import * as app from './app.js';
 
 // --- Módulos de UI ---
 import * as views from './modules/ui/views.js';
@@ -33,6 +34,9 @@ const addCreditCardForm = document.getElementById('add-credit-card-form');
 const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
+// INÍCIO DA ALTERAÇÃO - Adiciona o novo formulário
+const editRecurringForm = document.getElementById('edit-recurring-form');
+// FIM DA ALTERAÇÃO
 const themeToggle = document.getElementById('theme-toggle');
 
 /**
@@ -127,7 +131,7 @@ export function initializeEventListeners() {
     });
 
 
-    // --- Listeners do Modal de Edição ---
+    // --- Listeners do Modal de Edição de Transação ---
     editTransactionForm.addEventListener('submit', handleUpdateTransaction);
     document.getElementById('edit-payment-method').addEventListener('change', (e) => {
         document.getElementById('edit-credit-card-wrapper').style.display = e.target.value === 'credit_card' ? 'block' : 'none';
@@ -199,10 +203,46 @@ export function initializeEventListeners() {
     document.querySelectorAll('input[name="recurring-type"]').forEach(radio => {
         radio.addEventListener('change', e => render.populateCategorySelects(e.target.value, document.getElementById('recurring-category')));
     });
+
+    // INÍCIO DA ALTERAÇÃO - Listeners para a lista de recorrências
     document.getElementById('recurring-list').addEventListener('click', (e) => {
-        // Implementar delegação para exclusão de recorrências
+        const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
+        if (!eventTarget) return;
+
+        const recurringId = eventTarget.dataset.recurringId;
+        const recurringTx = state.userRecurringTransactions.find(tx => tx.id === recurringId);
+        
+        if (eventTarget.matches('.edit-btn')) {
+            if (recurringTx) modals.openEditRecurringModal(recurringTx);
+        }
+        if (eventTarget.matches('.delete-btn')) {
+            if (recurringTx) handleDeleteRecurring(recurringTx);
+        }
     });
 
+    document.getElementById('user-list').addEventListener('click', async (e) => {
+        const approveButton = e.target.closest('.approve-user-btn[data-user-id]');
+        if (approveButton) {
+            const userId = approveButton.dataset.userId;
+            if (confirm('Aprovar este usuário?')) {
+                try {
+                    await admin.updateUserStatus(userId, 'approved');
+                    showNotification('Usuário aprovado com sucesso!');
+                    // Recarrega e renderiza a lista de usuários
+                    const users = await admin.getAllUsers();
+                    render.renderUserList(users);
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+        }
+    });
+    // FIM DA ALTERAÇÃO
+
+    // INÍCIO DA ALTERAÇÃO - Listeners para o novo modal de edição de recorrência
+    document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
+    editRecurringForm.addEventListener('submit', handleUpdateRecurring);
+    // FIM DA ALTERAÇÃO
 
     // --- Listener Global para fechar modais clicando fora ---
     window.addEventListener('click', (event) => {
@@ -326,7 +366,6 @@ async function handleDeleteCreditCard(cardId) {
             await creditCard.deleteCreditCard(cardId);
             showNotification('Cartão excluído com sucesso!');
             app.loadUserCreditCards();
-            // Adicionado para fechar a view de fatura se o cartão aberto for excluído
             if (state.selectedCardForInvoiceView && state.selectedCardForInvoiceView.id === cardId) {
                 modals.showCardManagementView();
             }
@@ -424,8 +463,77 @@ async function handleDeleteBudget(budgetId) {
 
 async function handleAddRecurring(e) {
     e.preventDefault();
-    // Lógica para adicionar recorrência
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const recurringData = {
+        description: form['recurring-description'].value,
+        amount: parseFloat(form['recurring-amount'].value),
+        dayOfMonth: parseInt(form['recurring-day'].value),
+        type: form['recurring-type'].value,
+        category: form['recurring-category'].value,
+        userId: state.currentUser.uid
+    };
+
+    try {
+        await recurring.addRecurringTransaction(recurringData);
+        showNotification("Recorrência adicionada com sucesso!");
+        form.reset();
+        // Atualiza a lista na UI
+        const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
+        state.setUserRecurringTransactions(recurringTxs);
+        render.renderRecurringList();
+    } catch (error) {
+        showNotification(error.message, "error");
+    } finally {
+        submitButton.disabled = false;
+    }
 }
+
+// INÍCIO DA ALTERAÇÃO - Novas funções handler para edição e exclusão de recorrências
+async function handleUpdateRecurring(e) {
+    e.preventDefault();
+    const form = e.target;
+    const recurringId = form['edit-recurring-id'].value;
+    const updatedData = {
+        description: form['edit-recurring-description'].value,
+        amount: parseFloat(form['edit-recurring-amount'].value),
+        dayOfMonth: parseInt(form['edit-recurring-day'].value),
+        type: form['edit-recurring-type'].value,
+        category: form['edit-recurring-category'].value,
+    };
+
+    try {
+        await recurring.updateRecurringTransaction(recurringId, updatedData);
+        showNotification('Recorrência atualizada com sucesso!');
+        modals.closeEditRecurringModal();
+        
+        // Atualiza a lista na UI
+        const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
+        state.setUserRecurringTransactions(recurringTxs);
+        render.renderRecurringList();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+async function handleDeleteRecurring(recurringTx) {
+    if (confirm(`Tem certeza que deseja excluir a recorrência "${recurringTx.description}"?`)) {
+        try {
+            await recurring.deleteRecurringTransaction(recurringTx.id);
+            showNotification('Recorrência excluída com sucesso!');
+            
+            // Atualiza a lista na UI
+            const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
+            state.setUserRecurringTransactions(recurringTxs);
+            render.renderRecurringList();
+        } catch (error) {
+            showNotification(error.message, 'error');
+        }
+    }
+}
+// FIM DA ALTERAÇÃO
 
 function handleExportCsv() {
     if (state.filteredTransactions.length === 0) {
