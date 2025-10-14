@@ -16,6 +16,9 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
+// INÍCIO DA ALTERAÇÃO
+import { getDescriptionSuggestions } from './modules/autocomplete.js';
+// FIM DA ALTERAÇÃO
 
 // --- Módulos de UI ---
 import * as views from './modules/ui/views.js';
@@ -33,10 +36,12 @@ const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
 const editRecurringForm = document.getElementById('edit-recurring-form');
-// INÍCIO DA ALTERAÇÃO
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
-// FIM DA ALTERAÇÃO
 const themeToggle = document.getElementById('theme-toggle');
+
+// INÍCIO DA ALTERAÇÃO - Variável para o debounce do autocomplete
+let debounceTimer;
+// FIM DA ALTERAÇÃO
 
 /**
  * Função principal que inicializa todos os event listeners da aplicação.
@@ -91,6 +96,15 @@ export function initializeEventListeners() {
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => render.populateCategorySelects(e.target.value, document.getElementById('transaction-category')));
     });
+
+    // INÍCIO DA ALTERAÇÃO - Listener para o autocomplete
+    document.getElementById('transaction-description').addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            handleDescriptionAutocomplete(e.target.value);
+        }, 300); // Atraso de 300ms
+    });
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('payment-method').addEventListener('change', (e) => {
         const creditCardWrapper = document.getElementById('credit-card-wrapper');
@@ -186,7 +200,6 @@ export function initializeEventListeners() {
 
     document.getElementById('pay-invoice-button').addEventListener('click', handlePayInvoice);
 
-    // INÍCIO DA ALTERAÇÃO - Delegação de eventos para a lista de lançamentos da fatura
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
         if (!eventTarget) return;
@@ -196,14 +209,12 @@ export function initializeEventListeners() {
             modals.openEditInvoiceTransactionModal(transactionId);
         }
         if (eventTarget.matches('.delete-btn')) {
-            // Futura implementação da exclusão de lançamento
             showNotification('A exclusão de lançamentos individuais da fatura será implementada em breve.', 'error');
         }
     });
 
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
-    // FIM DA ALTERAÇÃO
 
 
     // --- Listeners do Modal de Configurações ---
@@ -289,6 +300,22 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+
+// INÍCIO DA ALTERAÇÃO - Nova função handler para o autocomplete
+async function handleDescriptionAutocomplete(searchTerm) {
+    const datalist = document.getElementById('description-suggestions');
+    if (!state.currentUser || !datalist) return;
+
+    const suggestions = await getDescriptionSuggestions(state.currentUser.uid, searchTerm);
+    
+    datalist.innerHTML = ''; // Limpa as sugestões antigas
+    suggestions.forEach(suggestionText => {
+        const option = document.createElement('option');
+        option.value = suggestionText;
+        datalist.appendChild(option);
+    });
+}
+// FIM DA ALTERAÇÃO
 
 async function handleAddTransaction(e) {
     e.preventDefault();
@@ -392,7 +419,6 @@ async function handleUpdateTransaction(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novo handler para a edição do lançamento da fatura
 async function handleUpdateInvoiceTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -400,32 +426,27 @@ async function handleUpdateInvoiceTransaction(e) {
     submitButton.disabled = true;
 
     try {
-        // Coleta os IDs necessários dos campos ocultos
         const transactionId = form['edit-invoice-transaction-id'].value;
         const originalInvoiceId = form['edit-invoice-id'].value;
         const cardId = form['edit-invoice-card-id'].value;
 
-        // Coleta os dados atualizados do formulário
         const updatedData = {
             description: form['edit-invoice-tx-description'].value,
             amount: parseFloat(form['edit-invoice-tx-amount'].value),
-            purchaseDate: form['edit-invoice-tx-date'].value, // Mantém como string, a função de backend converterá
+            purchaseDate: form['edit-invoice-tx-date'].value,
             category: form['edit-invoice-tx-category'].value,
         };
 
-        // Busca o objeto do cartão que está sendo usado
         const card = state.userCreditCards.find(c => c.id === cardId);
         if (!card) {
             throw new Error("Cartão de crédito não encontrado.");
         }
 
-        // Chama a nova função de backend
         await invoices.updateInvoiceTransaction(originalInvoiceId, transactionId, updatedData, card);
         
         showNotification('Lançamento atualizado com sucesso!');
         modals.closeEditInvoiceTransactionModal();
         
-        // Recarrega os dados da fatura para refletir as alterações
         await modals.loadAndDisplayInvoices(card);
 
     } catch (error) {
@@ -434,7 +455,6 @@ async function handleUpdateInvoiceTransaction(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleAddCreditCard(e) {
     e.preventDefault();
