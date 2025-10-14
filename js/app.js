@@ -12,7 +12,7 @@ import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices }
 import { getAllUsers, updateUserStatus } from './modules/admin.js';
 // Importa o módulo de recorrências.
 import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
-// Importa o novo módulo de análise
+// Importa o módulo de análise
 import { getMonthlySummary } from './modules/analytics.js';
 
 // --- Variáveis de Estado ---
@@ -20,10 +20,11 @@ let currentUser = null;
 let currentUserProfile = null;
 let userCreditCards = []; 
 let userCategories = [];
+let allTransactions = []; // Nova variável para armazenar todas as transações do período
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 let expensesChart = null; 
-let trendsChart = null; // Nova variável de estado para o gráfico de tendências
+let trendsChart = null;
 
 // --- Seleção de Elementos do DOM ---
 const loadingDiv = document.getElementById('loading');
@@ -108,6 +109,11 @@ const recurringDayInput = document.getElementById('recurring-day');
 const recurringCategorySelect = document.getElementById('recurring-category');
 const recurringTypeRadios = document.querySelectorAll('input[name="recurring-type"]');
 const recurringList = document.getElementById('recurring-list');
+// INÍCIO DA ALTERAÇÃO - Seleção dos novos elementos de filtro
+const filterDescriptionInput = document.getElementById('filter-description');
+const filterCategorySelect = document.getElementById('filter-category');
+const filterPaymentMethodSelect = document.getElementById('filter-payment-method');
+// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -132,7 +138,6 @@ function renderExpensesChart(transactions) {
     }
 
     if (labels.length === 0) {
-        // Se não houver dados, podemos limpar o canvas ou mostrar uma mensagem
         return;
     }
 
@@ -156,10 +161,7 @@ function renderExpensesChart(transactions) {
     });
 }
 
-/**
- * Renderiza o gráfico de evolução mensal de receitas e despesas.
- * @param {object} summaryData - Dados agregados do analytics.js.
- */
+/** Renderiza o gráfico de evolução mensal de receitas e despesas. */
 function renderTrendsChart(summaryData) {
     if (trendsChart) {
         trendsChart.destroy();
@@ -454,16 +456,34 @@ function formatCurrency(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/** Renderiza o dashboard: calcula totais, exibe a lista e atualiza o gráfico. */
-function updateDashboard(transactions) {
+// INÍCIO DA ALTERAÇÃO - `updateDashboard` agora aplica os filtros do cliente
+/** Renderiza o dashboard: aplica filtros, calcula totais, exibe a lista e atualiza o gráfico. */
+function updateDashboard() {
+    // 1. Pega os valores atuais dos filtros
+    const descriptionFilter = filterDescriptionInput.value.toLowerCase();
+    const categoryFilter = filterCategorySelect.value;
+    const paymentMethodFilter = filterPaymentMethodSelect.value;
+
+    // 2. Aplica os filtros na lista completa de transações do período
+    const filteredTransactions = allTransactions.filter(transaction => {
+        const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
+        const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
+        const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
+        
+        return descriptionMatch && categoryMatch && paymentMethodMatch;
+    });
+
+    // 3. O resto da função continua como antes, mas usando a lista já filtrada
     let totalRevenue = 0;
     let totalExpenses = 0;
     transactionsListEl.innerHTML = '';
 
-    if (transactions.length === 0) {
-        transactionsListEl.innerHTML = '<li>Nenhuma transação registrada para este período.</li>';
+    const transactionsToRender = filteredTransactions; // usa a lista filtrada
+
+    if (transactionsToRender.length === 0) {
+        transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
     } else {
-        transactions.forEach(transaction => {
+        transactionsToRender.forEach(transaction => {
             if (transaction.type === 'revenue') {
                 totalRevenue += transaction.amount;
             } else {
@@ -531,14 +551,23 @@ function updateDashboard(transactions) {
         });
     }
 
-    totalRevenueEl.textContent = formatCurrency(totalRevenue);
-    totalExpensesEl.textContent = formatCurrency(totalExpenses);
-    finalBalanceEl.textContent = formatCurrency(totalRevenue - totalExpenses);
+    // Os totais devem refletir a lista completa, não a filtrada
+    let fullPeriodRevenue = 0;
+    let fullPeriodExpenses = 0;
+    allTransactions.forEach(t => {
+        if (t.type === 'revenue') fullPeriodRevenue += t.amount;
+        else fullPeriodExpenses += t.amount;
+    });
 
-    renderExpensesChart(transactions);
+    totalRevenueEl.textContent = formatCurrency(fullPeriodRevenue);
+    totalExpensesEl.textContent = formatCurrency(fullPeriodExpenses);
+    finalBalanceEl.textContent = formatCurrency(fullPeriodRevenue - fullPeriodExpenses);
+
+    renderExpensesChart(transactionsToRender);
 }
+// FIM DA ALTERAÇÃO
 
-/** Busca os dados do usuário com filtros e chama a função para atualizar o dashboard. */
+/** Busca os dados do usuário e chama a função para atualizar o dashboard. */
 async function loadUserDashboard() {
     if (!currentUser) return;
     transactionsListEl.innerHTML = '<li>Carregando transações...</li>';
@@ -549,8 +578,8 @@ async function loadUserDashboard() {
     };
 
     try {
-        const transactions = await getTransactions(currentUser.uid, filters);
-        updateDashboard(transactions);
+        allTransactions = await getTransactions(currentUser.uid, filters); // Armazena na variável global
+        updateDashboard(); // Chama a renderização com os filtros atuais
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -616,6 +645,17 @@ async function loadUserCategories() {
     try {
         userCategories = await getCategories(currentUser.uid);
         renderCategoryManagementList();
+
+        // INÍCIO DA ALTERAÇÃO - Popula o novo dropdown de filtro
+        filterCategorySelect.innerHTML = '<option value="all">Todas</option>';
+        userCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.name;
+            option.textContent = cat.name;
+            filterCategorySelect.appendChild(option);
+        });
+        // FIM DA ALTERAÇÃO
+
         const currentTransactionType = document.querySelector('input[name="transaction-type"]:checked').value;
         populateCategorySelects(currentTransactionType, transactionCategorySelect);
         const currentRecurringType = document.querySelector('input[name="recurring-type"]:checked').value;
@@ -817,8 +857,13 @@ payInvoiceButton.addEventListener('click', async () => {
     }
 });
 
+// INÍCIO DA ALTERAÇÃO - Adiciona listeners para todos os filtros
 filterMonthSelect.addEventListener('change', loadUserDashboard);
 filterYearSelect.addEventListener('change', loadUserDashboard);
+filterDescriptionInput.addEventListener('input', updateDashboard);
+filterCategorySelect.addEventListener('change', updateDashboard);
+filterPaymentMethodSelect.addEventListener('change', updateDashboard);
+// FIM DA ALTERAÇÃO
 
 transactionTypeRadios.forEach(radio => { 
     radio.addEventListener('change', (e) => populateCategorySelects(e.target.value, transactionCategorySelect)); 
@@ -1081,6 +1126,7 @@ function initializeApp() {
             currentUserProfile = null;
             userCreditCards = [];
             userCategories = [];
+            allTransactions = [];
             showAuthForms();
         }
     });
