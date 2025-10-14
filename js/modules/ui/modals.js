@@ -9,13 +9,18 @@ import * as render from './render.js';
 import { formatDateToInput } from './utils.js';
 import { showNotification } from './notifications.js';
 import { getInvoices, getInvoiceTransactions } from '../invoices.js';
+// INÍCIO DA ALTERAÇÃO - Importa as funções de busca de dados
+import { getRecurringTransactions } from '../recurring.js';
+import { getAllUsers } from '../admin.js';
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM (Modais e seus conteúdos) ---
 const editModal = document.getElementById('edit-modal');
 const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
+const editRecurringModal = document.getElementById('edit-recurring-modal'); // Novo modal
 
-// Elementos do Modal de Edição
+// Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
 const editTransactionDescriptionInput = document.getElementById('edit-transaction-description');
 const editTransactionAmountInput = document.getElementById('edit-transaction-amount');
@@ -23,6 +28,13 @@ const editTransactionDateInput = document.getElementById('edit-transaction-date'
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
+
+// Elementos do Modal de Edição de Recorrência (Novos)
+const editRecurringIdInput = document.getElementById('edit-recurring-id');
+const editRecurringDescriptionInput = document.getElementById('edit-recurring-description');
+const editRecurringAmountInput = document.getElementById('edit-recurring-amount');
+const editRecurringDayInput = document.getElementById('edit-recurring-day');
+const editRecurringCategorySelect = document.getElementById('edit-recurring-category');
 
 // Elementos do Modal de Cartões
 const cardManagementView = document.getElementById('card-management-view');
@@ -35,7 +47,7 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 const adminTabButton = document.getElementById('admin-tab-button');
 
 
-// --- Funções de Gerenciamento do Modal de Edição ---
+// --- Funções de Gerenciamento do Modal de Edição de Transação ---
 
 /** Abre e preenche o modal de edição com os dados da transação. */
 export function openEditModal(transaction) {
@@ -45,7 +57,6 @@ export function openEditModal(transaction) {
     editTransactionDateInput.value = formatDateToInput(transaction.date);
     document.querySelector(`input[name="edit-transaction-type"][value="${transaction.type}"]`).checked = true;
 
-    // Popula as categorias e define o valor correto
     render.populateCategorySelects(transaction.type, editTransactionCategorySelect);
     editTransactionCategorySelect.value = transaction.category;
 
@@ -55,17 +66,40 @@ export function openEditModal(transaction) {
     editModal.style.display = 'flex';
 }
 
-/** Fecha o modal de edição. */
+/** Fecha o modal de edição de transação. */
 export function closeEditModal() {
     editModal.style.display = 'none';
 }
+
+// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de edição de recorrência
+
+/** Abre e preenche o modal de edição com os dados da recorrência. */
+export function openEditRecurringModal(recurringTx) {
+    editRecurringIdInput.value = recurringTx.id;
+    editRecurringDescriptionInput.value = recurringTx.description;
+    editRecurringAmountInput.value = recurringTx.amount;
+    editRecurringDayInput.value = recurringTx.dayOfMonth;
+    document.querySelector(`input[name="edit-recurring-type"][value="${recurringTx.type}"]`).checked = true;
+
+    // Popula as categorias e define o valor correto
+    render.populateCategorySelects(recurringTx.type, editRecurringCategorySelect);
+    editRecurringCategorySelect.value = recurringTx.category;
+
+    editRecurringModal.style.display = 'flex';
+}
+
+/** Fecha o modal de edição de recorrência. */
+export function closeEditRecurringModal() {
+    editRecurringModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento do Modal de Cartões ---
 
 /** Abre o modal de gerenciamento de cartões. */
 export function openCardModal() {
-    showCardManagementView(); // Garante que sempre abra na lista de cartões
+    showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
 
@@ -102,7 +136,7 @@ export async function loadAndDisplayInvoices(card) {
             render.renderEmptyInvoiceDetails();
         } else {
             render.renderInvoicePeriodSelect(invoices);
-            displayInvoiceDetails(invoices[0]); // Exibe a fatura mais recente por padrão
+            displayInvoiceDetails(invoices[0]);
         }
     } catch (error) {
         showNotification(error.message, 'error');
@@ -128,19 +162,40 @@ export async function displayInvoiceDetails(invoice) {
 
 // --- Funções de Gerenciamento do Modal de Configurações ---
 
-/** Abre o modal de configurações e renderiza o conteúdo inicial. */
-export function openSettingsModal() {
-    if (state.currentUserProfile) {
+// INÍCIO DA ALTERAÇÃO - A função agora busca os dados antes de renderizar.
+/** Abre o modal de configurações, busca os dados necessários e renderiza as listas. */
+export async function openSettingsModal() {
+    if (!state.currentUser) return;
+
+    // Define o estado de carregamento nas listas
+    document.getElementById('recurring-list').innerHTML = '<li>Carregando...</li>';
+    if (state.currentUserProfile.role === 'admin') {
+        document.getElementById('user-list').innerHTML = '<li>Carregando...</li>';
+    }
+
+    // Exibe o modal imediatamente para o usuário ver o carregamento
+    settingsModal.style.display = 'flex';
+    
+    try {
+        // Busca os dados das recorrências
+        const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
+        state.setUserRecurringTransactions(recurringTxs);
+        render.renderRecurringList(); // Renderiza com os dados buscados
+
+        // Se for admin, busca os dados dos usuários
         if (state.currentUserProfile.role === 'admin') {
             adminTabButton.style.display = 'block';
-            render.renderUserList(); // Renderiza a lista de usuários para o admin
+            const users = await getAllUsers();
+            render.renderUserList(users); // Passa os dados para a função de renderização
         }
-        // Renderiza as listas que são relevantes para todos os usuários
-        render.renderRecurringList();
+
+        // Renderiza as outras listas que dependem de estado já carregado
         render.renderBudgetList();
+    } catch (error) {
+        showNotification(error.message, 'error');
     }
-    settingsModal.style.display = 'flex';
 }
+// FIM DA ALTERAÇÃO
 
 /** Fecha o modal de configurações. */
 export function closeSettingsModal() {
