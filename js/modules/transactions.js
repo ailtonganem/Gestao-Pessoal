@@ -2,8 +2,10 @@
 import { db } from '../firebase-config.js';
 // Importa a lógica de faturas.
 import { findOrCreateInvoice } from './invoices.js';
-// INÍCIO DA ALTERAÇÃO - Importa a função de autocomplete
+// Importa a função de autocomplete.
 import { saveUniqueDescription } from './autocomplete.js';
+// INÍCIO DA ALTERAÇÃO - Importa a função para salvar subcategorias
+import { addSubcategory } from './categories.js';
 // FIM DA ALTERAÇÃO
 
 // Importa as funções do Firestore necessárias.
@@ -35,14 +37,19 @@ function parseDateString(dateString) {
 
 /**
  * Adiciona um novo documento de transação.
- * Se for cartão de crédito, associa a uma fatura.
- * Se for parcelado, distribui as parcelas nas faturas futuras.
  * @param {object} transactionData - Os dados da transação.
  * @param {object|null} cardData - Dados do cartão de crédito, se aplicável.
  * @returns {Promise<void>}
  */
 async function addTransaction(transactionData, cardData = null) {
     const transactionDate = parseDateString(transactionData.date);
+
+    // INÍCIO DA ALTERAÇÃO - Lógica para salvar a subcategoria se ela for nova
+    if (transactionData.subcategory && transactionData.categoryId) {
+        // Salva a nova subcategoria em segundo plano, não bloqueia o fluxo principal
+        addSubcategory(transactionData.categoryId, transactionData.subcategory).catch(console.error);
+    }
+    // FIM DA ALTERAÇÃO
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         const batch = writeBatch(db);
@@ -62,6 +69,7 @@ async function addTransaction(transactionData, cardData = null) {
                     description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
                     amount: installmentAmount,
                     category: transactionData.category,
+                    subcategory: transactionData.subcategory || null, // Adiciona subcategoria
                     purchaseDate: Timestamp.fromDate(currentInstallmentDate),
                     createdAt: serverTimestamp()
                 };
@@ -79,6 +87,7 @@ async function addTransaction(transactionData, cardData = null) {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
+                subcategory: transactionData.subcategory || null, // Adiciona subcategoria
                 purchaseDate: Timestamp.fromDate(transactionDate),
                 createdAt: serverTimestamp()
             };
@@ -89,9 +98,7 @@ async function addTransaction(transactionData, cardData = null) {
 
         try {
             await batch.commit();
-            // INÍCIO DA ALTERAÇÃO - Salva a descrição para o autocomplete
             saveUniqueDescription(transactionData.userId, transactionData.description);
-            // FIM DA ALTERAÇÃO
         } catch (error) {
             console.error("Erro ao salvar transação de crédito:", error);
             throw new Error("Não foi possível salvar a transação no cartão.");
@@ -101,14 +108,18 @@ async function addTransaction(transactionData, cardData = null) {
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
             const dataToSave = {
-                ...transactionData,
+                description: transactionData.description,
+                amount: transactionData.amount,
                 date: Timestamp.fromDate(transactionDate),
+                type: transactionData.type,
+                category: transactionData.category,
+                subcategory: transactionData.subcategory || null, // Adiciona subcategoria
+                paymentMethod: transactionData.paymentMethod,
+                userId: transactionData.userId,
                 createdAt: serverTimestamp()
             };
             await addDoc(transactionsCollectionRef, dataToSave);
-            // INÍCIO DA ALTERAÇÃO - Salva a descrição para o autocomplete
             saveUniqueDescription(transactionData.userId, transactionData.description);
-            // FIM DA ALTERAÇÃO
         } catch (error) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
@@ -117,12 +128,9 @@ async function addTransaction(transactionData, cardData = null) {
 }
 
 /**
- * Busca as transações de fluxo de caixa de um usuário (excluindo lançamentos de cartão de crédito)
- * com filtros opcionais de data. O filtro agora é feito no campo 'date'.
+ * Busca as transações de fluxo de caixa de um usuário.
  * @param {string} userId - O ID do usuário.
  * @param {object} filters - Objeto com os filtros.
- * @param {number|string} filters.month - O mês para filtrar (1-12 ou 'all').
- * @param {number} filters.year - O ano para filtrar.
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
 async function getTransactions(userId, filters = {}) {
@@ -187,7 +195,7 @@ async function deleteTransaction(transactionId) {
 }
 
 /**
- * Atualiza uma transação existente, incluindo o novo campo de data.
+ * Atualiza uma transação existente.
  * @param {string} transactionId - O ID da transação a ser atualizada.
  * @param {object} updatedData - Os novos dados.
  */
