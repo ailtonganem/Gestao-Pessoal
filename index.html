@@ -119,10 +119,8 @@
                 <form id="add-transaction-form">
                     <div class="form-control">
                         <label for="transaction-description">Descrição</label>
-                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <input type="text" id="transaction-description" list="description-suggestions" placeholder="Ex: Salário, Almoço" required>
                         <datalist id="description-suggestions"></datalist>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     <div class="form-control">
                         <label for="transaction-amount" id="transaction-amount-label">Valor (R$)</label>
@@ -145,6 +143,13 @@
                         <label for="transaction-category">Categoria</label>
                         <select id="transaction-category" required></select>
                     </div>
+                    <!-- INÍCIO DA ALTERAÇÃO - Adição do campo de subcategoria -->
+                    <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
+                        <label for="transaction-subcategory">Subcategoria (opcional)</label>
+                        <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
+                        <datalist id="subcategory-suggestions"></datalist>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                     <div class="form-control">
                         <label for="payment-method">Método de Pagamento</label>
                         <select id="payment-method" required>
@@ -375,7 +380,7 @@
                     <section>
                         <h3>Gerenciar Categorias</h3>
                         <form id="add-category-form">
-                            <h4>Adicionar Nova Categoria</h4>
+                            <h4>Adicionar Nova Categoria Principal</h4>
                             <div class="form-control">
                                 <label for="new-category-name">Nome da Categoria</label>
                                 <input type="text" id="new-category-name" placeholder="Ex: Investimentos" required>
@@ -391,16 +396,18 @@
                             </div>
                             <button type="submit">Adicionar Categoria</button>
                         </form>
-                        <div id="category-lists-container" style="display: flex; gap: 2rem; margin-top: 2rem;">
-                            <div style="flex: 1;">
+                        <!-- INÍCIO DA ALTERAÇÃO - Nova estrutura de gerenciamento de categorias -->
+                        <div id="category-lists-container" class="category-management-container">
+                            <div class="category-column">
                                 <h4>Receitas</h4>
                                 <ul id="revenue-categories-list" class="category-list"></ul>
                             </div>
-                            <div style="flex: 1;">
+                            <div class="category-column">
                                 <h4>Despesas</h4>
                                 <ul id="expense-categories-list" class="category-list"></ul>
                             </div>
                         </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </section>
                 </div>
 
