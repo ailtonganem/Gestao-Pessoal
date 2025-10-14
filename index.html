@@ -119,7 +119,10 @@
                 <form id="add-transaction-form">
                     <div class="form-control">
                         <label for="transaction-description">Descrição</label>
-                        <input type="text" id="transaction-description" placeholder="Ex: Salário, Almoço" required>
+                        <!-- INÍCIO DA ALTERAÇÃO -->
+                        <input type="text" id="transaction-description" list="description-suggestions" placeholder="Ex: Salário, Almoço" required>
+                        <datalist id="description-suggestions"></datalist>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     <div class="form-control">
                         <label for="transaction-amount" id="transaction-amount-label">Valor (R$)</label>
@@ -513,7 +516,7 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO - Adição do Modal de Edição de Lançamento de Fatura -->
+    <!-- Modal de Edição de Lançamento de Fatura -->
     <div id="edit-invoice-transaction-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-invoice-tx-modal-button">&times;</span>
@@ -542,7 +545,6 @@
             </form>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
