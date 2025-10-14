@@ -158,7 +158,6 @@
             <section id="transactions-list-section">
                 <h2>Histórico</h2>
                 
-                <!-- INÍCIO DA ALTERAÇÃO - Seção de filtros expandida -->
                 <div class="filter-container">
                     <div class="filter-controls">
                         <div class="form-control">
@@ -209,7 +208,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
 
                 <ul id="transactions-list"></ul>
             </section>
@@ -335,6 +333,9 @@
             
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
+                <!-- FIM DA ALTERAÇÃO -->
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
@@ -342,7 +343,7 @@
             <div id="settings-content">
                 <!-- Conteúdo da Aba 1: Gerenciar Categorias -->
                 <div id="category-management-tab" class="tab-content active">
-                    <section id="category-management-section">
+                    <section>
                         <h3>Gerenciar Categorias</h3>
                         
                         <form id="add-category-form">
@@ -376,54 +377,83 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba 2: Gerenciar Recorrências -->
-                <div id="recurring-management-tab" class="tab-content">
-                    <h3>Gerenciar Transações Recorrentes</h3>
-                    <p class="subtitle">Cadastre transações que se repetem todo mês, como salários ou assinaturas.</p>
+                <!-- INÍCIO DA ALTERAÇÃO - Conteúdo da nova aba de orçamentos -->
+                <div id="budget-management-tab" class="tab-content">
+                    <section>
+                        <h3>Gerenciar Orçamentos Mensais</h3>
+                        <p class="subtitle">Defina limites de gastos para suas categorias de despesa.</p>
 
-                    <form id="add-recurring-form">
-                        <h4>Adicionar Nova Recorrência</h4>
-                        <div class="form-control">
-                            <label for="recurring-description">Descrição</label>
-                            <input type="text" id="recurring-description" placeholder="Ex: Salário, Aluguel" required>
-                        </div>
-                        <div class="form-control">
-                            <label for="recurring-amount">Valor (R$)</label>
-                            <input type="number" id="recurring-amount" step="0.01" required>
-                        </div>
-                        <div class="form-control">
-                            <label for="recurring-day">Dia do Mês para Lançamento (1-31)</label>
-                            <input type="number" id="recurring-day" min="1" max="31" required>
-                        </div>
-                        <div class="form-control">
-                            <label>Tipo</label>
-                            <div class="radio-container">
-                                <input type="radio" id="recurring-type-revenue" name="recurring-type" value="revenue" required>
-                                <label for="recurring-type-revenue">Receita</label>
-                                <input type="radio" id="recurring-type-expense" name="recurring-type" value="expense" checked>
-                                <label for="recurring-type-expense">Despesa</label>
+                        <form id="set-budget-form">
+                            <h4>Definir/Atualizar Orçamento</h4>
+                            <div class="form-control">
+                                <label for="budget-category">Categoria de Despesa</label>
+                                <select id="budget-category" required></select>
                             </div>
-                        </div>
-                        <div class="form-control">
-                            <label for="recurring-category">Categoria</label>
-                            <select id="recurring-category" required></select>
-                        </div>
-                        <button type="submit">Adicionar Recorrência</button>
-                    </form>
+                            <div class="form-control">
+                                <label for="budget-amount">Valor do Orçamento (R$)</label>
+                                <input type="number" id="budget-amount" placeholder="500.00" step="0.01" required>
+                            </div>
+                            <button type="submit">Salvar Orçamento</button>
+                        </form>
 
-                    <h4>Recorrências Cadastradas</h4>
-                    <ul id="recurring-list">
-                        <!-- Lista de recorrências será renderizada aqui -->
-                    </ul>
+                        <h4>Orçamentos Ativos</h4>
+                        <ul id="budget-list">
+                            <!-- Lista de orçamentos será renderizada aqui -->
+                        </ul>
+                    </section>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
+
+                <!-- Conteúdo da Aba 3: Gerenciar Recorrências -->
+                <div id="recurring-management-tab" class="tab-content">
+                    <section>
+                        <h3>Gerenciar Transações Recorrentes</h3>
+                        <p class="subtitle">Cadastre transações que se repetem todo mês, como salários ou assinaturas.</p>
+
+                        <form id="add-recurring-form">
+                            <h4>Adicionar Nova Recorrência</h4>
+                            <div class="form-control">
+                                <label for="recurring-description">Descrição</label>
+                                <input type="text" id="recurring-description" placeholder="Ex: Salário, Aluguel" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="recurring-amount">Valor (R$)</label>
+                                <input type="number" id="recurring-amount" step="0.01" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="recurring-day">Dia do Mês para Lançamento (1-31)</label>
+                                <input type="number" id="recurring-day" min="1" max="31" required>
+                            </div>
+                            <div class="form-control">
+                                <label>Tipo</label>
+                                <div class="radio-container">
+                                    <input type="radio" id="recurring-type-revenue" name="recurring-type" value="revenue" required>
+                                    <label for="recurring-type-revenue">Receita</label>
+                                    <input type="radio" id="recurring-type-expense" name="recurring-type" value="expense" checked>
+                                    <label for="recurring-type-expense">Despesa</label>
+                                </div>
+                            </div>
+                            <div class="form-control">
+                                <label for="recurring-category">Categoria</label>
+                                <select id="recurring-category" required></select>
+                            </div>
+                            <button type="submit">Adicionar Recorrência</button>
+                        </form>
+
+                        <h4>Recorrências Cadastradas</h4>
+                        <ul id="recurring-list"></ul>
+                    </section>
                 </div>
 
-                <!-- Conteúdo da Aba 3: Gerenciar Usuários (para Admin) -->
+                <!-- Conteúdo da Aba 4: Gerenciar Usuários (para Admin) -->
                 <div id="user-management-tab" class="tab-content">
-                    <h3>Gerenciar Usuários</h3>
-                    <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
-                    <ul id="user-list">
-                        <li>Carregando usuários...</li>
-                    </ul>
+                    <section>
+                        <h3>Gerenciar Usuários</h3>
+                        <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
+                        <ul id="user-list">
+                            <li>Carregando usuários...</li>
+                        </ul>
+                    </section>
                 </div>
             </div>
         </div>
