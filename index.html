@@ -99,14 +99,12 @@
                 </div>
             </section>
 
-            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o gráfico de tendências -->
             <section id="trends-chart-section">
                 <h2>Evolução Mensal (Últimos 6 Meses)</h2>
                 <div class="chart-container">
                     <canvas id="trends-chart"></canvas>
                 </div>
             </section>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <section id="transaction-form-section">
                 <h2>Adicionar Transação</h2>
@@ -160,32 +158,58 @@
             <section id="transactions-list-section">
                 <h2>Histórico</h2>
                 
-                <div class="filter-controls">
-                    <div class="form-control">
-                        <label for="filter-month">Mês</label>
-                        <select id="filter-month">
-                            <option value="all">Todos</option>
-                            <option value="1">Janeiro</option>
-                            <option value="2">Fevereiro</option>
-                            <option value="3">Março</option>
-                            <option value="4">Abril</option>
-                            <option value="5">Maio</option>
-                            <option value="6">Junho</option>
-                            <option value="7">Julho</option>
-                            <option value="8">Agosto</option>
-                            <option value="9">Setembro</option>
-                            <option value="10">Outubro</option>
-                            <option value="11">Novembro</option>
-                            <option value="12">Dezembro</option>
-                        </select>
+                <!-- INÍCIO DA ALTERAÇÃO - Seção de filtros expandida -->
+                <div class="filter-container">
+                    <div class="filter-controls">
+                        <div class="form-control">
+                            <label for="filter-month">Mês</label>
+                            <select id="filter-month">
+                                <option value="all">Todos</option>
+                                <option value="1">Janeiro</option>
+                                <option value="2">Fevereiro</option>
+                                <option value="3">Março</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Maio</option>
+                                <option value="6">Junho</option>
+                                <option value="7">Julho</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label for="filter-year">Ano</label>
+                            <select id="filter-year">
+                                <!-- Anos serão preenchidos via JS -->
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-control">
-                        <label for="filter-year">Ano</label>
-                        <select id="filter-year">
-                            <!-- Anos serão preenchidos via JS -->
-                        </select>
+                    <div class="filter-controls">
+                        <div class="form-control" style="flex-grow: 2;">
+                            <label for="filter-description">Buscar por Descrição</label>
+                            <input type="text" id="filter-description" placeholder="Ex: Almoço, mercado...">
+                        </div>
+                        <div class="form-control">
+                            <label for="filter-category">Categoria</label>
+                            <select id="filter-category">
+                                <option value="all">Todas</option>
+                                <!-- Será populado via JS -->
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label for="filter-payment-method">Método de Pagamento</label>
+                            <select id="filter-payment-method">
+                                <option value="all">Todos</option>
+                                <option value="pix">PIX</option>
+                                <option value="debit">Débito</option>
+                                <option value="cash">Dinheiro</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+                <!-- FIM DA ALTERAÇÃO -->
 
                 <ul id="transactions-list"></ul>
             </section>
