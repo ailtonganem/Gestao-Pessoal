@@ -35,11 +35,9 @@
                 </div>
                 <button type="submit">Entrar</button>
             </form>
-            <!-- INÍCIO DA ALTERAÇÃO -->
             <p style="text-align: right; margin-top: 0.5rem; font-size: 0.9rem;">
                 <a href="#" id="forgot-password-link">Esqueci minha senha</a>
             </p>
-            <!-- FIM DA ALTERAÇÃO -->
             <p>Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
         </section>
 
@@ -60,14 +58,12 @@
             <p>Já tem uma conta? <a href="#" id="show-login-link">Faça Login</a></p>
         </section>
 
-        <!-- INÍCIO DA ALTERAÇÃO - Nova seção para usuários pendentes -->
         <section id="pending-approval" style="display: none;">
             <h1>Aguardando Aprovação</h1>
             <p>Sua conta foi criada com sucesso e está aguardando a aprovação de um administrador.</p>
             <p>Você será notificado por e-mail quando sua conta for ativada. Se tiver alguma dúvida, entre em contato com o suporte.</p>
             <button id="logout-pending-button" style="margin-top: 1.5rem;">Sair</button>
         </section>
-        <!-- FIM DA ALTERAÇÃO -->
     </main>
 
     <!-- Contêiner Principal da Aplicação (Dashboard) -->
@@ -298,53 +294,68 @@
         </div>
     </div>
 
-    <!-- Estrutura do Modal de Configurações -->
+    <!-- INÍCIO DA ALTERAÇÃO - Modal de Configurações reestruturado com abas -->
     <div id="settings-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
             
+            <!-- Navegação por Abas -->
+            <div class="modal-tabs">
+                <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
+                <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
+            </div>
+
             <div id="settings-content">
-                <section id="category-management-section">
-                    <h3>Gerenciar Categorias</h3>
-                    
-                    <form id="add-category-form">
-                        <h4>Adicionar Nova Categoria</h4>
-                        <div class="form-control">
-                            <label for="new-category-name">Nome da Categoria</label>
-                            <input type="text" id="new-category-name" placeholder="Ex: Investimentos" required>
-                        </div>
-                        <div class="form-control">
-                            <label>Tipo</label>
-                            <div class="radio-container">
-                                <input type="radio" id="new-category-type-revenue" name="new-category-type" value="revenue" required>
-                                <label for="new-category-type-revenue">Receita</label>
-                                <input type="radio" id="new-category-type-expense" name="new-category-type" value="expense" checked>
-                                <label for="new-category-type-expense">Despesa</label>
+                <!-- Conteúdo da Aba 1: Gerenciar Categorias -->
+                <div id="category-management-tab" class="tab-content active">
+                    <section id="category-management-section">
+                        <h3>Gerenciar Categorias</h3>
+                        
+                        <form id="add-category-form">
+                            <h4>Adicionar Nova Categoria</h4>
+                            <div class="form-control">
+                                <label for="new-category-name">Nome da Categoria</label>
+                                <input type="text" id="new-category-name" placeholder="Ex: Investimentos" required>
+                            </div>
+                            <div class="form-control">
+                                <label>Tipo</label>
+                                <div class="radio-container">
+                                    <input type="radio" id="new-category-type-revenue" name="new-category-type" value="revenue" required>
+                                    <label for="new-category-type-revenue">Receita</label>
+                                    <input type="radio" id="new-category-type-expense" name="new-category-type" value="expense" checked>
+                                    <label for="new-category-type-expense">Despesa</label>
+                                </div>
+                            </div>
+                            <button type="submit">Adicionar Categoria</button>
+                        </form>
+                        
+                        <div id="category-lists-container" style="display: flex; gap: 2rem; margin-top: 2rem;">
+                            <div style="flex: 1;">
+                                <h4>Receitas</h4>
+                                <ul id="revenue-categories-list" class="category-list"></ul>
+                            </div>
+                            <div style="flex: 1;">
+                                <h4>Despesas</h4>
+                                <ul id="expense-categories-list" class="category-list"></ul>
                             </div>
                         </div>
-                        <button type="submit">Adicionar Categoria</button>
-                    </form>
-                    
-                    <div id="category-lists-container" style="display: flex; gap: 2rem; margin-top: 2rem;">
-                        <div style="flex: 1;">
-                            <h4>Receitas</h4>
-                            <ul id="revenue-categories-list" class="category-list">
-                                <!-- Categorias de receita serão renderizadas aqui -->
-                            </ul>
-                        </div>
-                        <div style="flex: 1;">
-                            <h4>Despesas</h4>
-                            <ul id="expense-categories-list" class="category-list">
-                                <!-- Categorias de despesa serão renderizadas aqui -->
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-                <!-- Outras seções de configuração (Tema, Moeda, etc.) podem ser adicionadas aqui no futuro -->
+                    </section>
+                </div>
+
+                <!-- Conteúdo da Aba 2: Gerenciar Usuários (para Admin) -->
+                <div id="user-management-tab" class="tab-content">
+                    <h3>Gerenciar Usuários</h3>
+                    <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
+                    <ul id="user-list">
+                        <!-- A lista de usuários será renderizada aqui pelo app.js -->
+                        <li>Carregando usuários...</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
