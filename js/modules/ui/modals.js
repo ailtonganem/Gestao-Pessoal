@@ -9,16 +9,18 @@ import * as render from './render.js';
 import { formatDateToInput } from './utils.js';
 import { showNotification } from './notifications.js';
 import { getInvoices, getInvoiceTransactions } from '../invoices.js';
-// INÍCIO DA ALTERAÇÃO - Importa as funções de busca de dados
 import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
-// FIM DA ALTERAÇÃO
+
+// --- Variáveis de Estado do Módulo ---
+let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
 
 // --- Seleção de Elementos do DOM (Modais e seus conteúdos) ---
 const editModal = document.getElementById('edit-modal');
 const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
-const editRecurringModal = document.getElementById('edit-recurring-modal'); // Novo modal
+const editRecurringModal = document.getElementById('edit-recurring-modal');
+const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal'); // INÍCIO DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
@@ -29,12 +31,21 @@ const editTransactionCategorySelect = document.getElementById('edit-transaction-
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
 
-// Elementos do Modal de Edição de Recorrência (Novos)
+// Elementos do Modal de Edição de Recorrência
 const editRecurringIdInput = document.getElementById('edit-recurring-id');
 const editRecurringDescriptionInput = document.getElementById('edit-recurring-description');
 const editRecurringAmountInput = document.getElementById('edit-recurring-amount');
 const editRecurringDayInput = document.getElementById('edit-recurring-day');
 const editRecurringCategorySelect = document.getElementById('edit-recurring-category');
+
+// Elementos do Modal de Edição de Lançamento de Fatura (Novos)
+const editInvoiceTxIdInput = document.getElementById('edit-invoice-transaction-id');
+const editInvoiceIdInput = document.getElementById('edit-invoice-id');
+const editInvoiceCardIdInput = document.getElementById('edit-invoice-card-id');
+const editInvoiceTxDescriptionInput = document.getElementById('edit-invoice-tx-description');
+const editInvoiceTxAmountInput = document.getElementById('edit-invoice-tx-amount');
+const editInvoiceTxDateInput = document.getElementById('edit-invoice-tx-date');
+const editInvoiceTxCategorySelect = document.getElementById('edit-invoice-tx-category');
 
 // Elementos do Modal de Cartões
 const cardManagementView = document.getElementById('card-management-view');
@@ -49,7 +60,6 @@ const adminTabButton = document.getElementById('admin-tab-button');
 
 // --- Funções de Gerenciamento do Modal de Edição de Transação ---
 
-/** Abre e preenche o modal de edição com os dados da transação. */
 export function openEditModal(transaction) {
     editTransactionIdInput.value = transaction.id;
     editTransactionDescriptionInput.value = transaction.description;
@@ -66,14 +76,13 @@ export function openEditModal(transaction) {
     editModal.style.display = 'flex';
 }
 
-/** Fecha o modal de edição de transação. */
 export function closeEditModal() {
     editModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de edição de recorrência
 
-/** Abre e preenche o modal de edição com os dados da recorrência. */
+// --- Funções de Gerenciamento do Modal de Edição de Recorrência ---
+
 export function openEditRecurringModal(recurringTx) {
     editRecurringIdInput.value = recurringTx.id;
     editRecurringDescriptionInput.value = recurringTx.description;
@@ -81,34 +90,60 @@ export function openEditRecurringModal(recurringTx) {
     editRecurringDayInput.value = recurringTx.dayOfMonth;
     document.querySelector(`input[name="edit-recurring-type"][value="${recurringTx.type}"]`).checked = true;
 
-    // Popula as categorias e define o valor correto
     render.populateCategorySelects(recurringTx.type, editRecurringCategorySelect);
     editRecurringCategorySelect.value = recurringTx.category;
 
     editRecurringModal.style.display = 'flex';
 }
 
-/** Fecha o modal de edição de recorrência. */
 export function closeEditRecurringModal() {
     editRecurringModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
+
+
+// --- INÍCIO DA ALTERAÇÃO - Funções para o novo modal de edição de lançamento de fatura ---
+
+export function openEditInvoiceTransactionModal(transactionId) {
+    const tx = _currentInvoiceTransactions.find(t => t.id === transactionId);
+    if (!tx) {
+        showNotification('Lançamento não encontrado.', 'error');
+        return;
+    }
+
+    // Preenche os campos ocultos com os IDs necessários para a lógica de atualização
+    editInvoiceTxIdInput.value = tx.id;
+    editInvoiceIdInput.value = document.getElementById('invoice-period-select').value;
+    editInvoiceCardIdInput.value = state.selectedCardForInvoiceView.id;
+
+    // Preenche os campos visíveis do formulário
+    editInvoiceTxDescriptionInput.value = tx.description;
+    editInvoiceTxAmountInput.value = tx.amount;
+    editInvoiceTxDateInput.value = formatDateToInput(tx.purchaseDate);
+    
+    // Popula e seleciona a categoria correta
+    render.populateCategorySelects('expense', editInvoiceTxCategorySelect);
+    editInvoiceTxCategorySelect.value = tx.category;
+
+    editInvoiceTxModal.style.display = 'flex';
+}
+
+export function closeEditInvoiceTransactionModal() {
+    editInvoiceTxModal.style.display = 'none';
+}
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções de Gerenciamento do Modal de Cartões ---
 
-/** Abre o modal de gerenciamento de cartões. */
 export function openCardModal() {
     showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
 
-/** Fecha o modal de gerenciamento de cartões. */
 export function closeCardModal() {
     creditCardModal.style.display = 'none';
 }
 
-/** Troca a visão no modal para a de detalhes da fatura e inicia o carregamento. */
 export function showInvoiceDetailsView(card) {
     state.setSelectedCardForInvoiceView(card);
     invoiceCardName.textContent = `Faturas - ${card.name}`;
@@ -117,15 +152,14 @@ export function showInvoiceDetailsView(card) {
     invoiceDetailsView.style.display = 'block';
 }
 
-/** Troca a visão no modal de volta para a lista de cartões. */
 export function showCardManagementView() {
     state.setSelectedCardForInvoiceView(null);
     state.setCurrentCardInvoices([]);
+    _currentInvoiceTransactions = []; // Limpa a lista de transações
     cardManagementView.style.display = 'block';
     invoiceDetailsView.style.display = 'none';
 }
 
-/** Carrega as faturas de um cartão e as exibe no modal. */
 export async function loadAndDisplayInvoices(card) {
     invoicePeriodSelect.innerHTML = '<option>Carregando faturas...</option>';
     try {
@@ -136,7 +170,7 @@ export async function loadAndDisplayInvoices(card) {
             render.renderEmptyInvoiceDetails();
         } else {
             render.renderInvoicePeriodSelect(invoices);
-            displayInvoiceDetails(invoices[0]);
+            await displayInvoiceDetails(invoices[0]); // Aguarda o carregamento dos detalhes
         }
     } catch (error) {
         showNotification(error.message, 'error');
@@ -144,7 +178,6 @@ export async function loadAndDisplayInvoices(card) {
     }
 }
 
-/** Exibe os detalhes de uma fatura selecionada. */
 export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceSummary(invoice);
     payInvoiceButton.disabled = invoice.status !== 'closed';
@@ -152,9 +185,11 @@ export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceTransactionsList([{ description: 'Carregando...', amount: '' }]);
     try {
         const transactions = await getInvoiceTransactions(invoice.id);
+        _currentInvoiceTransactions = transactions; // Armazena a lista de transações
         render.renderInvoiceTransactionsList(transactions);
     } catch (error) {
         showNotification(error.message, 'error');
+        _currentInvoiceTransactions = []; // Limpa em caso de erro
         render.renderInvoiceTransactionsList([{ description: 'Erro ao carregar.', amount: '' }]);
     }
 }
@@ -162,42 +197,33 @@ export async function displayInvoiceDetails(invoice) {
 
 // --- Funções de Gerenciamento do Modal de Configurações ---
 
-// INÍCIO DA ALTERAÇÃO - A função agora busca os dados antes de renderizar.
-/** Abre o modal de configurações, busca os dados necessários e renderiza as listas. */
 export async function openSettingsModal() {
     if (!state.currentUser) return;
 
-    // Define o estado de carregamento nas listas
     document.getElementById('recurring-list').innerHTML = '<li>Carregando...</li>';
     if (state.currentUserProfile.role === 'admin') {
         document.getElementById('user-list').innerHTML = '<li>Carregando...</li>';
     }
 
-    // Exibe o modal imediatamente para o usuário ver o carregamento
     settingsModal.style.display = 'flex';
     
     try {
-        // Busca os dados das recorrências
         const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
         state.setUserRecurringTransactions(recurringTxs);
-        render.renderRecurringList(); // Renderiza com os dados buscados
+        render.renderRecurringList();
 
-        // Se for admin, busca os dados dos usuários
         if (state.currentUserProfile.role === 'admin') {
             adminTabButton.style.display = 'block';
             const users = await getAllUsers();
-            render.renderUserList(users); // Passa os dados para a função de renderização
+            render.renderUserList(users);
         }
 
-        // Renderiza as outras listas que dependem de estado já carregado
         render.renderBudgetList();
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
-/** Fecha o modal de configurações. */
 export function closeSettingsModal() {
     settingsModal.style.display = 'none';
 }
