@@ -53,7 +53,8 @@ async function addTransaction(transactionData, cardData = null) {
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
             await addDoc(transactionsCollectionRef, { ...transactionData, createdAt: serverTimestamp() });
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
         }
@@ -62,11 +63,12 @@ async function addTransaction(transactionData, cardData = null) {
 
 // INÍCIO DA ALTERAÇÃO
 /**
- * Busca todas as transações de fluxo de caixa de um usuário, com filtros opcionais de data.
+ * Busca as transações de fluxo de caixa de um usuário (excluindo lançamentos de cartão de crédito)
+ * com filtros opcionais de data. O filtro agora é feito diretamente no Firestore.
  * @param {string} userId - O ID do usuário.
  * @param {object} filters - Objeto com os filtros.
- * @param {number|null} filters.month - O mês para filtrar (1-12).
- * @param {number|null} filters.year - O ano para filtrar.
+ * @param {number|string} filters.month - O mês para filtrar (1-12 ou 'all').
+ * @param {number} filters.year - O ano para filtrar.
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
 async function getTransactions(userId, filters = {}) {
@@ -76,7 +78,9 @@ async function getTransactions(userId, filters = {}) {
         
         // Constrói a base da consulta
         let queryConstraints = [
-            where("userId", "==", userId)
+            where("userId", "==", userId),
+            // Adiciona o filtro para buscar apenas transações que não são de cartão de crédito
+            where("paymentMethod", "!=", "credit_card")
         ];
 
         // Adiciona filtros de data se fornecidos
@@ -105,10 +109,15 @@ async function getTransactions(userId, filters = {}) {
             transactions.push({ id: doc.id, ...doc.data() });
         });
         
-        // Filtra no lado do cliente para remover transações de cartão de crédito
-        return transactions.filter(t => t.paymentMethod !== 'credit_card');
+        // O filtro no lado do cliente não é mais necessário
+        return transactions;
 
     } catch (error) {
+        // Tratamento de erro específico do Firestore para essa consulta
+        if (error.code === 'failed-precondition') {
+             console.error("Erro de consulta no Firestore: ", error.message);
+             throw new Error("Parece que o Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação do índice.");
+        }
         console.error("Erro ao buscar transações:", error);
         throw new Error("Não foi possível buscar as transações.");
     }
