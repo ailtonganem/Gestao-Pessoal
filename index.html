@@ -122,7 +122,7 @@
                         <input type="text" id="transaction-description" placeholder="Ex: Salário, Almoço" required>
                     </div>
                     <div class="form-control">
-                        <label for="transaction-amount">Valor (R$)</label>
+                        <label for="transaction-amount" id="transaction-amount-label">Valor (R$)</label>
                         <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
                     </div>
                     <div class="form-control">
@@ -157,6 +157,18 @@
                             <option>Nenhum cartão cadastrado</option>
                         </select>
                     </div>
+                    <!-- INÍCIO DA ALTERAÇÃO - Adição dos campos de parcelamento -->
+                    <div id="installment-options-wrapper" class="form-control" style="display: none;">
+                        <div class="radio-container" style="margin-bottom: 1rem;">
+                             <input type="checkbox" id="is-installment-checkbox" style="width: auto;">
+                             <label for="is-installment-checkbox" style="font-weight: normal; margin-bottom: 0;">É uma compra parcelada?</label>
+                        </div>
+                        <div id="installments-count-wrapper" style="display: none;">
+                            <label for="installments-count">Número de Parcelas</label>
+                            <input type="number" id="installments-count" min="2" max="48" value="2">
+                        </div>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                     <button type="submit">Adicionar</button>
                 </form>
             </section>
@@ -466,7 +478,7 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO - Adição do Modal de Edição de Recorrência -->
+    <!-- Modal de Edição de Recorrência -->
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-recurring-modal-button">&times;</span>
@@ -502,7 +514,6 @@
             </form>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
