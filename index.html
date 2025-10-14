@@ -99,6 +99,15 @@
                 </div>
             </section>
 
+            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o gráfico de tendências -->
+            <section id="trends-chart-section">
+                <h2>Evolução Mensal (Últimos 6 Meses)</h2>
+                <div class="chart-container">
+                    <canvas id="trends-chart"></canvas>
+                </div>
+            </section>
+            <!-- FIM DA ALTERAÇÃO -->
+
             <section id="transaction-form-section">
                 <h2>Adicionar Transação</h2>
                 <form id="add-transaction-form">
@@ -300,13 +309,11 @@
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
             
-            <!-- INÍCIO DA ALTERAÇÃO - Adição da nova aba -->
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <div id="settings-content">
                 <!-- Conteúdo da Aba 1: Gerenciar Categorias -->
@@ -345,7 +352,7 @@
                     </section>
                 </div>
 
-                <!-- INÍCIO DA ALTERAÇÃO - Conteúdo da nova aba de recorrências -->
+                <!-- Conteúdo da Aba 2: Gerenciar Recorrências -->
                 <div id="recurring-management-tab" class="tab-content">
                     <h3>Gerenciar Transações Recorrentes</h3>
                     <p class="subtitle">Cadastre transações que se repetem todo mês, como salários ou assinaturas.</p>
@@ -385,7 +392,6 @@
                         <!-- Lista de recorrências será renderizada aqui -->
                     </ul>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
 
                 <!-- Conteúdo da Aba 3: Gerenciar Usuários (para Admin) -->
                 <div id="user-management-tab" class="tab-content">
