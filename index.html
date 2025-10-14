@@ -110,7 +110,6 @@
                 <h2>Acompanhamento de Orçamentos</h2>
                 <p class="subtitle" style="text-align: left;">Progresso dos seus gastos em relação aos limites definidos para o mês atual.</p>
                 <ul id="budget-progress-list">
-                    <!-- O progresso dos orçamentos será renderizado aqui pelo app.js -->
                     <li>Carregando orçamentos...</li>
                 </ul>
             </section>
@@ -141,9 +140,7 @@
                     </div>
                     <div class="form-control">
                         <label for="transaction-category">Categoria</label>
-                        <select id="transaction-category" required>
-                            <!-- Categorias do usuário serão carregadas aqui -->
-                        </select>
+                        <select id="transaction-category" required></select>
                     </div>
                     <div class="form-control">
                         <label for="payment-method">Método de Pagamento</label>
@@ -189,9 +186,7 @@
                         </div>
                         <div class="form-control">
                             <label for="filter-year">Ano</label>
-                            <select id="filter-year">
-                                <!-- Anos serão preenchidos via JS -->
-                            </select>
+                            <select id="filter-year"></select>
                         </div>
                     </div>
                     <div class="filter-controls">
@@ -203,7 +198,6 @@
                             <label for="filter-category">Categoria</label>
                             <select id="filter-category">
                                 <option value="all">Todas</option>
-                                <!-- Será populado via JS -->
                             </select>
                         </div>
                         <div class="form-control">
@@ -217,6 +211,12 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div class="export-container" style="text-align: right; margin-bottom: 1rem;">
+                    <button id="export-csv-button" class="button-secondary">Exportar para CSV</button>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
 
                 <ul id="transactions-list"></ul>
             </section>
@@ -340,7 +340,6 @@
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
             
-            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o tema -->
             <section id="theme-settings-section">
                 <h4>Aparência</h4>
                 <div class="form-control theme-switcher">
@@ -351,7 +350,6 @@
                     </label>
                 </div>
             </section>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
