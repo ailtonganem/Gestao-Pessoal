@@ -78,11 +78,9 @@ const filterMonthSelect = document.getElementById('filter-month');
 const filterYearSelect = document.getElementById('filter-year');
 const chartCanvas = document.getElementById('expenses-chart');
 
-// INÍCIO DA ALTERAÇÃO (Seleção de novos elementos)
 const settingsButton = document.getElementById('settings-button');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsModalButton = document.querySelector('.close-settings-modal-button');
-// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -339,24 +337,23 @@ function closeEditModal() {
     editModal.style.display = 'none';
 }
 
-/** Abre o modal de gerenciamento de cartões e verifica faturas vencidas. */
+// INÍCIO DA ALTERAÇÃO
+/** Abre o modal de gerenciamento de cartões. */
 async function openCardModal() {
-    if (currentUser) {
-        await closeOverdueInvoices(currentUser.uid);
-        if (selectedCardForInvoiceView) {
-            await loadAndDisplayInvoices(selectedCardForInvoiceView);
-        }
+    // A verificação de faturas vencidas foi removida daqui pois já acontece no login.
+    if (currentUser && selectedCardForInvoiceView) {
+        await loadAndDisplayInvoices(selectedCardForInvoiceView);
     }
     showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
+// FIM DA ALTERAÇÃO
 
 /** Fecha o modal de gerenciamento de cartões. */
 function closeCardModal() {
     creditCardModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO (Novas funções do modal de configurações)
 /** Abre o modal de configurações. */
 function openSettingsModal() {
     settingsModal.style.display = 'flex';
@@ -366,7 +363,6 @@ function openSettingsModal() {
 function closeSettingsModal() {
     settingsModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
 
 /** Formata um número para o padrão de moeda BRL. */
 function formatCurrency(value) {
@@ -507,11 +503,10 @@ closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 backToCardsButton.addEventListener('click', showCardManagementView);
 
-// INÍCIO DA ALTERAÇÃO (Eventos do novo modal de configurações)
+// Eventos do novo modal de configurações
 settingsButton.addEventListener('click', openSettingsModal);
 closeSettingsModalButton.addEventListener('click', closeSettingsModal);
 window.addEventListener('click', (event) => { if (event.target == settingsModal) { closeSettingsModal(); } });
-// FIM DA ALTERAÇÃO
 
 invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoiceId = e.target.value;
