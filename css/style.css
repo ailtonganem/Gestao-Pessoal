@@ -14,7 +14,7 @@
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* INÍCIO DA ALTERAÇÃO - Variáveis do Tema Escuro */
+/* Variáveis do Tema Escuro */
 body.dark-mode {
     --primary-color: #ecf0f1; /* Branco suave */
     --secondary-color: #3498db; /* Mantém o azul */
@@ -22,7 +22,6 @@ body.dark-mode {
     --text-color: #bdc3c7; /* Texto cinza claro */
     --container-bg-color: #34495e; /* Contêineres escuros */
 }
-/* FIM DA ALTERAÇÃO */
 
 
 /* Reset básico e estilos globais */
@@ -193,7 +192,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; } /* Ajuste de cor de tex
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
-/* Estilos de Notificações (Toasts) */
+/* INÍCIO DA ALTERAÇÃO - Estilos de Notificações (Toasts) */
 #notification-container {
     position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex;
     flex-direction: column; align-items: flex-end; gap: 10px;
@@ -201,18 +200,22 @@ body.dark-mode .summary-card.balance { color: #2c3e50; } /* Ajuste de cor de tex
 .toast {
     background-color: var(--container-bg-color); color: var(--text-color); padding: 15px 20px;
     border-radius: 5px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border-left: 5px solid;
-    animation: slideIn 0.3s ease-out forwards; opacity: 0; transform: translateX(100%);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
 }
 .toast.success { border-left-color: var(--success-color); }
 .toast.error { border-left-color: var(--error-color); }
-@keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-.toast.fade-out { animation: slideOut 0.5s ease-in forwards; }
-@keyframes slideOut { to { opacity: 0; transform: translateX(120%); } }
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos dos Modais */
 .modal {
     position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;
+    background-color: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center;
 }
 .modal-content {
     background-color: var(--container-bg-color); padding: 2rem; border-radius: 8px;
@@ -231,7 +234,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; } /* Ajuste de cor de tex
     color: var(--text-color);
 }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para o seletor de tema e toggle switch */
+/* Estilos para o seletor de tema e toggle switch */
 #theme-settings-section {
     border-bottom: 1px solid var(--background-color);
     padding-bottom: 1.5rem;
@@ -285,7 +288,6 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos para as abas do modal */
 .modal-tabs {
