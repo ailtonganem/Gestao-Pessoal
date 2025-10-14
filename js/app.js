@@ -14,13 +14,17 @@ import { getAllUsers, updateUserStatus } from './modules/admin.js';
 import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
 // Importa o módulo de análise
 import { getMonthlySummary } from './modules/analytics.js';
+// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de orçamento
+import { setBudget, getBudgets, deleteBudget } from './modules/budget.js';
+// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado ---
 let currentUser = null;
 let currentUserProfile = null;
 let userCreditCards = []; 
 let userCategories = [];
-let allTransactions = []; // Nova variável para armazenar todas as transações do período
+let userBudgets = []; // Nova variável para armazenar os orçamentos do usuário
+let allTransactions = [];
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 let expensesChart = null; 
@@ -109,10 +113,14 @@ const recurringDayInput = document.getElementById('recurring-day');
 const recurringCategorySelect = document.getElementById('recurring-category');
 const recurringTypeRadios = document.querySelectorAll('input[name="recurring-type"]');
 const recurringList = document.getElementById('recurring-list');
-// INÍCIO DA ALTERAÇÃO - Seleção dos novos elementos de filtro
 const filterDescriptionInput = document.getElementById('filter-description');
 const filterCategorySelect = document.getElementById('filter-category');
 const filterPaymentMethodSelect = document.getElementById('filter-payment-method');
+// INÍCIO DA ALTERAÇÃO - Seleção de elementos da aba de orçamento
+const setBudgetForm = document.getElementById('set-budget-form');
+const budgetCategorySelect = document.getElementById('budget-category');
+const budgetAmountInput = document.getElementById('budget-amount');
+const budgetList = document.getElementById('budget-list');
 // FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
@@ -442,6 +450,7 @@ function openSettingsModal() {
             renderUserList();
         }
         renderRecurringList();
+        renderBudgetList();
     }
     settingsModal.style.display = 'flex';
 }
@@ -456,15 +465,12 @@ function formatCurrency(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// INÍCIO DA ALTERAÇÃO - `updateDashboard` agora aplica os filtros do cliente
 /** Renderiza o dashboard: aplica filtros, calcula totais, exibe a lista e atualiza o gráfico. */
 function updateDashboard() {
-    // 1. Pega os valores atuais dos filtros
     const descriptionFilter = filterDescriptionInput.value.toLowerCase();
     const categoryFilter = filterCategorySelect.value;
     const paymentMethodFilter = filterPaymentMethodSelect.value;
 
-    // 2. Aplica os filtros na lista completa de transações do período
     const filteredTransactions = allTransactions.filter(transaction => {
         const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
@@ -473,12 +479,11 @@ function updateDashboard() {
         return descriptionMatch && categoryMatch && paymentMethodMatch;
     });
 
-    // 3. O resto da função continua como antes, mas usando a lista já filtrada
     let totalRevenue = 0;
     let totalExpenses = 0;
     transactionsListEl.innerHTML = '';
 
-    const transactionsToRender = filteredTransactions; // usa a lista filtrada
+    const transactionsToRender = filteredTransactions;
 
     if (transactionsToRender.length === 0) {
         transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
@@ -551,7 +556,6 @@ function updateDashboard() {
         });
     }
 
-    // Os totais devem refletir a lista completa, não a filtrada
     let fullPeriodRevenue = 0;
     let fullPeriodExpenses = 0;
     allTransactions.forEach(t => {
@@ -565,7 +569,6 @@ function updateDashboard() {
 
     renderExpensesChart(transactionsToRender);
 }
-// FIM DA ALTERAÇÃO
 
 /** Busca os dados do usuário e chama a função para atualizar o dashboard. */
 async function loadUserDashboard() {
@@ -578,8 +581,8 @@ async function loadUserDashboard() {
     };
 
     try {
-        allTransactions = await getTransactions(currentUser.uid, filters); // Armazena na variável global
-        updateDashboard(); // Chama a renderização com os filtros atuais
+        allTransactions = await getTransactions(currentUser.uid, filters);
+        updateDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -646,7 +649,6 @@ async function loadUserCategories() {
         userCategories = await getCategories(currentUser.uid);
         renderCategoryManagementList();
 
-        // INÍCIO DA ALTERAÇÃO - Popula o novo dropdown de filtro
         filterCategorySelect.innerHTML = '<option value="all">Todas</option>';
         userCategories.forEach(cat => {
             const option = document.createElement('option');
@@ -654,7 +656,15 @@ async function loadUserCategories() {
             option.textContent = cat.name;
             filterCategorySelect.appendChild(option);
         });
-        // FIM DA ALTERAÇÃO
+        
+        const expenseCategories = userCategories.filter(c => c.type === 'expense');
+        budgetCategorySelect.innerHTML = '';
+        expenseCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.name;
+            option.textContent = cat.name;
+            budgetCategorySelect.appendChild(option);
+        });
 
         const currentTransactionType = document.querySelector('input[name="transaction-type"]:checked').value;
         populateCategorySelects(currentTransactionType, transactionCategorySelect);
@@ -780,6 +790,59 @@ async function renderRecurringList() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Novas funções para carregar e renderizar orçamentos
+/** Busca os orçamentos do usuário e atualiza a UI. */
+async function loadUserBudgets() {
+    if (!currentUser) return;
+    try {
+        userBudgets = await getBudgets(currentUser.uid);
+        renderBudgetList();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+/** Renderiza a lista de orçamentos cadastrados. */
+function renderBudgetList() {
+    budgetList.innerHTML = '';
+    if (userBudgets.length === 0) {
+        budgetList.innerHTML = '<li>Nenhum orçamento definido.</li>';
+        return;
+    }
+
+    userBudgets.forEach(budget => {
+        const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.justifyContent = 'space-between';
+        li.style.alignItems = 'center';
+        li.style.padding = '0.5rem';
+        li.style.borderBottom = '1px solid var(--background-color)';
+
+        const infoSpan = document.createElement('span');
+        infoSpan.textContent = `${budget.category}: ${formatCurrency(budget.amount)}`;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '&times;';
+        deleteButton.classList.add('action-btn', 'delete-btn');
+        deleteButton.title = 'Excluir orçamento';
+        deleteButton.onclick = async () => {
+            if (confirm(`Tem certeza que deseja excluir o orçamento para "${budget.category}"?`)) {
+                try {
+                    await deleteBudget(budget.id);
+                    showNotification('Orçamento excluído com sucesso!');
+                    loadUserBudgets();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+        };
+        li.appendChild(infoSpan);
+        li.appendChild(deleteButton);
+        budgetList.appendChild(li);
+    });
+}
+// FIM DA ALTERAÇÃO
+
 // Funções de controle de visibilidade da UI
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
 function showAuthForms() { loadingDiv.style.display = 'none'; appContainer.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none'; pendingApprovalSection.style.display = 'none';}
@@ -857,13 +920,11 @@ payInvoiceButton.addEventListener('click', async () => {
     }
 });
 
-// INÍCIO DA ALTERAÇÃO - Adiciona listeners para todos os filtros
 filterMonthSelect.addEventListener('change', loadUserDashboard);
 filterYearSelect.addEventListener('change', loadUserDashboard);
 filterDescriptionInput.addEventListener('input', updateDashboard);
 filterCategorySelect.addEventListener('change', updateDashboard);
 filterPaymentMethodSelect.addEventListener('change', updateDashboard);
-// FIM DA ALTERAÇÃO
 
 transactionTypeRadios.forEach(radio => { 
     radio.addEventListener('change', (e) => populateCategorySelects(e.target.value, transactionCategorySelect)); 
@@ -1082,6 +1143,42 @@ addRecurringForm.addEventListener('submit', async (e) => {
     }
 });
 
+// INÍCIO DA ALTERAÇÃO - Listener para o novo formulário de orçamento
+setBudgetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitButton = setBudgetForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const budgetData = {
+        category: budgetCategorySelect.value,
+        amount: parseFloat(budgetAmountInput.value),
+        userId: currentUser.uid
+    };
+
+    if (!budgetData.category) {
+        showNotification("Por favor, selecione uma categoria.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+    if (isNaN(budgetData.amount) || budgetData.amount < 0) {
+        showNotification("Por favor, insira um valor de orçamento válido.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    try {
+        await setBudget(budgetData);
+        showNotification(`Orçamento para "${budgetData.category}" salvo com sucesso!`);
+        setBudgetForm.reset();
+        loadUserBudgets();
+    } catch (error) {
+        showNotification(error.message, "error");
+    } finally {
+        submitButton.disabled = false;
+    }
+});
+// FIM DA ALTERAÇÃO
+
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
     showLoading();
@@ -1111,6 +1208,7 @@ function initializeApp() {
                         loadUserDashboard(),
                         loadUserCreditCards(),
                         loadUserCategories(),
+                        loadUserBudgets(), // Carrega os orçamentos no login
                         getMonthlySummary(user.uid).then(renderTrendsChart)
                     ]);
 
@@ -1126,6 +1224,7 @@ function initializeApp() {
             currentUserProfile = null;
             userCreditCards = [];
             userCategories = [];
+            userBudgets = [];
             allTransactions = [];
             showAuthForms();
         }
