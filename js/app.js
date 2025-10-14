@@ -10,9 +10,10 @@ import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/credi
 import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices } from './modules/invoices.js';
 // Importa o módulo de admin.
 import { getAllUsers, updateUserStatus } from './modules/admin.js';
-// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de recorrências
+// Importa o módulo de recorrências.
 import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
-// FIM DA ALTERAÇÃO
+// Importa o novo módulo de análise
+import { getMonthlySummary } from './modules/analytics.js';
 
 // --- Variáveis de Estado ---
 let currentUser = null;
@@ -22,6 +23,7 @@ let userCategories = [];
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 let expensesChart = null; 
+let trendsChart = null; // Nova variável de estado para o gráfico de tendências
 
 // --- Seleção de Elementos do DOM ---
 const loadingDiv = document.getElementById('loading');
@@ -84,6 +86,7 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 const filterMonthSelect = document.getElementById('filter-month');
 const filterYearSelect = document.getElementById('filter-year');
 const chartCanvas = document.getElementById('expenses-chart');
+const trendsChartCanvas = document.getElementById('trends-chart');
 const settingsButton = document.getElementById('settings-button');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsModalButton = document.querySelector('.close-settings-modal-button');
@@ -98,7 +101,6 @@ const adminTabButton = document.getElementById('admin-tab-button');
 const userList = document.getElementById('user-list');
 const tabLinks = document.querySelectorAll('.tab-link');
 const tabContents = document.querySelectorAll('.tab-content');
-// INÍCIO DA ALTERAÇÃO - Seleção de elementos da aba de recorrências
 const addRecurringForm = document.getElementById('add-recurring-form');
 const recurringDescriptionInput = document.getElementById('recurring-description');
 const recurringAmountInput = document.getElementById('recurring-amount');
@@ -106,11 +108,10 @@ const recurringDayInput = document.getElementById('recurring-day');
 const recurringCategorySelect = document.getElementById('recurring-category');
 const recurringTypeRadios = document.querySelectorAll('input[name="recurring-type"]');
 const recurringList = document.getElementById('recurring-list');
-// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
-/** Renderiza o gráfico de despesas por categoria. */
+/** Renderiza o gráfico de despesas por categoria (pizza). */
 function renderExpensesChart(transactions) {
     const expenses = transactions.filter(t => t.type === 'expense');
     
@@ -131,6 +132,7 @@ function renderExpensesChart(transactions) {
     }
 
     if (labels.length === 0) {
+        // Se não houver dados, podemos limpar o canvas ou mostrar uma mensagem
         return;
     }
 
@@ -150,6 +152,50 @@ function renderExpensesChart(transactions) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+        }
+    });
+}
+
+/**
+ * Renderiza o gráfico de evolução mensal de receitas e despesas.
+ * @param {object} summaryData - Dados agregados do analytics.js.
+ */
+function renderTrendsChart(summaryData) {
+    if (trendsChart) {
+        trendsChart.destroy();
+    }
+
+    const data = {
+        labels: summaryData.labels,
+        datasets: [
+            {
+                label: 'Receitas',
+                data: summaryData.revenues,
+                backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                borderColor: 'rgba(46, 204, 113, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Despesas',
+                data: summaryData.expenses,
+                backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                borderColor: 'rgba(231, 76, 60, 1)',
+                borderWidth: 1
+            }
+        ]
+    };
+
+    trendsChart = new Chart(trendsChartCanvas, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
         }
     });
 }
@@ -645,7 +691,7 @@ async function renderUserList() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de recorrências
+/** Renderiza a lista de recorrências cadastradas. */
 async function renderRecurringList() {
     recurringList.innerHTML = '<li>Carregando...</li>';
     try {
@@ -663,7 +709,7 @@ async function renderRecurringList() {
             li.style.justifyContent = 'space-between';
             li.style.padding = '0.5rem';
             li.style.borderBottom = '1px solid var(--background-color)';
-            li.classList.add(tx.type); // Adiciona classe revenue/expense
+            li.classList.add(tx.type);
 
             const infoSpan = document.createElement('span');
             infoSpan.textContent = `Todo dia ${tx.dayOfMonth}: ${tx.description} (${formatCurrency(tx.amount)})`;
@@ -693,7 +739,6 @@ async function renderRecurringList() {
         recurringList.innerHTML = '<li>Erro ao carregar recorrências.</li>';
     }
 }
-// FIM DA ALTERAÇÃO
 
 // Funções de controle de visibilidade da UI
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
@@ -781,11 +826,9 @@ transactionTypeRadios.forEach(radio => {
 paymentMethodSelect.addEventListener('change', (e) => { creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 
-// INÍCIO DA ALTERAÇÃO - Listener para o tipo de recorrência
 recurringTypeRadios.forEach(radio => {
     radio.addEventListener('change', e => populateCategorySelects(e.target.value, recurringCategorySelect));
 });
-// FIM DA ALTERAÇÃO
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -962,7 +1005,6 @@ addCategoryForm.addEventListener('submit', async (e) => {
     }
 });
 
-// INÍCIO DA ALTERAÇÃO - Listener para o novo formulário de recorrências
 addRecurringForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitButton = addRecurringForm.querySelector('button[type="submit"]');
@@ -994,7 +1036,6 @@ addRecurringForm.addEventListener('submit', async (e) => {
         submitButton.disabled = false;
     }
 });
-// FIM DA ALTERAÇÃO
 
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
@@ -1013,20 +1054,21 @@ function initializeApp() {
 
                     transactionDateInput.value = formatDateToInput(new Date());
 
-                    // INÍCIO DA ALTERAÇÃO - Processa transações recorrentes no login
                     const transactionsCreated = await processRecurringTransactions(user.uid);
                     if (transactionsCreated > 0) {
                         showNotification(`${transactionsCreated} transação(ões) recorrente(s) foram lançadas.`);
                     }
-                    // FIM DA ALTERAÇÃO
 
                     await closeOverdueInvoices(user.uid);
                     populateYearFilter();
+
                     await Promise.all([
                         loadUserDashboard(),
                         loadUserCreditCards(),
-                        loadUserCategories()
+                        loadUserCategories(),
+                        getMonthlySummary(user.uid).then(renderTrendsChart)
                     ]);
+
                 } else {
                     showPendingApproval();
                 }
