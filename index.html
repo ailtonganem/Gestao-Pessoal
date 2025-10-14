@@ -466,5 +466,43 @@
         </div>
     </div>
 
+    <!-- INÍCIO DA ALTERAÇÃO - Adição do Modal de Edição de Recorrência -->
+    <div id="edit-recurring-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-recurring-modal-button">&times;</span>
+            <h2>Editar Recorrência</h2>
+            <form id="edit-recurring-form">
+                <input type="hidden" id="edit-recurring-id">
+                <div class="form-control">
+                    <label for="edit-recurring-description">Descrição</label>
+                    <input type="text" id="edit-recurring-description" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-recurring-amount">Valor (R$)</label>
+                    <input type="number" id="edit-recurring-amount" step="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-recurring-day">Dia do Mês para Lançamento (1-31)</label>
+                    <input type="number" id="edit-recurring-day" min="1" max="31" required>
+                </div>
+                <div class="form-control">
+                    <label>Tipo</label>
+                    <div class="radio-container">
+                        <input type="radio" id="edit-recurring-type-revenue" name="edit-recurring-type" value="revenue" required>
+                        <label for="edit-recurring-type-revenue">Receita</label>
+                        <input type="radio" id="edit-recurring-type-expense" name="edit-recurring-type" value="expense">
+                        <label for="edit-recurring-type-expense">Despesa</label>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label for="edit-recurring-category">Categoria</label>
+                    <select id="edit-recurring-category" required></select>
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
+
 </body>
 </html>
