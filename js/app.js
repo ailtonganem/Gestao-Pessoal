@@ -2,9 +2,8 @@
 import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
 // Importa as funções de transações.
 import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from './modules/transactions.js';
-// INÍCIO DA ALTERAÇÃO - Importa as novas funções de gerenciamento de categoria.
+// Importa as funções de gerenciamento de categoria.
 import { getCategories, addCategory, deleteCategory } from './modules/categories.js';
-// FIM DA ALTERAÇÃO
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 // Importa as funções de faturas.
@@ -13,10 +12,10 @@ import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices }
 // --- Variáveis de Estado ---
 let currentUser = null;
 let userCreditCards = []; 
-let userCategories = []; // Nova variável de estado para categorias do usuário
+let userCategories = [];
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
-let expensesChart = null; // Variável para a instância do gráfico
+let expensesChart = null; 
 
 // --- Seleção de Elementos do DOM ---
 const loadingDiv = document.getElementById('loading');
@@ -36,6 +35,9 @@ const logoutButton = document.getElementById('logout-button');
 const addTransactionForm = document.getElementById('add-transaction-form');
 const transactionDescriptionInput = document.getElementById('transaction-description');
 const transactionAmountInput = document.getElementById('transaction-amount');
+// INÍCIO DA ALTERAÇÃO - Seleção do novo campo de data
+const transactionDateInput = document.getElementById('transaction-date');
+// FIM DA ALTERAÇÃO
 const transactionTypeRadios = document.querySelectorAll('input[name="transaction-type"]');
 const transactionCategorySelect = document.getElementById('transaction-category');
 const paymentMethodSelect = document.getElementById('payment-method');
@@ -52,6 +54,9 @@ const editTransactionForm = document.getElementById('edit-transaction-form');
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
 const editTransactionDescriptionInput = document.getElementById('edit-transaction-description');
 const editTransactionAmountInput = document.getElementById('edit-transaction-amount');
+// INÍCIO DA ALTERAÇÃO - Seleção do novo campo de data do modal de edição
+const editTransactionDateInput = document.getElementById('edit-transaction-date');
+// FIM DA ALTERAÇÃO
 const editTransactionTypeRadios = document.querySelectorAll('input[name="edit-transaction-type"]');
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
@@ -80,12 +85,10 @@ const chartCanvas = document.getElementById('expenses-chart');
 const settingsButton = document.getElementById('settings-button');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsModalButton = document.querySelector('.close-settings-modal-button');
-// INÍCIO DA ALTERAÇÃO - Novos elementos do modal de categorias
 const addCategoryForm = document.getElementById('add-category-form');
 const newCategoryNameInput = document.getElementById('new-category-name');
 const revenueCategoriesList = document.getElementById('revenue-categories-list');
 const expenseCategoriesList = document.getElementById('expense-categories-list');
-// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -146,7 +149,6 @@ function populateYearFilter() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Função refatorada para usar categorias do usuário.
 /** Popula um elemento <select> com as categorias do usuário. */
 function populateCategorySelects(type, selectElement) {
     const filteredCategories = userCategories.filter(cat => cat.type === type);
@@ -167,7 +169,6 @@ function populateCategorySelects(type, selectElement) {
         selectElement.appendChild(option);
     });
 }
-// FIM DA ALTERAÇÃO
 
 /** Popula os <select> de cartão de crédito com os cartões do usuário. */
 function populateCreditCardSelects() {
@@ -324,11 +325,28 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
+// INÍCIO DA ALTERAÇÃO - Formata a data para o input tipo 'date'
+/**
+ * Formata um objeto Date para uma string no formato 'YYYY-MM-DD'.
+ * @param {Date} date O objeto Date a ser formatado.
+ * @returns {string} A data formatada.
+ */
+function formatDateToInput(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+// FIM DA ALTERAÇÃO
+
 /** Abre e preenche o modal de edição com os dados da transação. */
 function openEditModal(transaction) {
     editTransactionIdInput.value = transaction.id;
     editTransactionDescriptionInput.value = transaction.description;
     editTransactionAmountInput.value = transaction.amount;
+    // INÍCIO DA ALTERAÇÃO - Preenche o campo de data
+    editTransactionDateInput.value = formatDateToInput(transaction.date);
+    // FIM DA ALTERAÇÃO
     document.querySelector(`input[name="edit-transaction-type"][value="${transaction.type}"]`).checked = true;
     
     populateCategorySelects(transaction.type, editTransactionCategorySelect);
@@ -400,11 +418,14 @@ function updateDashboard(transactions) {
             descriptionSpan.className = 'transaction-description';
             descriptionSpan.textContent = transaction.description;
             
-            const categorySpan = document.createElement('span');
-            categorySpan.style.display = 'block';
-            categorySpan.style.fontSize = '0.8rem';
-            categorySpan.style.color = '#7f8c8d';
-            categorySpan.textContent = `${transaction.category || ''} • ${transaction.paymentMethod || ''}`;
+            // INÍCIO DA ALTERAÇÃO - Adiciona a data formatada na descrição da transação
+            const detailsSpan = document.createElement('span');
+            detailsSpan.style.display = 'block';
+            detailsSpan.style.fontSize = '0.8rem';
+            detailsSpan.style.color = '#7f8c8d';
+            const formattedDate = transaction.date.toLocaleDateString('pt-BR');
+            detailsSpan.textContent = `${formattedDate} • ${transaction.category || ''} • ${transaction.paymentMethod || ''}`;
+            // FIM DA ALTERAÇÃO
             
             const rightSide = document.createElement('div');
             rightSide.style.display = 'flex';
@@ -439,7 +460,7 @@ function updateDashboard(transactions) {
             };
 
             transactionInfo.appendChild(descriptionSpan);
-            transactionInfo.appendChild(categorySpan);
+            transactionInfo.appendChild(detailsSpan); // Usa o novo 'detailsSpan'
             actionsDiv.appendChild(editButton);
             actionsDiv.appendChild(deleteButton);
             rightSide.appendChild(amountSpan);
@@ -487,7 +508,6 @@ async function loadUserCreditCards() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para carregar e renderizar categorias
 /** Renderiza as listas de categorias no modal de configurações. */
 function renderCategoryManagementList() {
     revenueCategoriesList.innerHTML = '';
@@ -514,7 +534,7 @@ function renderCategoryManagementList() {
                 try {
                     await deleteCategory(category.id);
                     showNotification('Categoria excluída com sucesso!');
-                    loadUserCategories(); // Recarrega e renderiza tudo
+                    loadUserCategories();
                 } catch (error) {
                     showNotification(error.message, 'error');
                 }
@@ -536,15 +556,13 @@ async function loadUserCategories() {
     try {
         userCategories = await getCategories(currentUser.uid);
         renderCategoryManagementList();
-        // Atualiza os selects dos formulários com as novas categorias
         const currentTransactionType = document.querySelector('input[name="transaction-type"]:checked').value;
         populateCategorySelects(currentTransactionType, transactionCategorySelect);
-        populateCategorySelects('expense', editTransactionCategorySelect); // Assume despesa por padrão no modal de edição
+        populateCategorySelects('expense', editTransactionCategorySelect);
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
 function showAuthForms() { loadingDiv.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none';}
@@ -557,17 +575,14 @@ showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleAu
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(false); });
 logoutButton.addEventListener('click', () => { logoutUser().catch(error => showNotification(error.message, 'error')); });
 
-// Eventos do Modal de Edição
 closeButton.addEventListener('click', closeEditModal);
 window.addEventListener('click', (event) => { if (event.target == editModal) { closeEditModal(); } });
 
-// Eventos do Modal de Cartões
 manageCardsButton.addEventListener('click', openCardModal);
 closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 backToCardsButton.addEventListener('click', showCardManagementView);
 
-// Eventos do novo modal de configurações
 settingsButton.addEventListener('click', openSettingsModal);
 closeSettingsModalButton.addEventListener('click', closeSettingsModal);
 window.addEventListener('click', (event) => { if (event.target == settingsModal) { closeSettingsModal(); } });
@@ -601,12 +616,9 @@ payInvoiceButton.addEventListener('click', async () => {
 filterMonthSelect.addEventListener('change', loadUserDashboard);
 filterYearSelect.addEventListener('change', loadUserDashboard);
 
-// INÍCIO DA ALTERAÇÃO - Atualiza o listener para usar a nova função de popular categorias
 transactionTypeRadios.forEach(radio => { 
     radio.addEventListener('change', (e) => populateCategorySelects(e.target.value, transactionCategorySelect)); 
 });
-// A lógica para a opção "Outra..." foi removida.
-// FIM DA ALTERAÇÃO
 paymentMethodSelect.addEventListener('change', (e) => { creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 
@@ -643,7 +655,6 @@ addTransactionForm.addEventListener('submit', async (e) => {
         return;
     }
     
-    // INÍCIO DA ALTERAÇÃO - Simplificação da obtenção da categoria
     const category = transactionCategorySelect.value;
     if (!category) {
         showNotification("Por favor, selecione uma categoria.", 'error');
@@ -651,11 +662,13 @@ addTransactionForm.addEventListener('submit', async (e) => {
         submitButton.textContent = 'Adicionar';
         return;
     }
-    // FIM DA ALTERAÇÃO
 
     const transactionData = {
         description: transactionDescriptionInput.value,
         amount: parseFloat(transactionAmountInput.value),
+        // INÍCIO DA ALTERAÇÃO - Captura a data do formulário
+        date: transactionDateInput.value,
+        // FIM DA ALTERAÇÃO
         type: document.querySelector('input[name="transaction-type"]:checked').value,
         category: category,
         paymentMethod: paymentMethodSelect.value,
@@ -679,6 +692,9 @@ addTransactionForm.addEventListener('submit', async (e) => {
         await addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
+        // INÍCIO DA ALTERAÇÃO - Reseta a data para o dia atual após o envio
+        transactionDateInput.value = formatDateToInput(new Date());
+        // FIM DA ALTERAÇÃO
         creditCardWrapper.style.display = 'none';
         
         if (transactionData.paymentMethod !== 'credit_card') {
@@ -702,6 +718,9 @@ editTransactionForm.addEventListener('submit', async (e) => {
     const updatedData = {
         description: editTransactionDescriptionInput.value,
         amount: parseFloat(editTransactionAmountInput.value),
+        // INÍCIO DA ALTERAÇÃO - Captura a data do formulário de edição
+        date: editTransactionDateInput.value,
+        // FIM DA ALTERAÇÃO
         type: document.querySelector('input[name="edit-transaction-type"]:checked').value,
         category: editTransactionCategorySelect.value,
         paymentMethod: editPaymentMethodSelect.value,
@@ -752,7 +771,6 @@ addCreditCardForm.addEventListener('submit', async (e) => {
     }
 });
 
-// INÍCIO DA ALTERAÇÃO - Novo listener para o formulário de adicionar categoria
 addCategoryForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitButton = addCategoryForm.querySelector('button[type="submit"]');
@@ -775,14 +793,13 @@ addCategoryForm.addEventListener('submit', async (e) => {
         });
         showNotification("Categoria adicionada com sucesso!");
         addCategoryForm.reset();
-        await loadUserCategories(); // Recarrega e renderiza tudo
+        await loadUserCategories();
     } catch (error) {
         showNotification(error.message, "error");
     } finally {
         submitButton.disabled = false;
     }
 });
-// FIM DA ALTERAÇÃO
 
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
@@ -792,20 +809,22 @@ function initializeApp() {
             currentUser = user;
             showApp();
             
+            // INÍCIO DA ALTERAÇÃO - Define a data atual no formulário ao carregar o app
+            transactionDateInput.value = formatDateToInput(new Date());
+            // FIM DA ALTERAÇÃO
+            
             await closeOverdueInvoices(user.uid);
             populateYearFilter();
             
-            // INÍCIO DA ALTERAÇÃO - Carrega todos os dados iniciais em paralelo
             await Promise.all([
                 loadUserDashboard(),
                 loadUserCreditCards(),
                 loadUserCategories()
             ]);
-            // FIM DA ALTERAÇÃO
         } else {
             currentUser = null;
             userCreditCards = [];
-            userCategories = []; // Limpa as categorias ao deslogar
+            userCategories = [];
             showAuthForms();
         }
     });
