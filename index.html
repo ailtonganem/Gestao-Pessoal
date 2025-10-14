@@ -157,7 +157,6 @@
                             <option>Nenhum cartão cadastrado</option>
                         </select>
                     </div>
-                    <!-- INÍCIO DA ALTERAÇÃO - Adição dos campos de parcelamento -->
                     <div id="installment-options-wrapper" class="form-control" style="display: none;">
                         <div class="radio-container" style="margin-bottom: 1rem;">
                              <input type="checkbox" id="is-installment-checkbox" style="width: auto;">
@@ -168,7 +167,6 @@
                             <input type="number" id="installments-count" min="2" max="48" value="2">
                         </div>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                     <button type="submit">Adicionar</button>
                 </form>
             </section>
@@ -514,6 +512,37 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO - Adição do Modal de Edição de Lançamento de Fatura -->
+    <div id="edit-invoice-transaction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-invoice-tx-modal-button">&times;</span>
+            <h2>Editar Lançamento do Cartão</h2>
+            <form id="edit-invoice-transaction-form">
+                <input type="hidden" id="edit-invoice-transaction-id">
+                <input type="hidden" id="edit-invoice-id">
+                <input type="hidden" id="edit-invoice-card-id">
+                <div class="form-control">
+                    <label for="edit-invoice-tx-description">Descrição</label>
+                    <input type="text" id="edit-invoice-tx-description" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-invoice-tx-amount">Valor (R$)</label>
+                    <input type="number" id="edit-invoice-tx-amount" step="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-invoice-tx-date">Data da Compra</label>
+                    <input type="date" id="edit-invoice-tx-date" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-invoice-tx-category">Categoria</label>
+                    <select id="edit-invoice-tx-category" required></select>
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
