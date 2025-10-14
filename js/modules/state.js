@@ -16,6 +16,7 @@ export let userCategories = [];
 export let userBudgets = [];
 export let allTransactions = []; // Contém todas as transações do período selecionado
 export let filteredTransactions = []; // Contém as transações após a aplicação de filtros na UI
+export let userRecurringTransactions = []; // INÍCIO DA ALTERAÇÃO - Nova variável de estado
 
 // --- Estado da Interface (UI State) ---
 export let selectedCardForInvoiceView = null; // Armazena o objeto do cartão selecionado no modal de faturas
@@ -56,6 +57,12 @@ export function setAllTransactions(transactions) {
 export function setFilteredTransactions(transactions) {
     filteredTransactions = transactions;
 }
+
+// INÍCIO DA ALTERAÇÃO - Nova função "setter"
+export function setUserRecurringTransactions(transactions) {
+    userRecurringTransactions = transactions;
+}
+// FIM DA ALTERAÇÃO
 
 export function setSelectedCardForInvoiceView(card) {
     selectedCardForInvoiceView = card;
