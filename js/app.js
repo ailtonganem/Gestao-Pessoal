@@ -122,9 +122,7 @@ const budgetAmountInput = document.getElementById('budget-amount');
 const budgetList = document.getElementById('budget-list');
 const budgetProgressList = document.getElementById('budget-progress-list');
 const themeToggle = document.getElementById('theme-toggle');
-// INÍCIO DA ALTERAÇÃO
 const exportCsvButton = document.getElementById('export-csv-button');
-// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -1039,6 +1037,41 @@ editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrappe
 recurringTypeRadios.forEach(radio => {
     radio.addEventListener('change', e => populateCategorySelects(e.target.value, recurringCategorySelect));
 });
+
+// INÍCIO DA ALTERAÇÃO - Listener para o botão de exportar
+exportCsvButton.addEventListener('click', () => {
+    if (filteredTransactions.length === 0) {
+        showNotification("Nenhuma transação para exportar.", "error");
+        return;
+    }
+
+    const headers = ['Data', 'Descrição', 'Valor', 'Tipo', 'Categoria', 'Método de Pagamento'];
+    
+    // Escapa vírgulas na descrição envolvendo o campo com aspas duplas
+    const csvRows = filteredTransactions.map(t => {
+        const row = [
+            t.date.toLocaleDateString('pt-BR'),
+            `"${t.description.replace(/"/g, '""')}"`, // Trata aspas dentro da descrição
+            t.amount.toFixed(2).replace('.', ','), // Formato de moeda local
+            t.type === 'revenue' ? 'Receita' : 'Despesa',
+            t.category,
+            t.paymentMethod
+        ];
+        return row.join(';'); // Usa ponto e vírgula para melhor compatibilidade com Excel em português
+    });
+
+    const csvContent = [headers.join(';'), ...csvRows].join('\n');
+    
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // \uFEFF para BOM
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `transacoes_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+// FIM DA ALTERAÇÃO
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
