@@ -14,16 +14,15 @@ import { getAllUsers, updateUserStatus } from './modules/admin.js';
 import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
 // Importa o módulo de análise
 import { getMonthlySummary } from './modules/analytics.js';
-// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de orçamento
+// Importa o novo módulo de orçamento
 import { setBudget, getBudgets, deleteBudget } from './modules/budget.js';
-// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado ---
 let currentUser = null;
 let currentUserProfile = null;
 let userCreditCards = []; 
 let userCategories = [];
-let userBudgets = []; // Nova variável para armazenar os orçamentos do usuário
+let userBudgets = [];
 let allTransactions = [];
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
@@ -116,11 +115,12 @@ const recurringList = document.getElementById('recurring-list');
 const filterDescriptionInput = document.getElementById('filter-description');
 const filterCategorySelect = document.getElementById('filter-category');
 const filterPaymentMethodSelect = document.getElementById('filter-payment-method');
-// INÍCIO DA ALTERAÇÃO - Seleção de elementos da aba de orçamento
 const setBudgetForm = document.getElementById('set-budget-form');
 const budgetCategorySelect = document.getElementById('budget-category');
 const budgetAmountInput = document.getElementById('budget-amount');
 const budgetList = document.getElementById('budget-list');
+// INÍCIO DA ALTERAÇÃO - Seleção da nova lista no dashboard
+const budgetProgressList = document.getElementById('budget-progress-list');
 // FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
@@ -568,6 +568,7 @@ function updateDashboard() {
     finalBalanceEl.textContent = formatCurrency(fullPeriodRevenue - fullPeriodExpenses);
 
     renderExpensesChart(transactionsToRender);
+    renderBudgetProgress(); // Chama a renderização do progresso dos orçamentos
 }
 
 /** Busca os dados do usuário e chama a função para atualizar o dashboard. */
@@ -790,7 +791,6 @@ async function renderRecurringList() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para carregar e renderizar orçamentos
 /** Busca os orçamentos do usuário e atualiza a UI. */
 async function loadUserBudgets() {
     if (!currentUser) return;
@@ -839,6 +839,51 @@ function renderBudgetList() {
         li.appendChild(infoSpan);
         li.appendChild(deleteButton);
         budgetList.appendChild(li);
+    });
+}
+
+// INÍCIO DA ALTERAÇÃO - Nova função para renderizar o progresso dos orçamentos no dashboard
+function renderBudgetProgress() {
+    budgetProgressList.innerHTML = '';
+
+    if (userBudgets.length === 0) {
+        budgetProgressList.innerHTML = '<li>Nenhum orçamento definido. <a href="#" id="go-to-budgets">Definir agora</a></li>';
+        document.getElementById('go-to-budgets').addEventListener('click', (e) => {
+            e.preventDefault();
+            openSettingsModal();
+            // Simula o clique na aba de orçamentos
+            document.querySelector('.tab-link[data-tab="budget-management-tab"]').click();
+        });
+        return;
+    }
+
+    userBudgets.forEach(budget => {
+        const spentAmount = allTransactions
+            .filter(t => t.type === 'expense' && t.category === budget.category)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const percentage = (spentAmount / budget.amount) * 100;
+        const cappedPercentage = Math.min(percentage, 100);
+
+        let progressBarClass = 'safe';
+        if (percentage > 90) {
+            progressBarClass = 'danger';
+        } else if (percentage > 70) {
+            progressBarClass = 'warning';
+        }
+
+        const li = document.createElement('li');
+        li.classList.add('budget-item');
+        li.innerHTML = `
+            <div class="budget-item-header">
+                <span>${budget.category}</span>
+                <span class="budget-item-values">${formatCurrency(spentAmount)} / ${formatCurrency(budget.amount)}</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar ${progressBarClass}" style="width: ${cappedPercentage}%;">${Math.round(percentage)}%</div>
+            </div>
+        `;
+        budgetProgressList.appendChild(li);
     });
 }
 // FIM DA ALTERAÇÃO
@@ -1143,7 +1188,6 @@ addRecurringForm.addEventListener('submit', async (e) => {
     }
 });
 
-// INÍCIO DA ALTERAÇÃO - Listener para o novo formulário de orçamento
 setBudgetForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitButton = setBudgetForm.querySelector('button[type="submit"]');
@@ -1177,7 +1221,6 @@ setBudgetForm.addEventListener('submit', async (e) => {
         submitButton.disabled = false;
     }
 });
-// FIM DA ALTERAÇÃO
 
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
@@ -1208,7 +1251,7 @@ function initializeApp() {
                         loadUserDashboard(),
                         loadUserCreditCards(),
                         loadUserCategories(),
-                        loadUserBudgets(), // Carrega os orçamentos no login
+                        loadUserBudgets(),
                         getMonthlySummary(user.uid).then(renderTrendsChart)
                     ]);
 
