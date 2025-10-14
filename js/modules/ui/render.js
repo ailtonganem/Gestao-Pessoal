@@ -10,10 +10,7 @@ import * as state from '../state.js';
 import * as modals from './modals.js';
 import * as charts from './charts.js';
 import { formatCurrency } from './utils.js';
-// INÍCIO DA CORREÇÃO - As funções de busca de dados foram removidas.
-// Apenas a notificação é necessária para feedback de erro.
 import { showNotification } from './notifications.js';
-// FIM DA CORREÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const totalRevenueEl = document.getElementById('total-revenue');
@@ -75,7 +72,7 @@ function renderTransactionList(transactionsToRender) {
     transactionsToRender.forEach(transaction => {
         const li = document.createElement('li');
         li.classList.add(transaction.type);
-        li.dataset.id = transaction.id; // Adiciona o ID para referência no módulo de eventos
+        li.dataset.id = transaction.id;
 
         const formattedDate = transaction.date.toLocaleDateString('pt-BR');
         li.innerHTML = `
@@ -213,7 +210,8 @@ export function renderInvoiceSummary(invoice) {
     invoiceStatus.classList.add(invoice.status);
 }
 
-/** Renderiza a lista de lançamentos de uma fatura. */
+// INÍCIO DA ALTERAÇÃO - Renderiza a lista de lançamentos com botões de ação.
+/** Renderiza a lista de lançamentos de uma fatura, incluindo botões de ação. */
 export function renderInvoiceTransactionsList(transactions) {
     invoiceTransactionsList.innerHTML = '';
     if (transactions.length === 0 || !transactions[0].description) {
@@ -222,14 +220,28 @@ export function renderInvoiceTransactionsList(transactions) {
     }
     transactions.forEach(tx => {
         const li = document.createElement('li');
+        // Prepara os dados para exibição
         const amount = typeof tx.amount === 'number' ? formatCurrency(tx.amount) : '';
+        const formattedDate = tx.purchaseDate ? tx.purchaseDate.toLocaleDateString('pt-BR') : 'Data não registrada';
+
+        // Constrói o HTML do item da lista com as ações
         li.innerHTML = `
-            <span>${tx.description}</span>
-            <span>${amount}</span>
+            <div style="text-align: left; flex-grow: 1;">
+                <span>${tx.description}</span>
+                <small style="display: block; color: #7f8c8d;">${formattedDate}</small>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span>${amount}</span>
+                <div class="transaction-actions">
+                    <button class="action-btn edit-btn" data-invoice-tx-id="${tx.id}" title="Editar">&#9998;</button>
+                    <button class="action-btn delete-btn" data-invoice-tx-id="${tx.id}" title="Excluir">&times;</button>
+                </div>
+            </div>
         `;
         invoiceTransactionsList.appendChild(li);
     });
 }
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Renderização para o Modal de Configurações ---
@@ -282,8 +294,6 @@ export function renderBudgetList() {
         budgetList.appendChild(li);
     });
 }
-
-// INÍCIO DA CORREÇÃO - As funções agora apenas renderizam a partir do estado.
 
 /** Renderiza a lista de transações recorrentes a partir dos dados do estado global. */
 export function renderRecurringList() {
@@ -341,7 +351,6 @@ export function renderUserList(users) {
         userList.appendChild(li);
     });
 }
-// FIM DA CORREÇÃO
 
 // --- Renderização de Componentes Específicos ---
 
