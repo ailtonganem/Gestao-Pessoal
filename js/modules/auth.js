@@ -9,6 +9,11 @@ import {
     onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
+// INÍCIO DA ALTERAÇÃO
+// Importa a função para criar categorias padrão do novo módulo.
+import { createDefaultCategoriesForUser } from './categories.js';
+// FIM DA ALTERAÇÃO
+
 /**
  * Tenta cadastrar um novo usuário com e-mail e senha.
  * @param {string} email 
@@ -19,6 +24,14 @@ import {
 async function registerUser(email, password) {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // INÍCIO DA ALTERAÇÃO
+        // Após o usuário ser criado, chama a função para criar suas categorias padrão.
+        if (userCredential.user) {
+            await createDefaultCategoriesForUser(userCredential.user.uid);
+        }
+        // FIM DA ALTERAÇÃO
+
         return userCredential;
     } catch (error) {
         console.error("Erro no cadastro:", error.code, error.message);
