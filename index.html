@@ -143,13 +143,11 @@
                         <label for="transaction-category">Categoria</label>
                         <select id="transaction-category" required></select>
                     </div>
-                    <!-- INÍCIO DA ALTERAÇÃO - Adição do campo de subcategoria -->
                     <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
                         <label for="transaction-subcategory">Subcategoria (opcional)</label>
                         <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
                         <datalist id="subcategory-suggestions"></datalist>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                     <div class="form-control">
                         <label for="payment-method">Método de Pagamento</label>
                         <select id="payment-method" required>
@@ -206,6 +204,16 @@
                             <label for="filter-year">Ano</label>
                             <select id="filter-year"></select>
                         </div>
+                        <!-- INÍCIO DA ALTERAÇÃO - Adição dos campos de filtro por data -->
+                        <div class="form-control">
+                            <label for="filter-start-date">De:</label>
+                            <input type="date" id="filter-start-date">
+                        </div>
+                        <div class="form-control">
+                            <label for="filter-end-date">Até:</label>
+                            <input type="date" id="filter-end-date">
+                        </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     <div class="filter-controls">
                         <div class="form-control" style="flex-grow: 2;">
@@ -242,6 +250,7 @@
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
+    <!-- Modais (todos os modais existentes permanecem aqui, sem alterações) ... -->
     <!-- Modal para Edição de Transação -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
@@ -396,7 +405,6 @@
                             </div>
                             <button type="submit">Adicionar Categoria</button>
                         </form>
-                        <!-- INÍCIO DA ALTERAÇÃO - Nova estrutura de gerenciamento de categorias -->
                         <div id="category-lists-container" class="category-management-container">
                             <div class="category-column">
                                 <h4>Receitas</h4>
@@ -407,7 +415,6 @@
                                 <ul id="expense-categories-list" class="category-list"></ul>
                             </div>
                         </div>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </section>
                 </div>
 
