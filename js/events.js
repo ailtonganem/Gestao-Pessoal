@@ -14,9 +14,7 @@ import * as creditCard from './modules/creditCard.js';
 import * as invoices from './modules/invoices.js';
 import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
-// INÍCIO DA ALTERAÇÃO - Importa o módulo de admin
 import * as admin from './modules/admin.js';
-// FIM DA ALTERAÇÃO
 import * as app from './app.js';
 
 // --- Módulos de UI ---
@@ -34,9 +32,7 @@ const addCreditCardForm = document.getElementById('add-credit-card-form');
 const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
-// INÍCIO DA ALTERAÇÃO - Adiciona o novo formulário
 const editRecurringForm = document.getElementById('edit-recurring-form');
-// FIM DA ALTERAÇÃO
 const themeToggle = document.getElementById('theme-toggle');
 
 /**
@@ -92,9 +88,32 @@ export function initializeEventListeners() {
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => render.populateCategorySelects(e.target.value, document.getElementById('transaction-category')));
     });
+
+    // INÍCIO DA ALTERAÇÃO - Lógica de visibilidade para campos de cartão e parcelamento
     document.getElementById('payment-method').addEventListener('change', (e) => {
-        document.getElementById('credit-card-wrapper').style.display = e.target.value === 'credit_card' ? 'block' : 'none';
+        const creditCardWrapper = document.getElementById('credit-card-wrapper');
+        const installmentOptionsWrapper = document.getElementById('installment-options-wrapper');
+        if (e.target.value === 'credit_card') {
+            creditCardWrapper.style.display = 'block';
+            installmentOptionsWrapper.style.display = 'block';
+        } else {
+            creditCardWrapper.style.display = 'none';
+            installmentOptionsWrapper.style.display = 'none';
+        }
     });
+
+    document.getElementById('is-installment-checkbox').addEventListener('change', (e) => {
+        const installmentsCountWrapper = document.getElementById('installments-count-wrapper');
+        const amountLabel = document.getElementById('transaction-amount-label');
+        if (e.target.checked) {
+            installmentsCountWrapper.style.display = 'block';
+            amountLabel.textContent = 'Valor Total (R$)';
+        } else {
+            installmentsCountWrapper.style.display = 'none';
+            amountLabel.textContent = 'Valor (R$)';
+        }
+    });
+    // FIM DA ALTERAÇÃO
 
 
     // --- Listeners dos Filtros do Histórico ---
@@ -203,8 +222,7 @@ export function initializeEventListeners() {
     document.querySelectorAll('input[name="recurring-type"]').forEach(radio => {
         radio.addEventListener('change', e => render.populateCategorySelects(e.target.value, document.getElementById('recurring-category')));
     });
-
-    // INÍCIO DA ALTERAÇÃO - Listeners para a lista de recorrências
+    
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
         if (!eventTarget) return;
@@ -228,7 +246,6 @@ export function initializeEventListeners() {
                 try {
                     await admin.updateUserStatus(userId, 'approved');
                     showNotification('Usuário aprovado com sucesso!');
-                    // Recarrega e renderiza a lista de usuários
                     const users = await admin.getAllUsers();
                     render.renderUserList(users);
                 } catch (error) {
@@ -237,12 +254,10 @@ export function initializeEventListeners() {
             }
         }
     });
-    // FIM DA ALTERAÇÃO
-
-    // INÍCIO DA ALTERAÇÃO - Listeners para o novo modal de edição de recorrência
+    
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
-    // FIM DA ALTERAÇÃO
+    
 
     // --- Listener Global para fechar modais clicando fora ---
     window.addEventListener('click', (event) => {
@@ -255,6 +270,7 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
+// INÍCIO DA ALTERAÇÃO - Atualiza o handler para coletar dados de parcelamento
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -275,7 +291,8 @@ async function handleAddTransaction(e) {
         type: form['transaction-type'].value,
         category: category,
         paymentMethod: form['payment-method'].value,
-        userId: state.currentUser.uid
+        userId: state.currentUser.uid,
+        isInstallment: false
     };
 
     let cardData = null;
@@ -288,13 +305,30 @@ async function handleAddTransaction(e) {
         }
         transactionData.cardId = cardId;
         cardData = state.userCreditCards.find(card => card.id === cardId);
+
+        const isInstallment = form['is-installment-checkbox'].checked;
+        if (isInstallment) {
+            transactionData.isInstallment = true;
+            transactionData.installments = parseInt(form['installments-count'].value);
+            if (isNaN(transactionData.installments) || transactionData.installments < 2) {
+                showNotification("O número de parcelas deve ser 2 ou maior.", 'error');
+                submitButton.disabled = false;
+                return;
+            }
+        }
     }
     
     try {
         await transactions.addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         form.reset();
+        // Reseta a UI de parcelamento para o estado padrão
         document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('credit-card-wrapper').style.display = 'none';
+        document.getElementById('installment-options-wrapper').style.display = 'none';
+        document.getElementById('installments-count-wrapper').style.display = 'none';
+        document.getElementById('transaction-amount-label').textContent = 'Valor (R$)';
+        
         if (transactionData.paymentMethod !== 'credit_card') {
             app.loadUserDashboard();
         }
@@ -304,6 +338,7 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
+// FIM DA ALTERAÇÃO
 
 async function handleDeleteTransaction(transactionId) {
     const tx = state.filteredTransactions.find(t => t.id === transactionId);
@@ -480,7 +515,6 @@ async function handleAddRecurring(e) {
         await recurring.addRecurringTransaction(recurringData);
         showNotification("Recorrência adicionada com sucesso!");
         form.reset();
-        // Atualiza a lista na UI
         const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
         state.setUserRecurringTransactions(recurringTxs);
         render.renderRecurringList();
@@ -491,7 +525,6 @@ async function handleAddRecurring(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções handler para edição e exclusão de recorrências
 async function handleUpdateRecurring(e) {
     e.preventDefault();
     const form = e.target;
@@ -509,7 +542,6 @@ async function handleUpdateRecurring(e) {
         showNotification('Recorrência atualizada com sucesso!');
         modals.closeEditRecurringModal();
         
-        // Atualiza a lista na UI
         const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
         state.setUserRecurringTransactions(recurringTxs);
         render.renderRecurringList();
@@ -524,7 +556,6 @@ async function handleDeleteRecurring(recurringTx) {
             await recurring.deleteRecurringTransaction(recurringTx.id);
             showNotification('Recorrência excluída com sucesso!');
             
-            // Atualiza a lista na UI
             const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
             state.setUserRecurringTransactions(recurringTxs);
             render.renderRecurringList();
@@ -533,7 +564,6 @@ async function handleDeleteRecurring(recurringTx) {
         }
     }
 }
-// FIM DA ALTERAÇÃO
 
 function handleExportCsv() {
     if (state.filteredTransactions.length === 0) {
