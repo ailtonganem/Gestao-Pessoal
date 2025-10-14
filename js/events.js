@@ -6,20 +6,22 @@
  */
 
 // --- Módulos de Lógica e Estado ---
-import *as state from './modules/state.js';
-import *as auth from './modules/auth.js';
-import *as transactions from './modules/transactions.js';
-import *as categories from './modules/categories.js';
-import *as creditCard from './modules/creditCard.js';
-import *as invoices from './modules/invoices.js';
-import *as budget from './modules/budget.js';
-import *as recurring from './modules/recurring.js';
-import *as app from '../app.js'; // Importa o app principal para acessar as funções de recarregamento de dados
+import * as state from './modules/state.js';
+import * as auth from './modules/auth.js';
+import * as transactions from './modules/transactions.js';
+import * as categories from './modules/categories.js';
+import * as creditCard from './modules/creditCard.js';
+import * as invoices from './modules/invoices.js';
+import * as budget from './modules/budget.js';
+import * as recurring from './modules/recurring.js';
+// INÍCIO DA CORREÇÃO - O caminho para app.js foi corrigido de '../app.js' para './app.js'
+import * as app from './app.js'; // Importa o app principal para acessar as funções de recarregamento de dados
+// FIM DA CORREÇÃO
 
 // --- Módulos de UI ---
-import *as views from './modules/ui/views.js';
-import *as modals from './modules/ui/modals.js';
-import *as render from './modules/ui/render.js';
+import * as views from './modules/ui/views.js';
+import * as modals from './modules/ui/modals.js';
+import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
 
 // --- Seleção de Elementos do DOM ---
@@ -110,8 +112,10 @@ export function initializeEventListeners() {
     // --- Delegação de Eventos para a Lista de Transações ---
     document.getElementById('transactions-list').addEventListener('click', (e) => {
         const target = e.target;
-        const transactionId = target.closest('li').dataset.id;
-        if (!transactionId) return;
+        const transactionLi = target.closest('li');
+        if (!transactionLi || !transactionLi.dataset.id) return;
+
+        const transactionId = transactionLi.dataset.id;
 
         if (target.matches('.edit-btn')) {
             const transaction = state.filteredTransactions.find(t => t.id === transactionId);
@@ -137,14 +141,16 @@ export function initializeEventListeners() {
     addCreditCardForm.addEventListener('submit', handleAddCreditCard);
     
     document.getElementById('credit-card-list').addEventListener('click', (e) => {
-        const cardId = e.target.closest('div, button').dataset.cardId;
-        if (!cardId) return;
+        const eventTarget = e.target.closest('[data-card-id]');
+        if (!eventTarget) return;
+
+        const cardId = eventTarget.dataset.cardId;
         
-        if (e.target.matches('.card-info')) {
+        if (eventTarget.matches('.card-info')) {
             const card = state.userCreditCards.find(c => c.id === cardId);
             if(card) modals.showInvoiceDetailsView(card);
         }
-        if (e.target.matches('.delete-btn')) {
+        if (eventTarget.matches('.delete-btn')) {
             handleDeleteCreditCard(cardId);
         }
     });
@@ -173,16 +179,18 @@ export function initializeEventListeners() {
 
     addCategoryForm.addEventListener('submit', handleAddCategory);
     document.getElementById('category-lists-container').addEventListener('click', (e) => {
-        if (e.target.matches('.delete-btn')) {
-            const categoryId = e.target.dataset.categoryId;
+        const deleteButton = e.target.closest('.delete-btn[data-category-id]');
+        if (deleteButton) {
+            const categoryId = deleteButton.dataset.categoryId;
             handleDeleteCategory(categoryId);
         }
     });
 
     setBudgetForm.addEventListener('submit', handleSetBudget);
     document.getElementById('budget-list').addEventListener('click', (e) => {
-        if(e.target.matches('.delete-btn')) {
-            const budgetId = e.target.dataset.budgetId;
+        const deleteButton = e.target.closest('.delete-btn[data-budget-id]');
+        if (deleteButton) {
+            const budgetId = deleteButton.dataset.budgetId;
             handleDeleteBudget(budgetId);
         }
     });
@@ -318,6 +326,10 @@ async function handleDeleteCreditCard(cardId) {
             await creditCard.deleteCreditCard(cardId);
             showNotification('Cartão excluído com sucesso!');
             app.loadUserCreditCards();
+            // Adicionado para fechar a view de fatura se o cartão aberto for excluído
+            if (state.selectedCardForInvoiceView && state.selectedCardForInvoiceView.id === cardId) {
+                modals.showCardManagementView();
+            }
         } catch (error) {
             showNotification(error.message, 'error');
         }
