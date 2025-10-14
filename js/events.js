@@ -16,9 +16,7 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
-// INÍCIO DA ALTERAÇÃO
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
-// FIM DA ALTERAÇÃO
 
 // --- Módulos de UI ---
 import * as views from './modules/ui/views.js';
@@ -39,13 +37,10 @@ const editRecurringForm = document.getElementById('edit-recurring-form');
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
 const themeToggle = document.getElementById('theme-toggle');
 
-// INÍCIO DA ALTERAÇÃO - Variável para o debounce do autocomplete
 let debounceTimer;
-// FIM DA ALTERAÇÃO
 
 /**
  * Função principal que inicializa todos os event listeners da aplicação.
- * Será chamada uma única vez quando a aplicação iniciar.
  */
 export function initializeEventListeners() {
 
@@ -94,15 +89,43 @@ export function initializeEventListeners() {
     // --- Listeners do Formulário Principal de Transações ---
     addTransactionForm.addEventListener('submit', handleAddTransaction);
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
-        radio.addEventListener('change', (e) => render.populateCategorySelects(e.target.value, document.getElementById('transaction-category')));
+        radio.addEventListener('change', (e) => {
+            render.populateCategorySelects(e.target.value, document.getElementById('transaction-category'));
+            // Esconde o campo de subcategoria ao trocar o tipo
+            document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
+        });
     });
 
-    // INÍCIO DA ALTERAÇÃO - Listener para o autocomplete
     document.getElementById('transaction-description').addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             handleDescriptionAutocomplete(e.target.value);
-        }, 300); // Atraso de 300ms
+        }, 300);
+    });
+
+    // INÍCIO DA ALTERAÇÃO - Lógica para subcategorias no formulário de transação
+    document.getElementById('transaction-category').addEventListener('change', (e) => {
+        const subcategoryWrapper = document.getElementById('transaction-subcategory-wrapper');
+        const subcategoryDatalist = document.getElementById('subcategory-suggestions');
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const categoryId = selectedOption.dataset.categoryId;
+
+        if (!categoryId) {
+            subcategoryWrapper.style.display = 'none';
+            return;
+        }
+
+        const category = state.userCategories.find(c => c.id === categoryId);
+        subcategoryWrapper.style.display = 'block';
+        subcategoryDatalist.innerHTML = '';
+
+        if (category && category.subcategories && category.subcategories.length > 0) {
+            category.subcategories.forEach(sub => {
+                const option = document.createElement('option');
+                option.value = sub;
+                subcategoryDatalist.appendChild(option);
+            });
+        }
     });
     // FIM DA ALTERAÇÃO
 
@@ -138,23 +161,16 @@ export function initializeEventListeners() {
     document.getElementById('filter-category').addEventListener('change', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-payment-method').addEventListener('change', app.applyFiltersAndUpdateDashboard);
 
-    // --- Listener do botão de Exportar ---
     document.getElementById('export-csv-button').addEventListener('click', handleExportCsv);
-
-
-    // --- Listeners de Abertura de Modais ---
     document.getElementById('settings-button').addEventListener('click', modals.openSettingsModal);
     document.getElementById('manage-cards-button').addEventListener('click', modals.openCardModal);
-
 
     // --- Delegação de Eventos para a Lista de Transações ---
     document.getElementById('transactions-list').addEventListener('click', (e) => {
         const target = e.target;
         const transactionLi = target.closest('li');
         if (!transactionLi || !transactionLi.dataset.id) return;
-
         const transactionId = transactionLi.dataset.id;
-
         if (target.matches('.edit-btn')) {
             const transaction = state.filteredTransactions.find(t => t.id === transactionId);
             if (transaction) modals.openEditModal(transaction);
@@ -164,16 +180,10 @@ export function initializeEventListeners() {
         }
     });
 
-
-    // --- Listeners do Modal de Edição de Transação ---
+    // --- Listeners de Modais ---
     editTransactionForm.addEventListener('submit', handleUpdateTransaction);
-    document.getElementById('edit-payment-method').addEventListener('change', (e) => {
-        document.getElementById('edit-credit-card-wrapper').style.display = e.target.value === 'credit_card' ? 'block' : 'none';
-    });
     document.querySelector('.close-button').addEventListener('click', modals.closeEditModal);
 
-
-    // --- Listeners do Modal de Cartões de Crédito ---
     document.querySelector('.close-card-modal-button').addEventListener('click', modals.closeCardModal);
     document.getElementById('back-to-cards-button').addEventListener('click', modals.showCardManagementView);
     addCreditCardForm.addEventListener('submit', handleAddCreditCard);
@@ -181,9 +191,7 @@ export function initializeEventListeners() {
     document.getElementById('credit-card-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('[data-card-id]');
         if (!eventTarget) return;
-
         const cardId = eventTarget.dataset.cardId;
-        
         if (eventTarget.matches('.card-info')) {
             const card = state.userCreditCards.find(c => c.id === cardId);
             if(card) modals.showInvoiceDetailsView(card);
@@ -203,7 +211,6 @@ export function initializeEventListeners() {
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
         if (!eventTarget) return;
-
         const transactionId = eventTarget.dataset.invoiceTxId;
         if (eventTarget.matches('.edit-btn')) {
             modals.openEditInvoiceTransactionModal(transactionId);
@@ -216,8 +223,6 @@ export function initializeEventListeners() {
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
 
-
-    // --- Listeners do Modal de Configurações ---
     document.querySelector('.close-settings-modal-button').addEventListener('click', modals.closeSettingsModal);
     themeToggle.addEventListener('change', () => app.toggleTheme(themeToggle.checked));
     
@@ -232,15 +237,51 @@ export function initializeEventListeners() {
     });
 
     addCategoryForm.addEventListener('submit', handleAddCategory);
-    document.getElementById('category-lists-container').addEventListener('click', (e) => {
-        const deleteButton = e.target.closest('.delete-btn[data-category-id]');
-        if (deleteButton) {
-            const categoryId = deleteButton.dataset.categoryId;
+    setBudgetForm.addEventListener('submit', handleSetBudget);
+    addRecurringForm.addEventListener('submit', handleAddRecurring);
+
+    // INÍCIO DA ALTERAÇÃO - Nova delegação de eventos para o gerenciamento de categorias
+    const categoryContainer = document.getElementById('category-lists-container');
+    categoryContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        const categoryItem = target.closest('.category-item');
+        if (!categoryItem) return;
+
+        const categoryId = categoryItem.dataset.categoryId;
+
+        // Ação: Expandir/Recolher subcategorias
+        if (target.matches('.toggle-subcategories-btn')) {
+            const subcontainer = categoryItem.querySelector('.subcategory-container');
+            const isHidden = subcontainer.style.display === 'none';
+            subcontainer.style.display = isHidden ? 'block' : 'none';
+            target.innerHTML = isHidden ? '&#9652;' : '&#9662;'; // Seta para cima/baixo
+        }
+
+        // Ação: Excluir categoria principal
+        if (target.matches('.delete-category-btn')) {
             handleDeleteCategory(categoryId);
+        }
+
+        // Ação: Excluir subcategoria
+        if (target.matches('.delete-subcategory-btn')) {
+            const subcategoryName = target.dataset.subcategoryName;
+            handleDeleteSubcategory(categoryId, subcategoryName);
         }
     });
 
-    setBudgetForm.addEventListener('submit', handleSetBudget);
+    categoryContainer.addEventListener('submit', (e) => {
+        // Ação: Adicionar nova subcategoria
+        if (e.target.matches('.add-subcategory-form')) {
+            e.preventDefault();
+            const form = e.target;
+            const categoryItem = form.closest('.category-item');
+            const categoryId = categoryItem.dataset.categoryId;
+            const subcategoryName = form.querySelector('.new-subcategory-name').value;
+            handleAddSubcategory(categoryId, subcategoryName, form);
+        }
+    });
+    // FIM DA ALTERAÇÃO
+    
     document.getElementById('budget-list').addEventListener('click', (e) => {
         const deleteButton = e.target.closest('.delete-btn[data-budget-id]');
         if (deleteButton) {
@@ -248,25 +289,14 @@ export function initializeEventListeners() {
             handleDeleteBudget(budgetId);
         }
     });
-
-    addRecurringForm.addEventListener('submit', handleAddRecurring);
-    document.querySelectorAll('input[name="recurring-type"]').forEach(radio => {
-        radio.addEventListener('change', e => render.populateCategorySelects(e.target.value, document.getElementById('recurring-category')));
-    });
     
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
         if (!eventTarget) return;
-
         const recurringId = eventTarget.dataset.recurringId;
         const recurringTx = state.userRecurringTransactions.find(tx => tx.id === recurringId);
-        
-        if (eventTarget.matches('.edit-btn')) {
-            if (recurringTx) modals.openEditRecurringModal(recurringTx);
-        }
-        if (eventTarget.matches('.delete-btn')) {
-            if (recurringTx) handleDeleteRecurring(recurringTx);
-        }
+        if (eventTarget.matches('.edit-btn') && recurringTx) modals.openEditRecurringModal(recurringTx);
+        if (eventTarget.matches('.delete-btn') && recurringTx) handleDeleteRecurring(recurringTx);
     });
 
     document.getElementById('user-list').addEventListener('click', async (e) => {
@@ -289,33 +319,25 @@ export function initializeEventListeners() {
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
     
-
-    // --- Listener Global para fechar modais clicando fora ---
     window.addEventListener('click', (event) => {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
+        if (event.target.classList.contains('modal')) event.target.style.display = 'none';
     });
 }
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO - Nova função handler para o autocomplete
 async function handleDescriptionAutocomplete(searchTerm) {
     const datalist = document.getElementById('description-suggestions');
     if (!state.currentUser || !datalist) return;
-
     const suggestions = await getDescriptionSuggestions(state.currentUser.uid, searchTerm);
-    
-    datalist.innerHTML = ''; // Limpa as sugestões antigas
+    datalist.innerHTML = '';
     suggestions.forEach(suggestionText => {
         const option = document.createElement('option');
         option.value = suggestionText;
         datalist.appendChild(option);
     });
 }
-// FIM DA ALTERAÇÃO
 
 async function handleAddTransaction(e) {
     e.preventDefault();
@@ -323,8 +345,15 @@ async function handleAddTransaction(e) {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
-    const category = form['transaction-category'].value;
-    if (!category) {
+    // INÍCIO DA ALTERAÇÃO - Coleta de dados da subcategoria
+    const categorySelect = form['transaction-category'];
+    const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
+    const categoryName = selectedCategoryOption.value;
+    const categoryId = selectedCategoryOption.dataset.categoryId;
+    const subcategoryName = form['transaction-subcategory'].value.trim();
+    // FIM DA ALTERAÇÃO
+
+    if (!categoryName) {
         showNotification("Por favor, selecione uma categoria.", 'error');
         submitButton.disabled = false;
         return;
@@ -335,7 +364,9 @@ async function handleAddTransaction(e) {
         amount: parseFloat(form['transaction-amount'].value),
         date: form['transaction-date'].value,
         type: form['transaction-type'].value,
-        category: category,
+        category: categoryName,
+        categoryId: categoryId, // Passa o ID para o backend
+        subcategory: subcategoryName, // Passa a subcategoria
         paymentMethod: form['payment-method'].value,
         userId: state.currentUser.uid,
         isInstallment: false
@@ -351,7 +382,6 @@ async function handleAddTransaction(e) {
         }
         transactionData.cardId = cardId;
         cardData = state.userCreditCards.find(card => card.id === cardId);
-
         const isInstallment = form['is-installment-checkbox'].checked;
         if (isInstallment) {
             transactionData.isInstallment = true;
@@ -373,9 +403,14 @@ async function handleAddTransaction(e) {
         document.getElementById('installment-options-wrapper').style.display = 'none';
         document.getElementById('installments-count-wrapper').style.display = 'none';
         document.getElementById('transaction-amount-label').textContent = 'Valor (R$)';
+        document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
         
         if (transactionData.paymentMethod !== 'credit_card') {
             app.loadUserDashboard();
+        }
+        // Se uma nova subcategoria foi criada, recarrega os dados de categorias
+        if (subcategoryName) {
+            app.loadUserCategories();
         }
     } catch (error) {
         showNotification(error.message, 'error');
@@ -429,26 +464,18 @@ async function handleUpdateInvoiceTransaction(e) {
         const transactionId = form['edit-invoice-transaction-id'].value;
         const originalInvoiceId = form['edit-invoice-id'].value;
         const cardId = form['edit-invoice-card-id'].value;
-
         const updatedData = {
             description: form['edit-invoice-tx-description'].value,
             amount: parseFloat(form['edit-invoice-tx-amount'].value),
             purchaseDate: form['edit-invoice-tx-date'].value,
             category: form['edit-invoice-tx-category'].value,
         };
-
         const card = state.userCreditCards.find(c => c.id === cardId);
-        if (!card) {
-            throw new Error("Cartão de crédito não encontrado.");
-        }
-
+        if (!card) throw new Error("Cartão de crédito não encontrado.");
         await invoices.updateInvoiceTransaction(originalInvoiceId, transactionId, updatedData, card);
-        
         showNotification('Lançamento atualizado com sucesso!');
         modals.closeEditInvoiceTransactionModal();
-        
         await modals.loadAndDisplayInvoices(card);
-
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
@@ -531,7 +558,7 @@ async function handleAddCategory(e) {
 
 async function handleDeleteCategory(categoryId) {
     const cat = state.userCategories.find(c => c.id === categoryId);
-    if (confirm(`Tem certeza de que deseja excluir a categoria "${cat.name}"?`)) {
+    if (confirm(`Tem certeza de que deseja excluir a categoria "${cat.name}"? Todas as suas subcategorias também serão removidas.`)) {
         try {
             await categories.deleteCategory(categoryId);
             showNotification("Categoria excluída com sucesso!");
@@ -541,6 +568,35 @@ async function handleDeleteCategory(categoryId) {
         }
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Novos handlers para subcategorias
+async function handleAddSubcategory(categoryId, subcategoryName, form) {
+    if (!subcategoryName.trim()) {
+        showNotification("O nome da subcategoria não pode estar vazio.", "error");
+        return;
+    }
+    try {
+        await categories.addSubcategory(categoryId, subcategoryName);
+        showNotification("Subcategoria adicionada com sucesso!");
+        form.reset();
+        await app.loadUserCategories(); // Recarrega e re-renderiza a lista
+    } catch (error) {
+        showNotification(error.message, "error");
+    }
+}
+
+async function handleDeleteSubcategory(categoryId, subcategoryName) {
+    if (confirm(`Tem certeza de que deseja excluir a subcategoria "${subcategoryName}"?`)) {
+        try {
+            await categories.deleteSubcategory(categoryId, subcategoryName);
+            showNotification("Subcategoria excluída com sucesso!");
+            await app.loadUserCategories();
+        } catch (error) {
+            showNotification(error.message, "error");
+        }
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleSetBudget(e) {
     e.preventDefault();
