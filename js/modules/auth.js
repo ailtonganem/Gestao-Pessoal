@@ -1,41 +1,51 @@
-// Importa a instância de autenticação configurada anteriormente.
-import { auth } from '../firebase-config.js';
+// Importa a instância de autenticação e o banco de dados.
+import { auth, db } from '../firebase-config.js';
 
 // Importa as funções específicas de autenticação do SDK do Firebase.
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    sendPasswordResetEmail // Nova importação para recuperação de senha
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
-// INÍCIO DA ALTERAÇÃO
-// Importa a função para criar categorias padrão do novo módulo.
-import { createDefaultCategoriesForUser } from './categories.js';
+// INÍCIO DA ALTERAÇÃO - Importa funções do Firestore para gerenciar perfis de usuário
+import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 // FIM DA ALTERAÇÃO
 
+// Importa a função para criar categorias padrão.
+import { createDefaultCategoriesForUser } from './categories.js';
+
 /**
- * Tenta cadastrar um novo usuário com e-mail e senha.
+ * Tenta cadastrar um novo usuário.
+ * Cria o usuário no Firebase Auth e um perfil de usuário no Firestore com status 'pending'.
  * @param {string} email 
  * @param {string} password 
  * @returns {Promise<object>} O objeto userCredential em caso de sucesso.
- * @throws {Error} Lança o erro original do Firebase em caso de falha.
  */
 async function registerUser(email, password) {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        
-        // INÍCIO DA ALTERAÇÃO
-        // Após o usuário ser criado, chama a função para criar suas categorias padrão.
-        if (userCredential.user) {
-            await createDefaultCategoriesForUser(userCredential.user.uid);
+        const user = userCredential.user;
+
+        if (user) {
+            // INÍCIO DA ALTERAÇÃO - Cria um documento de perfil para o novo usuário no Firestore.
+            const userProfileRef = doc(db, "users", user.uid);
+            await setDoc(userProfileRef, {
+                email: user.email,
+                status: "pending", // Status inicial
+                createdAt: new Date()
+            });
+            // FIM DA ALTERAÇÃO
+
+            // Cria as categorias padrão para o novo usuário.
+            await createDefaultCategoriesForUser(user.uid);
         }
-        // FIM DA ALTERAÇÃO
 
         return userCredential;
     } catch (error) {
         console.error("Erro no cadastro:", error.code, error.message);
-        // Repassa o erro para ser tratado na camada de UI (app.js)
         throw error;
     }
 }
@@ -45,7 +55,6 @@ async function registerUser(email, password) {
  * @param {string} email 
  * @param {string} password 
  * @returns {Promise<object>} O objeto userCredential em caso de sucesso.
- * @throws {Error} Lança o erro original do Firebase em caso de falha.
  */
 async function loginUser(email, password) {
     try {
@@ -71,22 +80,56 @@ async function logoutUser() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Nova função para buscar o perfil do usuário no Firestore.
+/**
+ * Busca o perfil de um usuário no Firestore para verificar seu status.
+ * @param {string} uid - O ID do usuário.
+ * @returns {Promise<object|null>} O objeto com os dados do perfil ou null se não encontrado.
+ */
+async function getUserProfile(uid) {
+    try {
+        const userProfileRef = doc(db, "users", uid);
+        const docSnap = await getDoc(userProfileRef);
+        if (docSnap.exists()) {
+            return docSnap.data();
+        } else {
+            // Isso não deveria acontecer para um usuário logado, mas é uma boa prática de segurança.
+            console.log("Perfil de usuário não encontrado no Firestore!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Erro ao buscar perfil do usuário:", error);
+        throw error;
+    }
+}
+// FIM DA ALTERAÇÃO
+
+// INÍCIO DA ALTERAÇÃO - Nova função para envio de e-mail de redefinição de senha.
+/**
+ * Envia um e-mail para redefinição de senha para o endereço fornecido.
+ * @param {string} email O e-mail do usuário.
+ * @returns {Promise<void>}
+ */
+async function sendPasswordReset(email) {
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+        console.error("Erro ao enviar e-mail de redefinição de senha:", error);
+        throw error;
+    }
+}
+// FIM DA ALTERAÇÃO
+
 /**
  * Monitora o estado de autenticação do usuário em tempo real.
- * Essa função é crucial para SPA, pois determina o que mostrar na tela
- * (login ou dashboard) sempre que o estado muda (login, logout, refresh da página).
- * 
  * @param {function} callback Função a ser executada quando o estado muda. 
- * Recebe o objeto usuário (ou null) como argumento.
  */
 function monitorAuthState(callback) {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Usuário está logado
             console.log("Estado: Usuário logado", user.uid);
             callback(user);
         } else {
-            // Usuário está deslogado
             console.log("Estado: Nenhum usuário logado");
             callback(null);
         }
@@ -94,4 +137,4 @@ function monitorAuthState(callback) {
 }
 
 // Exporta as funções para serem utilizadas no arquivo principal da aplicação (app.js).
-export { registerUser, loginUser, logoutUser, monitorAuthState };
+export { registerUser, loginUser, logoutUser, monitorAuthState, getUserProfile, sendPasswordReset };
