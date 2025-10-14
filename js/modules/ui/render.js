@@ -75,11 +75,17 @@ function renderTransactionList(transactionsToRender) {
         li.dataset.id = transaction.id;
 
         const formattedDate = transaction.date.toLocaleDateString('pt-BR');
+        // INÍCIO DA ALTERAÇÃO - Exibe a subcategoria na lista de transações
+        const categoryDisplay = transaction.subcategory 
+            ? `${transaction.category} / ${transaction.subcategory}` 
+            : transaction.category;
+        // FIM DA ALTERAÇÃO
+
         li.innerHTML = `
             <div style="text-align: left;">
                 <span class="transaction-description">${transaction.description}</span>
                 <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
-                    ${formattedDate} • ${transaction.category || ''} • ${transaction.paymentMethod || ''}
+                    ${formattedDate} • ${categoryDisplay || ''} • ${transaction.paymentMethod || ''}
                 </span>
             </div>
             <div style="display: flex; align-items: center; gap: 1rem;">
@@ -109,6 +115,7 @@ export function populateCategorySelects(type, selectElement) {
     filteredCategories.forEach(category => {
         const option = document.createElement('option');
         option.value = category.name;
+        option.dataset.categoryId = category.id; // Adiciona o ID para referência futura
         option.textContent = category.name;
         selectElement.appendChild(option);
     });
@@ -210,7 +217,6 @@ export function renderInvoiceSummary(invoice) {
     invoiceStatus.classList.add(invoice.status);
 }
 
-// INÍCIO DA ALTERAÇÃO - Renderiza a lista de lançamentos com botões de ação.
 /** Renderiza a lista de lançamentos de uma fatura, incluindo botões de ação. */
 export function renderInvoiceTransactionsList(transactions) {
     invoiceTransactionsList.innerHTML = '';
@@ -220,11 +226,9 @@ export function renderInvoiceTransactionsList(transactions) {
     }
     transactions.forEach(tx => {
         const li = document.createElement('li');
-        // Prepara os dados para exibição
         const amount = typeof tx.amount === 'number' ? formatCurrency(tx.amount) : '';
         const formattedDate = tx.purchaseDate ? tx.purchaseDate.toLocaleDateString('pt-BR') : 'Data não registrada';
 
-        // Constrói o HTML do item da lista com as ações
         li.innerHTML = `
             <div style="text-align: left; flex-grow: 1;">
                 <span>${tx.description}</span>
@@ -241,29 +245,50 @@ export function renderInvoiceTransactionsList(transactions) {
         invoiceTransactionsList.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Renderização para o Modal de Configurações ---
 
-/** Renderiza as listas de categorias (receitas e despesas). */
+// INÍCIO DA ALTERAÇÃO - Reescrita completa da função de renderização de categorias
+/** Renderiza as listas de categorias e subcategorias de forma aninhada. */
 export function renderCategoryManagementList() {
     revenueCategoriesList.innerHTML = '';
     expenseCategoriesList.innerHTML = '';
 
-    const createCategoryListItem = (category, listElement) => {
+    const createCategoryListItem = (category) => {
+        const subcategoriesHtml = category.subcategories.map(sub => `
+            <li class="subcategory-item">
+                <span>${sub}</span>
+                <button class="action-btn delete-btn delete-subcategory-btn" data-subcategory-name="${sub}" title="Excluir Subcategoria">&times;</button>
+            </li>
+        `).join('');
+
         const li = document.createElement('li');
-        li.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem;';
+        li.className = 'category-item';
+        li.dataset.categoryId = category.id;
         li.innerHTML = `
-            <span>${category.name}</span>
-            <button class="action-btn delete-btn" data-category-id="${category.id}" title="Excluir categoria">&times;</button>
+            <div class="category-item-header">
+                <span class="category-name">${category.name}</span>
+                <div class="category-actions">
+                    <button class="action-btn delete-btn delete-category-btn" title="Excluir Categoria Principal">&times;</button>
+                    <button class="action-btn toggle-subcategories-btn" title="Ver Subcategorias">&#9662;</button>
+                </div>
+            </div>
+            <div class="subcategory-container" style="display: none;">
+                <ul class="subcategory-list">${subcategoriesHtml}</ul>
+                <form class="add-subcategory-form">
+                    <input type="text" class="new-subcategory-name" placeholder="Nova subcategoria" required>
+                    <button type="submit" class="button-secondary">Adicionar</button>
+                </form>
+            </div>
         `;
-        listElement.appendChild(li);
+        return li;
     };
 
-    state.userCategories.filter(c => c.type === 'revenue').forEach(cat => createCategoryListItem(cat, revenueCategoriesList));
-    state.userCategories.filter(c => c.type === 'expense').forEach(cat => createCategoryListItem(cat, expenseCategoriesList));
+    state.userCategories.filter(c => c.type === 'revenue').forEach(cat => revenueCategoriesList.appendChild(createCategoryListItem(cat)));
+    state.userCategories.filter(c => c.type === 'expense').forEach(cat => expenseCategoriesList.appendChild(createCategoryListItem(cat)));
 }
+// FIM DA ALTERAÇÃO
 
 /** Popula o select de categorias na aba de orçamentos. */
 export function populateBudgetCategorySelect() {
