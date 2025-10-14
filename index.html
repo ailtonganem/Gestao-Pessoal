@@ -35,10 +35,17 @@
                 </div>
                 <button type="submit">Entrar</button>
             </form>
+            <!-- INÍCIO DA ALTERAÇÃO -->
+            <p style="text-align: right; margin-top: 0.5rem; font-size: 0.9rem;">
+                <a href="#" id="forgot-password-link">Esqueci minha senha</a>
+            </p>
+            <!-- FIM DA ALTERAÇÃO -->
             <p>Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
         </section>
+
         <section id="register-form" style="display: none;">
             <h1>Crie sua conta</h1>
+            <p class="subtitle" style="text-align: center;">Após o cadastro, sua conta precisará ser aprovada por um administrador.</p>
             <form>
                 <div class="form-control">
                     <label for="register-email">E-mail</label>
@@ -52,6 +59,15 @@
             </form>
             <p>Já tem uma conta? <a href="#" id="show-login-link">Faça Login</a></p>
         </section>
+
+        <!-- INÍCIO DA ALTERAÇÃO - Nova seção para usuários pendentes -->
+        <section id="pending-approval" style="display: none;">
+            <h1>Aguardando Aprovação</h1>
+            <p>Sua conta foi criada com sucesso e está aguardando a aprovação de um administrador.</p>
+            <p>Você será notificado por e-mail quando sua conta for ativada. Se tiver alguma dúvida, entre em contato com o suporte.</p>
+            <button id="logout-pending-button" style="margin-top: 1.5rem;">Sair</button>
+        </section>
+        <!-- FIM DA ALTERAÇÃO -->
     </main>
 
     <!-- Contêiner Principal da Aplicação (Dashboard) -->
@@ -98,12 +114,10 @@
                         <label for="transaction-amount">Valor (R$)</label>
                         <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
                     </div>
-                    <!-- INÍCIO DA ALTERAÇÃO -->
                     <div class="form-control">
                         <label for="transaction-date">Data</label>
                         <input type="date" id="transaction-date" required>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                     <div class="form-control">
                         <label>Tipo</label>
                         <div class="radio-container">
@@ -191,12 +205,10 @@
                     <label for="edit-transaction-amount">Valor (R$)</label>
                     <input type="number" id="edit-transaction-amount" step="0.01" required>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-transaction-date">Data</label>
                     <input type="date" id="edit-transaction-date" required>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label>Tipo</label>
                     <div class="radio-container">
