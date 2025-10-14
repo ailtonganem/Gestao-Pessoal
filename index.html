@@ -77,20 +77,29 @@
             </div>
         </header>
         <main id="app-content">
+            <!-- INÍCIO DA ALTERAÇÃO - Seção de Resumo de Contas -->
             <section id="summary-section">
+                <div class="summary-card balance">
+                    <h3>Saldo Total em Contas</h3>
+                    <p id="total-balance-accounts">R$ 0,00</p>
+                </div>
                 <div class="summary-card">
-                    <h3>Receitas</h3>
+                    <h3>Receitas (no período)</h3>
                     <p id="total-revenue">R$ 0,00</p>
                 </div>
                 <div class="summary-card">
-                    <h3>Despesas</h3>
+                    <h3>Despesas (no período)</h3>
                     <p id="total-expenses">R$ 0,00</p>
                 </div>
-                <div class="summary-card balance">
-                    <h3>Saldo</h3>
-                    <p id="final-balance">R$ 0,00</p>
-                </div>
             </section>
+            
+            <section id="accounts-summary-section">
+                <h2>Minhas Contas</h2>
+                <ul id="accounts-summary-list">
+                    <li>Carregando contas...</li>
+                </ul>
+            </section>
+            <!-- FIM DA ALTERAÇÃO -->
 
             <section id="chart-section">
                 <h2>Análise de Despesas por Categoria</h2>
@@ -157,6 +166,14 @@
                             <option value="credit_card">Cartão de Crédito</option>
                         </select>
                     </div>
+                    <!-- INÍCIO DA ALTERAÇÃO - Novo campo de seleção de conta -->
+                    <div id="transaction-account-wrapper" class="form-control">
+                        <label for="transaction-account">Conta</label>
+                        <select id="transaction-account" required>
+                            <option>Nenhuma conta cadastrada</option>
+                        </select>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                     <div id="credit-card-wrapper" class="form-control" style="display: none;">
                         <label for="credit-card-select">Cartão</label>
                         <select id="credit-card-select">
@@ -204,7 +221,6 @@
                             <label for="filter-year">Ano</label>
                             <select id="filter-year"></select>
                         </div>
-                        <!-- INÍCIO DA ALTERAÇÃO - Adição dos campos de filtro por data -->
                         <div class="form-control">
                             <label for="filter-start-date">De:</label>
                             <input type="date" id="filter-start-date">
@@ -213,7 +229,6 @@
                             <label for="filter-end-date">Até:</label>
                             <input type="date" id="filter-end-date">
                         </div>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     <div class="filter-controls">
                         <div class="form-control" style="flex-grow: 2;">
@@ -283,6 +298,7 @@
                     <label for="edit-transaction-category">Categoria</label>
                     <select id="edit-transaction-category" required></select>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO - Novo campo de conta no modal de edição -->
                 <div class="form-control">
                     <label for="edit-payment-method">Método de Pagamento</label>
                     <select id="edit-payment-method" required>
@@ -292,6 +308,11 @@
                         <option value="credit_card">Cartão de Crédito</option>
                     </select>
                 </div>
+                <div id="edit-account-wrapper" class="form-control">
+                    <label for="edit-transaction-account">Conta</label>
+                    <select id="edit-transaction-account" required></select>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div id="edit-credit-card-wrapper" class="form-control" style="display: none;">
                     <label for="edit-credit-card-select">Cartão</label>
                     <select id="edit-credit-card-select"></select>
@@ -376,16 +397,42 @@
                 </div>
             </section>
 
+            <!-- INÍCIO DA ALTERAÇÃO - Nova aba "Minhas Contas" -->
             <div class="modal-tabs">
-                <button class="tab-link active" data-tab="category-management-tab">Minhas Categorias</button>
+                <button class="tab-link active" data-tab="account-management-tab">Minhas Contas</button>
+                <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
+            <!-- FIM DA ALTERAÇÃO -->
 
             <div id="settings-content">
+                <!-- INÍCIO DA ALTERAÇÃO - Novo conteúdo da aba de gerenciamento de contas -->
+                <div id="account-management-tab" class="tab-content active">
+                    <section>
+                        <h3>Gerenciar Contas</h3>
+                        <p class="subtitle">Adicione as contas que você usa no dia a dia, como conta corrente, poupança ou carteira.</p>
+                        <form id="add-account-form">
+                            <h4>Adicionar Nova Conta</h4>
+                            <div class="form-control">
+                                <label for="account-name">Nome da Conta</label>
+                                <input type="text" id="account-name" placeholder="Ex: Carteira, Bradesco" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="account-initial-balance">Saldo Inicial (R$)</label>
+                                <input type="number" id="account-initial-balance" placeholder="0.00" step="0.01" value="0" required>
+                            </div>
+                            <button type="submit">Adicionar Conta</button>
+                        </form>
+                        <h4>Contas Cadastradas</h4>
+                        <ul id="account-list"></ul>
+                    </section>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
+
                 <!-- Conteúdo da Aba: Gerenciar Categorias -->
-                <div id="category-management-tab" class="tab-content active">
+                <div id="category-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Categorias</h3>
                         <form id="add-category-form">
