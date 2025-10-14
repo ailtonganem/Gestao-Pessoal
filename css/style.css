@@ -14,6 +14,17 @@
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* INÍCIO DA ALTERAÇÃO - Variáveis do Tema Escuro */
+body.dark-mode {
+    --primary-color: #ecf0f1; /* Branco suave */
+    --secondary-color: #3498db; /* Mantém o azul */
+    --background-color: #2c3e50; /* Fundo escuro */
+    --text-color: #bdc3c7; /* Texto cinza claro */
+    --container-bg-color: #34495e; /* Contêineres escuros */
+}
+/* FIM DA ALTERAÇÃO */
+
+
 /* Reset básico e estilos globais */
 * {
     margin: 0;
@@ -31,6 +42,7 @@ html, body {
     align-items: flex-start;
     text-align: center;
     overflow-y: auto;
+    transition: background-color 0.3s, color 0.3s; /* Adiciona transição suave */
 }
 
 /* Estilo do Indicador de Carregamento */
@@ -78,6 +90,8 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .form-control select {
     width: 100%; padding: 0.8rem; border: 1px solid #bdc3c7; border-radius: 5px;
     font-size: 1rem; font-family: var(--font-family);
+    background-color: var(--container-bg-color); /* Adicionado para tema escuro */
+    color: var(--text-color); /* Adicionado para tema escuro */
 }
 .form-control input:focus, .form-control select:focus {
     outline: none; border-color: var(--secondary-color);
@@ -122,6 +136,7 @@ a:hover { text-decoration: underline; }
 #total-revenue { color: var(--revenue-color); }
 #total-expenses { color: var(--expense-color); }
 .summary-card.balance { background-color: var(--primary-color); color: white; }
+body.dark-mode .summary-card.balance { color: #2c3e50; } /* Ajuste de cor de texto para o card de saldo no modo escuro */
 .summary-card.balance h3 { color: #bdc3c7; }
 
 /* Estilos da Seção de Gráfico */
@@ -206,24 +221,71 @@ a:hover { text-decoration: underline; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Unifica os estilos para todos os botões de fechar dos modais */
-.close-button, 
-.close-card-modal-button, 
-.close-settings-modal-button {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    color: #aaa;
-    font-size: 2rem;
-    font-weight: bold;
-    cursor: pointer;
-    line-height: 1;
+.close-button, .close-card-modal-button, .close-settings-modal-button {
+    position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
+    font-weight: bold; cursor: pointer; line-height: 1;
 }
 .close-button:hover, .close-button:focus,
 .close-card-modal-button:hover, .close-card-modal-button:focus,
 .close-settings-modal-button:hover, .close-settings-modal-button:focus {
     color: var(--text-color);
 }
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para o seletor de tema e toggle switch */
+#theme-settings-section {
+    border-bottom: 1px solid var(--background-color);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+.theme-switcher {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: var(--secondary-color);
+}
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+.slider.round {
+    border-radius: 34px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos para as abas do modal */
 .modal-tabs {
@@ -232,26 +294,16 @@ a:hover { text-decoration: underline; }
     margin-bottom: 1.5rem;
 }
 .tab-link {
-    background: none;
-    border: none;
-    padding: 0.8rem 1rem;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #7f8c8d;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -1px;
+    background: none; border: none; padding: 0.8rem 1rem; cursor: pointer;
+    font-size: 1rem; font-weight: bold; color: #7f8c8d;
+    border-bottom: 3px solid transparent; margin-bottom: -1px;
 }
-.tab-link:hover {
-    color: var(--text-color);
-}
+.tab-link:hover { color: var(--text-color); }
 .tab-link.active {
     color: var(--secondary-color);
     border-bottom-color: var(--secondary-color);
 }
-.tab-content {
-    display: none;
-}
+.tab-content { display: none; }
 .tab-content.active {
     display: block;
     animation: fadeIn 0.5s;
@@ -276,9 +328,7 @@ a:hover { text-decoration: underline; }
 
 .status-badge {
     padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
-    color: white; font-weight: bold;
-    display: inline-block;
-    margin-top: 4px;
+    color: white; font-weight: bold; display: inline-block; margin-top: 4px;
 }
 .status-badge.open { background-color: var(--secondary-color); }
 .status-badge.closed { background-color: var(--error-color); }
@@ -292,57 +342,30 @@ a:hover { text-decoration: underline; }
     border-bottom: 1px solid var(--background-color);
 }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para a Seção de Progresso de Orçamento */
-#budget-progress-section {
-    margin-bottom: 2rem;
-}
-#budget-progress-list {
-    list-style-type: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
+/* Estilos para a Seção de Progresso de Orçamento */
+#budget-progress-section { margin-bottom: 2rem; }
+#budget-progress-list { list-style-type: none; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
 .budget-item {
-    background-color: var(--container-bg-color);
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    text-align: left;
+    background-color: var(--container-bg-color); padding: 1rem;
+    border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left;
 }
 .budget-item-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between;
+    font-weight: bold; margin-bottom: 0.5rem;
 }
-.budget-item-values {
-    font-size: 0.9rem;
-    color: #7f8c8d;
-}
+.budget-item-values { font-size: 0.9rem; color: #7f8c8d; }
 .progress-bar-container {
-    width: 100%;
-    background-color: var(--background-color);
-    border-radius: 10px;
-    height: 20px;
-    margin-top: 0.5rem;
-    overflow: hidden;
+    width: 100%; background-color: var(--background-color);
+    border-radius: 10px; height: 20px; margin-top: 0.5rem; overflow: hidden;
 }
 .progress-bar {
-    height: 100%;
-    border-radius: 10px;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-    transition: width 0.5s ease-in-out, background-color 0.5s ease;
+    height: 100%; border-radius: 10px; color: white; display: flex;
+    align-items: center; justify-content: center; font-size: 0.8rem;
+    font-weight: bold; transition: width 0.5s ease-in-out, background-color 0.5s ease;
 }
 .progress-bar.safe { background-color: var(--success-color); }
 .progress-bar.warning { background-color: var(--pending-color); }
 .progress-bar.danger { background-color: var(--error-color); }
-/* FIM DA ALTERAÇÃO */
 
 /* ============================================= */
 /*          DESIGN RESPONSIVO (TELAS MAIORES)    */
@@ -351,11 +374,9 @@ a:hover { text-decoration: underline; }
     body {
         align-items: center;
     }
-
     main, #app-container {
         max-width: 1024px;
     }
-
     #app-content {
         display: grid;
         grid-template-columns: 1fr 1.5fr;
@@ -363,8 +384,8 @@ a:hover { text-decoration: underline; }
         grid-template-areas: 
             "summary history"
             "chart history"
-            "trends history" /* Novo layout */
-            "budget history" /* Novo layout */
+            "trends history"
+            "budget history"
             "form history";
     }
     
@@ -382,12 +403,10 @@ a:hover { text-decoration: underline; }
     }
     
     .summary-card { flex: 1; }
-
     .chart-container {
         height: auto;
         min-height: 280px;
     }
-
     .modal-content {
         max-width: 600px;
     }
