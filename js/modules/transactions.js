@@ -4,9 +4,8 @@ import { db } from '../firebase-config.js';
 import { findOrCreateInvoice } from './invoices.js';
 // Importa a função de autocomplete.
 import { saveUniqueDescription } from './autocomplete.js';
-// INÍCIO DA ALTERAÇÃO - Importa a função para salvar subcategorias
+// Importa a função para salvar subcategorias
 import { addSubcategory } from './categories.js';
-// FIM DA ALTERAÇÃO
 
 // Importa as funções do Firestore necessárias.
 import {
@@ -44,12 +43,9 @@ function parseDateString(dateString) {
 async function addTransaction(transactionData, cardData = null) {
     const transactionDate = parseDateString(transactionData.date);
 
-    // INÍCIO DA ALTERAÇÃO - Lógica para salvar a subcategoria se ela for nova
     if (transactionData.subcategory && transactionData.categoryId) {
-        // Salva a nova subcategoria em segundo plano, não bloqueia o fluxo principal
         addSubcategory(transactionData.categoryId, transactionData.subcategory).catch(console.error);
     }
-    // FIM DA ALTERAÇÃO
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         const batch = writeBatch(db);
@@ -69,7 +65,7 @@ async function addTransaction(transactionData, cardData = null) {
                     description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
                     amount: installmentAmount,
                     category: transactionData.category,
-                    subcategory: transactionData.subcategory || null, // Adiciona subcategoria
+                    subcategory: transactionData.subcategory || null,
                     purchaseDate: Timestamp.fromDate(currentInstallmentDate),
                     createdAt: serverTimestamp()
                 };
@@ -87,7 +83,7 @@ async function addTransaction(transactionData, cardData = null) {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
-                subcategory: transactionData.subcategory || null, // Adiciona subcategoria
+                subcategory: transactionData.subcategory || null,
                 purchaseDate: Timestamp.fromDate(transactionDate),
                 createdAt: serverTimestamp()
             };
@@ -113,7 +109,7 @@ async function addTransaction(transactionData, cardData = null) {
                 date: Timestamp.fromDate(transactionDate),
                 type: transactionData.type,
                 category: transactionData.category,
-                subcategory: transactionData.subcategory || null, // Adiciona subcategoria
+                subcategory: transactionData.subcategory || null,
                 paymentMethod: transactionData.paymentMethod,
                 userId: transactionData.userId,
                 createdAt: serverTimestamp()
@@ -128,13 +124,15 @@ async function addTransaction(transactionData, cardData = null) {
 }
 
 /**
- * Busca as transações de fluxo de caixa de um usuário.
+ * Busca as transações de fluxo de caixa de um usuário com filtros.
  * @param {string} userId - O ID do usuário.
- * @param {object} filters - Objeto com os filtros.
+ * @param {object} filters - Objeto com os filtros (month, year, startDate, endDate).
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
 async function getTransactions(userId, filters = {}) {
-    const { month, year } = filters;
+    // INÍCIO DA ALTERAÇÃO - Extrai os novos filtros
+    const { month, year, startDate, endDate } = filters;
+    // FIM DA ALTERAÇÃO
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
         
@@ -143,19 +141,24 @@ async function getTransactions(userId, filters = {}) {
             where("paymentMethod", "in", ["pix", "debit", "cash"])
         ];
 
-        if (year && month && month !== 'all') {
-            const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0, 23, 59, 59);
-            
-            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
-            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
+        // INÍCIO DA ALTERAÇÃO - Lógica de filtro prioriza o intervalo de datas
+        if (startDate && endDate) {
+            const start = new Date(startDate + 'T00:00:00');
+            const end = new Date(endDate + 'T23:59:59');
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(start)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(end)));
+        } else if (year && month && month !== 'all') {
+            const startOfMonth = new Date(year, month - 1, 1);
+            const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startOfMonth)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfMonth)));
         } else if (year) {
-            const startDate = new Date(year, 0, 1);
-            const endDate = new Date(year, 11, 31, 23, 59, 59);
-
-            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
-            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
+            const startOfYear = new Date(year, 0, 1);
+            const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startOfYear)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfYear)));
         }
+        // FIM DA ALTERAÇÃO
         
         queryConstraints.push(orderBy("date", "desc"));
 
