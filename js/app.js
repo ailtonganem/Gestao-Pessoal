@@ -8,9 +8,13 @@ import { getCategories, addCategory, deleteCategory } from './modules/categories
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 // Importa as funções de faturas.
 import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices } from './modules/invoices.js';
+// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de admin
+import { getAllUsers, updateUserStatus } from './modules/admin.js';
+// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado ---
 let currentUser = null;
+let currentUserProfile = null; // Armazena o perfil do usuário logado (incluindo role)
 let userCreditCards = []; 
 let userCategories = [];
 let selectedCardForInvoiceView = null;
@@ -88,6 +92,13 @@ const expenseCategoriesList = document.getElementById('expense-categories-list')
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const pendingApprovalSection = document.getElementById('pending-approval');
 const logoutPendingButton = document.getElementById('logout-pending-button');
+// INÍCIO DA ALTERAÇÃO - Seleção de elementos para abas e admin
+const adminTabButton = document.getElementById('admin-tab-button');
+const userList = document.getElementById('user-list');
+const tabLinks = document.querySelectorAll('.tab-link');
+const tabContents = document.querySelectorAll('.tab-content');
+// FIM DA ALTERAÇÃO
+
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -370,6 +381,11 @@ function closeCardModal() {
 
 /** Abre o modal de configurações. */
 function openSettingsModal() {
+    // INÍCIO DA ALTERAÇÃO - Se for admin, carrega a lista de usuários ao abrir o modal
+    if (currentUserProfile && currentUserProfile.role === 'admin') {
+        renderUserList();
+    }
+    // FIM DA ALTERAÇÃO
     settingsModal.style.display = 'flex';
 }
 
@@ -553,6 +569,73 @@ async function loadUserCategories() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de usuários para o admin
+async function renderUserList() {
+    userList.innerHTML = '<li>Carregando usuários...</li>';
+    try {
+        const users = await getAllUsers();
+        userList.innerHTML = '';
+
+        if (users.length === 0) {
+            userList.innerHTML = '<li>Nenhum usuário encontrado.</li>';
+            return;
+        }
+
+        users.forEach(user => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.alignItems = 'center';
+            li.style.padding = '0.8rem';
+            li.style.borderBottom = '1px solid var(--background-color)';
+
+            const userInfo = document.createElement('div');
+            userInfo.style.textAlign = 'left';
+            const emailSpan = document.createElement('span');
+            emailSpan.style.fontWeight = 'bold';
+            emailSpan.textContent = user.email;
+            const statusBadge = document.createElement('span');
+            statusBadge.textContent = user.status;
+            statusBadge.className = `status-badge ${user.status}`;
+            userInfo.appendChild(emailSpan);
+            userInfo.appendChild(document.createElement('br'));
+            userInfo.appendChild(statusBadge);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.style.display = 'flex';
+            actionsDiv.style.gap = '0.5rem';
+
+            if (user.status === 'pending') {
+                const approveButton = document.createElement('button');
+                approveButton.textContent = 'Aprovar';
+                approveButton.classList.add('button-secondary');
+                approveButton.style.backgroundColor = 'var(--success-color)';
+                approveButton.onclick = async () => {
+                    if (confirm(`Aprovar o usuário ${user.email}?`)) {
+                        try {
+                            await updateUserStatus(user.id, 'approved');
+                            showNotification('Usuário aprovado!');
+                            renderUserList(); // Atualiza a lista
+                        } catch (error) {
+                            showNotification(error.message, 'error');
+                        }
+                    }
+                };
+                actionsDiv.appendChild(approveButton);
+            }
+            
+            // Futuramente, pode-se adicionar botões para 'Rejeitar' ou 'Tornar Admin'
+            li.appendChild(userInfo);
+            li.appendChild(actionsDiv);
+            userList.appendChild(li);
+        });
+    } catch (error) {
+        showNotification(error.message, 'error');
+        userList.innerHTML = '<li>Erro ao carregar usuários.</li>';
+    }
+}
+// FIM DA ALTERAÇÃO
+
 // Funções de controle de visibilidade da UI
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
 function showAuthForms() { loadingDiv.style.display = 'none'; appContainer.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none'; pendingApprovalSection.style.display = 'none';}
@@ -591,6 +674,20 @@ backToCardsButton.addEventListener('click', showCardManagementView);
 settingsButton.addEventListener('click', openSettingsModal);
 closeSettingsModalButton.addEventListener('click', closeSettingsModal);
 window.addEventListener('click', (event) => { if (event.target == settingsModal) { closeSettingsModal(); } });
+
+// INÍCIO DA ALTERAÇÃO - Lógica de navegação por abas no modal de configurações
+tabLinks.forEach(button => {
+    button.addEventListener('click', () => {
+        const tabId = button.dataset.tab;
+
+        tabLinks.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+
+        button.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+// FIM DA ALTERAÇÃO
 
 invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoiceId = e.target.value;
@@ -809,9 +906,16 @@ function initializeApp() {
         if (user) {
             currentUser = user;
             try {
-                const userProfile = await getUserProfile(user.uid);
-                if (userProfile && userProfile.status === 'approved') {
+                currentUserProfile = await getUserProfile(user.uid);
+                if (currentUserProfile && currentUserProfile.status === 'approved') {
                     showApp();
+
+                    // INÍCIO DA ALTERAÇÃO - Mostra a aba de admin se o usuário for admin
+                    if (currentUserProfile.role === 'admin') {
+                        adminTabButton.style.display = 'block';
+                    }
+                    // FIM DA ALTERAÇÃO
+
                     transactionDateInput.value = formatDateToInput(new Date());
                     await closeOverdueInvoices(user.uid);
                     populateYearFilter();
@@ -829,6 +933,7 @@ function initializeApp() {
             }
         } else {
             currentUser = null;
+            currentUserProfile = null;
             userCreditCards = [];
             userCategories = [];
             showAuthForms();
