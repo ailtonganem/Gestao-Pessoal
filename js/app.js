@@ -17,7 +17,7 @@ import * as invoices from './modules/invoices.js';
 import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
-
+import * as accounts from './modules/accounts.js'; // INÍCIO DA ALTERAÇÃO - Importa o novo módulo
 
 // --- Ponto de Entrada da Aplicação ---
 
@@ -67,6 +67,7 @@ async function handleAuthStateChange(user) {
         state.setUserCreditCards([]);
         state.setUserBudgets([]);
         state.setUserRecurringTransactions([]);
+        state.setUserAccounts([]); // INÍCIO DA ALTERAÇÃO - Limpa o estado das contas no logout
         views.showAuthForms();
     }
 }
@@ -90,6 +91,7 @@ async function loadInitialData(userId) {
     await Promise.all([
         loadUserCategories(),
         loadUserCreditCards(),
+        loadUserAccounts(), // INÍCIO DA ALTERAÇÃO - Carrega as contas do usuário
         loadUserBudgets(),
         loadUserDashboard(),
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
@@ -103,14 +105,12 @@ async function loadInitialData(userId) {
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
-    // INÍCIO DA ALTERAÇÃO - Coleta dos novos filtros de data
     const filters = {
         month: document.getElementById('filter-month').value,
         year: document.getElementById('filter-year').value,
         startDate: document.getElementById('filter-start-date').value,
         endDate: document.getElementById('filter-end-date').value
     };
-    // FIM DA ALTERAÇÃO
 
     try {
         const userTransactions = await transactions.getTransactions(state.currentUser.uid, filters);
@@ -153,6 +153,22 @@ export async function loadUserCreditCards() {
         showNotification(error.message, 'error');
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Nova função para carregar as contas do usuário
+/** Busca as contas, armazena no estado e atualiza a UI. */
+export async function loadUserAccounts() {
+    if (!state.currentUser) return;
+    try {
+        const userAccounts = await accounts.getAccounts(state.currentUser.uid);
+        state.setUserAccounts(userAccounts);
+        render.populateAccountSelects();
+        render.renderAccountList();
+        render.updateDashboard(); // Chama para atualizar os saldos
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
 
 /** Busca os orçamentos, armazena no estado e atualiza a UI. */
 export async function loadUserBudgets() {
