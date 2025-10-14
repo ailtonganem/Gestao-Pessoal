@@ -10,7 +10,9 @@ import {
     orderBy,
     doc,
     updateDoc,
-    writeBatch
+    writeBatch,
+    getDoc,
+    increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 const INVOICES_COLLECTION = 'invoices';
@@ -116,17 +118,14 @@ async function getInvoiceTransactions(invoiceId) {
         const q = query(invoiceTransactionsRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const transactions = [];
-        // INÍCIO DA ALTERAÇÃO - Converte o timestamp 'purchaseDate' para um objeto Date.
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             transactions.push({
                 id: doc.id,
                 ...data,
-                // Garante que a data da compra seja um objeto Date do JS para uso no formulário
                 purchaseDate: data.purchaseDate ? data.purchaseDate.toDate() : null
             });
         });
-        // FIM DA ALTERAÇÃO
         return transactions;
     } catch (error) {
         console.error("Erro ao buscar lançamentos da fatura:", error);
@@ -155,6 +154,7 @@ async function payInvoice(invoice, card) {
             category: 'Fatura de Cartão',
             paymentMethod: 'debit',
             userId: invoice.userId,
+            date: Timestamp.now(), // Adicionando a data do pagamento
             createdAt: Timestamp.now()
         };
         const newTransactionRef = doc(transactionsRef);
@@ -165,6 +165,64 @@ async function payInvoice(invoice, card) {
     } catch (error) {
         console.error("Erro ao pagar fatura:", error);
         throw new Error("Ocorreu um erro ao registrar o pagamento da fatura.");
+    }
+}
+
+/**
+ * Atualiza um lançamento de cartão de crédito. Lida com a mudança de valor e a migração entre faturas.
+ * @param {string} originalInvoiceId - O ID da fatura onde o lançamento está originalmente.
+ * @param {string} transactionId - O ID do lançamento a ser atualizado.
+ * @param {object} updatedData - Os novos dados do lançamento.
+ * @param {object} card - O objeto do cartão de crédito.
+ * @returns {Promise<void>}
+ */
+async function updateInvoiceTransaction(originalInvoiceId, transactionId, updatedData, card) {
+    const batch = writeBatch(db);
+    const originalInvoiceRef = doc(db, INVOICES_COLLECTION, originalInvoiceId);
+    const transactionRef = doc(originalInvoiceRef, 'transactions', transactionId);
+
+    try {
+        const originalTxSnap = await getDoc(transactionRef);
+        if (!originalTxSnap.exists()) {
+            throw new Error("Lançamento original não encontrado.");
+        }
+        const originalAmount = originalTxSnap.data().amount;
+
+        // Converte a data do formulário para um objeto Date do JS
+        const newPurchaseDate = new Date(updatedData.purchaseDate + 'T00:00:00');
+
+        // Determina a qual fatura o lançamento pertence com a nova data
+        const newInvoiceId = await findOrCreateInvoice(card.id, card, card.userId, newPurchaseDate);
+
+        // Prepara os dados para salvar, garantindo que a data seja um Timestamp
+        const dataToSave = {
+            ...updatedData,
+            purchaseDate: Timestamp.fromDate(newPurchaseDate)
+        };
+
+        if (originalInvoiceId === newInvoiceId) {
+            // Caso 1: A transação permanece na mesma fatura
+            const amountDifference = dataToSave.amount - originalAmount;
+            batch.update(transactionRef, dataToSave);
+            batch.update(originalInvoiceRef, { totalAmount: increment(amountDifference) });
+        } else {
+            // Caso 2: A transação muda de fatura
+            const newInvoiceRef = doc(db, INVOICES_COLLECTION, newInvoiceId);
+            
+            // Remove da fatura antiga
+            batch.update(originalInvoiceRef, { totalAmount: increment(-originalAmount) });
+            batch.delete(transactionRef);
+
+            // Adiciona na fatura nova
+            const newTransactionRef = doc(collection(newInvoiceRef, 'transactions'));
+            batch.set(newTransactionRef, dataToSave);
+            batch.update(newInvoiceRef, { totalAmount: increment(dataToSave.amount) });
+        }
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao atualizar lançamento da fatura:", error);
+        throw new Error("Não foi possível salvar as alterações no lançamento.");
     }
 }
 
@@ -203,4 +261,4 @@ async function closeOverdueInvoices(userId) {
     }
 }
 
-export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices };
+export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction };
