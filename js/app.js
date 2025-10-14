@@ -1,5 +1,5 @@
 // Importa as funções de autenticação.
-import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
+import { registerUser, loginUser, logoutUser, monitorAuthState, getUserProfile, sendPasswordReset } from './modules/auth.js';
 // Importa as funções de transações.
 import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from './modules/transactions.js';
 // Importa as funções de gerenciamento de categoria.
@@ -35,9 +35,7 @@ const logoutButton = document.getElementById('logout-button');
 const addTransactionForm = document.getElementById('add-transaction-form');
 const transactionDescriptionInput = document.getElementById('transaction-description');
 const transactionAmountInput = document.getElementById('transaction-amount');
-// INÍCIO DA ALTERAÇÃO - Seleção do novo campo de data
 const transactionDateInput = document.getElementById('transaction-date');
-// FIM DA ALTERAÇÃO
 const transactionTypeRadios = document.querySelectorAll('input[name="transaction-type"]');
 const transactionCategorySelect = document.getElementById('transaction-category');
 const paymentMethodSelect = document.getElementById('payment-method');
@@ -54,9 +52,7 @@ const editTransactionForm = document.getElementById('edit-transaction-form');
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
 const editTransactionDescriptionInput = document.getElementById('edit-transaction-description');
 const editTransactionAmountInput = document.getElementById('edit-transaction-amount');
-// INÍCIO DA ALTERAÇÃO - Seleção do novo campo de data do modal de edição
 const editTransactionDateInput = document.getElementById('edit-transaction-date');
-// FIM DA ALTERAÇÃO
 const editTransactionTypeRadios = document.querySelectorAll('input[name="edit-transaction-type"]');
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
@@ -89,6 +85,9 @@ const addCategoryForm = document.getElementById('add-category-form');
 const newCategoryNameInput = document.getElementById('new-category-name');
 const revenueCategoriesList = document.getElementById('revenue-categories-list');
 const expenseCategoriesList = document.getElementById('expense-categories-list');
+const forgotPasswordLink = document.getElementById('forgot-password-link');
+const pendingApprovalSection = document.getElementById('pending-approval');
+const logoutPendingButton = document.getElementById('logout-pending-button');
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -325,28 +324,20 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
-// INÍCIO DA ALTERAÇÃO - Formata a data para o input tipo 'date'
-/**
- * Formata um objeto Date para uma string no formato 'YYYY-MM-DD'.
- * @param {Date} date O objeto Date a ser formatado.
- * @returns {string} A data formatada.
- */
+/** Formata um objeto Date para uma string no formato 'YYYY-MM-DD'. */
 function formatDateToInput(date) {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
-// FIM DA ALTERAÇÃO
 
 /** Abre e preenche o modal de edição com os dados da transação. */
 function openEditModal(transaction) {
     editTransactionIdInput.value = transaction.id;
     editTransactionDescriptionInput.value = transaction.description;
     editTransactionAmountInput.value = transaction.amount;
-    // INÍCIO DA ALTERAÇÃO - Preenche o campo de data
     editTransactionDateInput.value = formatDateToInput(transaction.date);
-    // FIM DA ALTERAÇÃO
     document.querySelector(`input[name="edit-transaction-type"][value="${transaction.type}"]`).checked = true;
     
     populateCategorySelects(transaction.type, editTransactionCategorySelect);
@@ -418,14 +409,12 @@ function updateDashboard(transactions) {
             descriptionSpan.className = 'transaction-description';
             descriptionSpan.textContent = transaction.description;
             
-            // INÍCIO DA ALTERAÇÃO - Adiciona a data formatada na descrição da transação
             const detailsSpan = document.createElement('span');
             detailsSpan.style.display = 'block';
             detailsSpan.style.fontSize = '0.8rem';
             detailsSpan.style.color = '#7f8c8d';
             const formattedDate = transaction.date.toLocaleDateString('pt-BR');
             detailsSpan.textContent = `${formattedDate} • ${transaction.category || ''} • ${transaction.paymentMethod || ''}`;
-            // FIM DA ALTERAÇÃO
             
             const rightSide = document.createElement('div');
             rightSide.style.display = 'flex';
@@ -460,7 +449,7 @@ function updateDashboard(transactions) {
             };
 
             transactionInfo.appendChild(descriptionSpan);
-            transactionInfo.appendChild(detailsSpan); // Usa o novo 'detailsSpan'
+            transactionInfo.appendChild(detailsSpan);
             actionsDiv.appendChild(editButton);
             actionsDiv.appendChild(deleteButton);
             rightSide.appendChild(amountSpan);
@@ -564,9 +553,11 @@ async function loadUserCategories() {
     }
 }
 
+// Funções de controle de visibilidade da UI
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
-function showAuthForms() { loadingDiv.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none';}
+function showAuthForms() { loadingDiv.style.display = 'none'; appContainer.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none'; pendingApprovalSection.style.display = 'none';}
 function showApp() { loadingDiv.style.display = 'none'; authContainer.style.display = 'none'; appContainer.style.display = 'block'; }
+function showPendingApproval() { loadingDiv.style.display = 'none'; appContainer.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'none'; registerSection.style.display = 'none'; pendingApprovalSection.style.display = 'block'; }
 function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.display = 'none'; registerSection.style.display = 'block'; } else { loginSection.style.display = 'block'; registerSection.style.display = 'none'; } }
 
 // --- Lógica de Negócios e Eventos ---
@@ -574,6 +565,20 @@ function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(true); });
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(false); });
 logoutButton.addEventListener('click', () => { logoutUser().catch(error => showNotification(error.message, 'error')); });
+
+logoutPendingButton.addEventListener('click', () => { logoutUser().catch(error => showNotification(error.message, 'error')); });
+forgotPasswordLink.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = prompt("Por favor, digite seu e-mail para enviarmos o link de redefinição de senha:");
+    if (email) {
+        try {
+            await sendPasswordReset(email);
+            showNotification(`Um e-mail de redefinição de senha foi enviado para ${email}.`);
+        } catch (error) {
+            showNotification("Erro ao enviar e-mail. Verifique se o e-mail está correto.", 'error');
+        }
+    }
+});
 
 closeButton.addEventListener('click', closeEditModal);
 window.addEventListener('click', (event) => { if (event.target == editModal) { closeEditModal(); } });
@@ -637,6 +642,8 @@ registerForm.addEventListener('submit', async (e) => {
     try {
         await registerUser(registerEmailInput.value, registerPasswordInput.value);
         registerForm.reset();
+        toggleAuthForms(false);
+        showNotification("Cadastro realizado! Faça login para continuar.");
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -666,9 +673,7 @@ addTransactionForm.addEventListener('submit', async (e) => {
     const transactionData = {
         description: transactionDescriptionInput.value,
         amount: parseFloat(transactionAmountInput.value),
-        // INÍCIO DA ALTERAÇÃO - Captura a data do formulário
         date: transactionDateInput.value,
-        // FIM DA ALTERAÇÃO
         type: document.querySelector('input[name="transaction-type"]:checked').value,
         category: category,
         paymentMethod: paymentMethodSelect.value,
@@ -692,9 +697,7 @@ addTransactionForm.addEventListener('submit', async (e) => {
         await addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
-        // INÍCIO DA ALTERAÇÃO - Reseta a data para o dia atual após o envio
         transactionDateInput.value = formatDateToInput(new Date());
-        // FIM DA ALTERAÇÃO
         creditCardWrapper.style.display = 'none';
         
         if (transactionData.paymentMethod !== 'credit_card') {
@@ -718,9 +721,7 @@ editTransactionForm.addEventListener('submit', async (e) => {
     const updatedData = {
         description: editTransactionDescriptionInput.value,
         amount: parseFloat(editTransactionAmountInput.value),
-        // INÍCIO DA ALTERAÇÃO - Captura a data do formulário de edição
         date: editTransactionDateInput.value,
-        // FIM DA ALTERAÇÃO
         type: document.querySelector('input[name="edit-transaction-type"]:checked').value,
         category: editTransactionCategorySelect.value,
         paymentMethod: editPaymentMethodSelect.value,
@@ -807,20 +808,25 @@ function initializeApp() {
     monitorAuthState(async (user) => {
         if (user) {
             currentUser = user;
-            showApp();
-            
-            // INÍCIO DA ALTERAÇÃO - Define a data atual no formulário ao carregar o app
-            transactionDateInput.value = formatDateToInput(new Date());
-            // FIM DA ALTERAÇÃO
-            
-            await closeOverdueInvoices(user.uid);
-            populateYearFilter();
-            
-            await Promise.all([
-                loadUserDashboard(),
-                loadUserCreditCards(),
-                loadUserCategories()
-            ]);
+            try {
+                const userProfile = await getUserProfile(user.uid);
+                if (userProfile && userProfile.status === 'approved') {
+                    showApp();
+                    transactionDateInput.value = formatDateToInput(new Date());
+                    await closeOverdueInvoices(user.uid);
+                    populateYearFilter();
+                    await Promise.all([
+                        loadUserDashboard(),
+                        loadUserCreditCards(),
+                        loadUserCategories()
+                    ]);
+                } else {
+                    showPendingApproval();
+                }
+            } catch (error) {
+                showNotification("Erro ao verificar seu perfil. Tente novamente.", "error");
+                logoutUser();
+            }
         } else {
             currentUser = null;
             userCreditCards = [];
