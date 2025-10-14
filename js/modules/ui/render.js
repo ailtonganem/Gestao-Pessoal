@@ -10,11 +10,10 @@ import * as state from '../state.js';
 import * as modals from './modals.js';
 import * as charts from './charts.js';
 import { formatCurrency } from './utils.js';
-// INÍCIO DA ALTERAÇÃO
-import { getRecurringTransactions } from '../recurring.js';
-import { getAllUsers } from '../admin.js';
+// INÍCIO DA CORREÇÃO - As funções de busca de dados foram removidas.
+// Apenas a notificação é necessária para feedback de erro.
 import { showNotification } from './notifications.js';
-// FIM DA ALTERAÇÃO
+// FIM DA CORREÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const totalRevenueEl = document.getElementById('total-revenue');
@@ -284,76 +283,65 @@ export function renderBudgetList() {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO - Implementação da renderização da lista de recorrências
+// INÍCIO DA CORREÇÃO - As funções agora apenas renderizam a partir do estado.
 
-/** Busca e renderiza a lista de transações recorrentes. */
-export async function renderRecurringList() {
-    recurringList.innerHTML = '<li>Carregando...</li>';
-    try {
-        const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
-        state.setUserRecurringTransactions(recurringTxs); // Armazena no estado para uso posterior
-
-        recurringList.innerHTML = '';
-        if (recurringTxs.length === 0) {
-            recurringList.innerHTML = '<li>Nenhuma recorrência cadastrada.</li>';
-            return;
-        }
-
-        recurringTxs.forEach(tx => {
-            const li = document.createElement('li');
-            li.className = tx.type;
-            li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
-
-            li.innerHTML = `
-                <span style="flex-grow: 1; text-align: left;">
-                    Todo dia ${tx.dayOfMonth}: ${tx.description} (${formatCurrency(tx.amount)})
-                </span>
-                <div class="transaction-actions">
-                    <button class="action-btn edit-btn" data-recurring-id="${tx.id}" title="Editar">&#9998;</button>
-                    <button class="action-btn delete-btn" data-recurring-id="${tx.id}" title="Excluir">&times;</button>
-                </div>
-            `;
-            recurringList.appendChild(li);
-        });
-    } catch (error) {
-        showNotification(error.message, 'error');
-        recurringList.innerHTML = '<li>Erro ao carregar recorrências.</li>';
+/** Renderiza a lista de transações recorrentes a partir dos dados do estado global. */
+export function renderRecurringList() {
+    const recurringTxs = state.userRecurringTransactions;
+    recurringList.innerHTML = '';
+    
+    if (recurringTxs.length === 0) {
+        recurringList.innerHTML = '<li>Nenhuma recorrência cadastrada.</li>';
+        return;
     }
+
+    recurringTxs.forEach(tx => {
+        const li = document.createElement('li');
+        li.className = tx.type;
+        li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
+
+        li.innerHTML = `
+            <span style="flex-grow: 1; text-align: left;">
+                Todo dia ${tx.dayOfMonth}: ${tx.description} (${formatCurrency(tx.amount)})
+            </span>
+            <div class="transaction-actions">
+                <button class="action-btn edit-btn" data-recurring-id="${tx.id}" title="Editar">&#9998;</button>
+                <button class="action-btn delete-btn" data-recurring-id="${tx.id}" title="Excluir">&times;</button>
+            </div>
+        `;
+        recurringList.appendChild(li);
+    });
 }
 
-/** Busca e renderiza a lista de usuários para o admin. */
-export async function renderUserList() {
-    userList.innerHTML = '<li>Carregando usuários...</li>';
-    try {
-        const users = await getAllUsers();
-        userList.innerHTML = '';
-        if (users.length === 0) {
-            userList.innerHTML = '<li>Nenhum usuário encontrado.</li>';
-            return;
-        }
-        users.forEach(user => {
-            const li = document.createElement('li');
-            li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border-bottom: 1px solid var(--background-color);';
-            const actionsDiv = user.status === 'pending'
-                ? `<div class="transaction-actions">
-                       <button class="button-secondary approve-user-btn" data-user-id="${user.id}" style="background-color: var(--success-color);">Aprovar</button>
-                   </div>`
-                : '';
-            li.innerHTML = `
-                <div style="text-align: left;">
-                    <span style="font-weight: bold;">${user.email}</span><br>
-                    <span class="status-badge ${user.status}">${user.status}</span>
-                </div>
-                ${actionsDiv}
-            `;
-            userList.appendChild(li);
-        });
-    } catch (error) {
-        showNotification(error.message, 'error');
-        userList.innerHTML = '<li>Erro ao carregar usuários.</li>';
+/**
+ * Renderiza a lista de usuários para o admin.
+ * @param {Array<object>} users - A lista de usuários a ser renderizada.
+ */
+export function renderUserList(users) {
+    userList.innerHTML = '';
+    if (users.length === 0) {
+        userList.innerHTML = '<li>Nenhum usuário encontrado.</li>';
+        return;
     }
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border-bottom: 1px solid var(--background-color);';
+        const actionsDiv = user.status === 'pending'
+            ? `<div class="transaction-actions">
+                   <button class="button-secondary approve-user-btn" data-user-id="${user.id}" style="background-color: var(--success-color);">Aprovar</button>
+               </div>`
+            : '';
+        li.innerHTML = `
+            <div style="text-align: left;">
+                <span style="font-weight: bold;">${user.email}</span><br>
+                <span class="status-badge ${user.status}">${user.status}</span>
+            </div>
+            ${actionsDiv}
+        `;
+        userList.appendChild(li);
+    });
 }
-// FIM DA ALTERAÇÃO
+// FIM DA CORREÇÃO
 
 // --- Renderização de Componentes Específicos ---
 
