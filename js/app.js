@@ -26,14 +26,11 @@ import * as analytics from './modules/analytics.js';
  * e começa a monitorar o estado de autenticação do usuário.
  */
 function initializeApp() {
-    // Define o tema inicial com base no que está salvo no localStorage
     const savedTheme = localStorage.getItem('theme');
     toggleTheme(savedTheme === 'dark');
     
-    // Registra todos os event listeners da aplicação
     initializeEventListeners();
 
-    // Inicia o monitoramento do estado de autenticação
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
 }
@@ -43,9 +40,6 @@ function initializeApp() {
 
 /**
  * Lida com as mudanças no estado de autenticação do usuário.
- * É a função principal que direciona o que acontece quando um usuário
- * faz login ou logout.
- * @param {object|null} user - O objeto de usuário do Firebase, ou null se deslogado.
  */
 async function handleAuthStateChange(user) {
     if (user) {
@@ -65,7 +59,6 @@ async function handleAuthStateChange(user) {
             auth.logoutUser();
         }
     } else {
-        // Limpa o estado e exibe a tela de login
         state.setCurrentUser(null);
         state.setCurrentUserProfile(null);
         state.setAllTransactions([]);
@@ -73,6 +66,7 @@ async function handleAuthStateChange(user) {
         state.setUserCategories([]);
         state.setUserCreditCards([]);
         state.setUserBudgets([]);
+        state.setUserRecurringTransactions([]);
         views.showAuthForms();
     }
 }
@@ -85,7 +79,6 @@ async function loadInitialData(userId) {
     const transactionDateInput = document.getElementById('transaction-date');
     transactionDateInput.value = new Date().toISOString().split('T')[0];
 
-    // Processa tarefas de fundo
     const recurringCount = await recurring.processRecurringTransactions(userId);
     if (recurringCount > 0) {
         showNotification(`${recurringCount} transação(ões) recorrente(s) foram lançadas.`);
@@ -94,7 +87,6 @@ async function loadInitialData(userId) {
 
     render.populateYearFilter();
 
-    // Carrega dados em paralelo para agilizar
     await Promise.all([
         loadUserCategories(),
         loadUserCreditCards(),
@@ -106,21 +98,24 @@ async function loadInitialData(userId) {
 
 
 // --- Funções "Controladoras" / Orquestradoras ---
-// Estas funções são exportadas para serem chamadas pelo módulo de eventos.
 
 /** Busca as transações, armazena no estado e atualiza o dashboard. */
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
+    // INÍCIO DA ALTERAÇÃO - Coleta dos novos filtros de data
     const filters = {
         month: document.getElementById('filter-month').value,
-        year: document.getElementById('filter-year').value
+        year: document.getElementById('filter-year').value,
+        startDate: document.getElementById('filter-start-date').value,
+        endDate: document.getElementById('filter-end-date').value
     };
+    // FIM DA ALTERAÇÃO
 
     try {
         const userTransactions = await transactions.getTransactions(state.currentUser.uid, filters);
         state.setAllTransactions(userTransactions);
-        applyFiltersAndUpdateDashboard(); // Aplica filtros iniciais e renderiza
+        applyFiltersAndUpdateDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -133,12 +128,10 @@ export async function loadUserCategories() {
         const userCategories = await categories.getCategories(state.currentUser.uid);
         state.setUserCategories(userCategories);
         
-        // Renderiza todos os locais onde as categorias são usadas
         render.renderCategoryManagementList();
         render.populateCategoryFilter();
         render.populateBudgetCategorySelect();
         
-        // Popula os selects dos formulários com base no tipo selecionado
         const transactionType = document.querySelector('input[name="transaction-type"]:checked').value;
         render.populateCategorySelects(transactionType, document.getElementById('transaction-category'));
         const recurringType = document.querySelector('input[name="recurring-type"]:checked').value;
@@ -168,7 +161,7 @@ export async function loadUserBudgets() {
         const userBudgets = await budget.getBudgets(state.currentUser.uid);
         state.setUserBudgets(userBudgets);
         render.renderBudgetList();
-        render.updateDashboard(); // Atualiza o progresso dos orçamentos
+        render.updateDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -209,7 +202,6 @@ export function toggleTheme(isDarkMode) {
         themeToggle.checked = false;
     }
 
-    // Se houver um usuário logado, recarrega os gráficos para que eles se adaptem ao novo tema
     if (state.currentUser) {
         charts.renderExpensesChart(state.filteredTransactions);
         analytics.getMonthlySummary(state.currentUser.uid).then(charts.renderTrendsChart);
