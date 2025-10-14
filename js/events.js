@@ -33,6 +33,9 @@ const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
 const editRecurringForm = document.getElementById('edit-recurring-form');
+// INÍCIO DA ALTERAÇÃO
+const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
+// FIM DA ALTERAÇÃO
 const themeToggle = document.getElementById('theme-toggle');
 
 /**
@@ -89,7 +92,6 @@ export function initializeEventListeners() {
         radio.addEventListener('change', (e) => render.populateCategorySelects(e.target.value, document.getElementById('transaction-category')));
     });
 
-    // INÍCIO DA ALTERAÇÃO - Lógica de visibilidade para campos de cartão e parcelamento
     document.getElementById('payment-method').addEventListener('change', (e) => {
         const creditCardWrapper = document.getElementById('credit-card-wrapper');
         const installmentOptionsWrapper = document.getElementById('installment-options-wrapper');
@@ -113,7 +115,6 @@ export function initializeEventListeners() {
             amountLabel.textContent = 'Valor (R$)';
         }
     });
-    // FIM DA ALTERAÇÃO
 
 
     // --- Listeners dos Filtros do Histórico ---
@@ -178,12 +179,31 @@ export function initializeEventListeners() {
         }
     });
 
-    document.getElementById('invoice-period-select').addEventListener('change', (e) => {
+    document.getElementById('invoice-period-select').addEventListener('change', async (e) => {
         const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === e.target.value);
-        if (selectedInvoice) modals.displayInvoiceDetails(selectedInvoice);
+        if (selectedInvoice) await modals.displayInvoiceDetails(selectedInvoice);
     });
 
     document.getElementById('pay-invoice-button').addEventListener('click', handlePayInvoice);
+
+    // INÍCIO DA ALTERAÇÃO - Delegação de eventos para a lista de lançamentos da fatura
+    document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
+        const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
+        if (!eventTarget) return;
+
+        const transactionId = eventTarget.dataset.invoiceTxId;
+        if (eventTarget.matches('.edit-btn')) {
+            modals.openEditInvoiceTransactionModal(transactionId);
+        }
+        if (eventTarget.matches('.delete-btn')) {
+            // Futura implementação da exclusão de lançamento
+            showNotification('A exclusão de lançamentos individuais da fatura será implementada em breve.', 'error');
+        }
+    });
+
+    document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
+    editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
+    // FIM DA ALTERAÇÃO
 
 
     // --- Listeners do Modal de Configurações ---
@@ -270,7 +290,6 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO - Atualiza o handler para coletar dados de parcelamento
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -322,7 +341,6 @@ async function handleAddTransaction(e) {
         await transactions.addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         form.reset();
-        // Reseta a UI de parcelamento para o estado padrão
         document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('credit-card-wrapper').style.display = 'none';
         document.getElementById('installment-options-wrapper').style.display = 'none';
@@ -338,7 +356,6 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleDeleteTransaction(transactionId) {
     const tx = state.filteredTransactions.find(t => t.id === transactionId);
@@ -374,6 +391,50 @@ async function handleUpdateTransaction(e) {
         showNotification(error.message, 'error');
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Novo handler para a edição do lançamento da fatura
+async function handleUpdateInvoiceTransaction(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+        // Coleta os IDs necessários dos campos ocultos
+        const transactionId = form['edit-invoice-transaction-id'].value;
+        const originalInvoiceId = form['edit-invoice-id'].value;
+        const cardId = form['edit-invoice-card-id'].value;
+
+        // Coleta os dados atualizados do formulário
+        const updatedData = {
+            description: form['edit-invoice-tx-description'].value,
+            amount: parseFloat(form['edit-invoice-tx-amount'].value),
+            purchaseDate: form['edit-invoice-tx-date'].value, // Mantém como string, a função de backend converterá
+            category: form['edit-invoice-tx-category'].value,
+        };
+
+        // Busca o objeto do cartão que está sendo usado
+        const card = state.userCreditCards.find(c => c.id === cardId);
+        if (!card) {
+            throw new Error("Cartão de crédito não encontrado.");
+        }
+
+        // Chama a nova função de backend
+        await invoices.updateInvoiceTransaction(originalInvoiceId, transactionId, updatedData, card);
+        
+        showNotification('Lançamento atualizado com sucesso!');
+        modals.closeEditInvoiceTransactionModal();
+        
+        // Recarrega os dados da fatura para refletir as alterações
+        await modals.loadAndDisplayInvoices(card);
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleAddCreditCard(e) {
     e.preventDefault();
@@ -417,7 +478,7 @@ async function handlePayInvoice() {
             try {
                 await invoices.payInvoice(selectedInvoice, state.selectedCardForInvoiceView);
                 showNotification("Fatura paga com sucesso!");
-                modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
+                await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
                 app.loadUserDashboard();
             } catch (error) {
                 showNotification(error.message, 'error');
