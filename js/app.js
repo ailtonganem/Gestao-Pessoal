@@ -2,8 +2,9 @@
 import { registerUser, loginUser, logoutUser, monitorAuthState } from './modules/auth.js';
 // Importa as funções de transações.
 import { addTransaction, getTransactions, deleteTransaction, updateTransaction } from './modules/transactions.js';
-// Importa a função de categorias.
-import { getCategories } from './modules/categories.js';
+// INÍCIO DA ALTERAÇÃO - Importa as novas funções de gerenciamento de categoria.
+import { getCategories, addCategory, deleteCategory } from './modules/categories.js';
+// FIM DA ALTERAÇÃO
 // Importa as funções de cartão de crédito.
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 // Importa as funções de faturas.
@@ -12,6 +13,7 @@ import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices }
 // --- Variáveis de Estado ---
 let currentUser = null;
 let userCreditCards = []; 
+let userCategories = []; // Nova variável de estado para categorias do usuário
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 let expensesChart = null; // Variável para a instância do gráfico
@@ -36,8 +38,6 @@ const transactionDescriptionInput = document.getElementById('transaction-descrip
 const transactionAmountInput = document.getElementById('transaction-amount');
 const transactionTypeRadios = document.querySelectorAll('input[name="transaction-type"]');
 const transactionCategorySelect = document.getElementById('transaction-category');
-const newCategoryWrapper = document.getElementById('new-category-wrapper');
-const newCategoryInput = document.getElementById('new-transaction-category');
 const paymentMethodSelect = document.getElementById('payment-method');
 const creditCardWrapper = document.getElementById('credit-card-wrapper');
 const creditCardSelect = document.getElementById('credit-card-select');
@@ -77,10 +77,15 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 const filterMonthSelect = document.getElementById('filter-month');
 const filterYearSelect = document.getElementById('filter-year');
 const chartCanvas = document.getElementById('expenses-chart');
-
 const settingsButton = document.getElementById('settings-button');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsModalButton = document.querySelector('.close-settings-modal-button');
+// INÍCIO DA ALTERAÇÃO - Novos elementos do modal de categorias
+const addCategoryForm = document.getElementById('add-category-form');
+const newCategoryNameInput = document.getElementById('new-category-name');
+const revenueCategoriesList = document.getElementById('revenue-categories-list');
+const expenseCategoriesList = document.getElementById('expense-categories-list');
+// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -141,25 +146,28 @@ function populateYearFilter() {
     }
 }
 
-/** Popula um elemento <select> com as categorias apropriadas. */
-function populateCategories(type, selectElement, isEditForm = false) {
-    const categories = getCategories(type);
+// INÍCIO DA ALTERAÇÃO - Função refatorada para usar categorias do usuário.
+/** Popula um elemento <select> com as categorias do usuário. */
+function populateCategorySelects(type, selectElement) {
+    const filteredCategories = userCategories.filter(cat => cat.type === type);
     selectElement.innerHTML = '';
 
-    categories.forEach(category => {
+    if (filteredCategories.length === 0) {
         const option = document.createElement('option');
-        option.value = category;
-        option.textContent = category;
+        option.textContent = `Nenhuma categoria de ${type === 'revenue' ? 'receita' : 'despesa'} cadastrada`;
+        option.disabled = true;
+        selectElement.appendChild(option);
+        return;
+    }
+
+    filteredCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.name;
+        option.textContent = category.name;
         selectElement.appendChild(option);
     });
-
-    if (!isEditForm) {
-        const otherOption = document.createElement('option');
-        otherOption.value = 'outra';
-        otherOption.textContent = 'Outra...';
-        selectElement.appendChild(otherOption);
-    }
 }
+// FIM DA ALTERAÇÃO
 
 /** Popula os <select> de cartão de crédito com os cartões do usuário. */
 function populateCreditCardSelects() {
@@ -323,7 +331,7 @@ function openEditModal(transaction) {
     editTransactionAmountInput.value = transaction.amount;
     document.querySelector(`input[name="edit-transaction-type"][value="${transaction.type}"]`).checked = true;
     
-    populateCategories(transaction.type, editTransactionCategorySelect, true);
+    populateCategorySelects(transaction.type, editTransactionCategorySelect);
     editTransactionCategorySelect.value = transaction.category;
 
     editPaymentMethodSelect.value = transaction.paymentMethod;
@@ -337,17 +345,14 @@ function closeEditModal() {
     editModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO
 /** Abre o modal de gerenciamento de cartões. */
 async function openCardModal() {
-    // A verificação de faturas vencidas foi removida daqui pois já acontece no login.
     if (currentUser && selectedCardForInvoiceView) {
         await loadAndDisplayInvoices(selectedCardForInvoiceView);
     }
     showCardManagementView();
     creditCardModal.style.display = 'flex';
 }
-// FIM DA ALTERAÇÃO
 
 /** Fecha o modal de gerenciamento de cartões. */
 function closeCardModal() {
@@ -482,6 +487,65 @@ async function loadUserCreditCards() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Novas funções para carregar e renderizar categorias
+/** Renderiza as listas de categorias no modal de configurações. */
+function renderCategoryManagementList() {
+    revenueCategoriesList.innerHTML = '';
+    expenseCategoriesList.innerHTML = '';
+
+    const revenueCats = userCategories.filter(c => c.type === 'revenue');
+    const expenseCats = userCategories.filter(c => c.type === 'expense');
+
+    const createCategoryListItem = (category, listElement) => {
+        const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.justifyContent = 'space-between';
+        li.style.padding = '0.5rem';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = category.name;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '&times;';
+        deleteButton.classList.add('action-btn', 'delete-btn');
+        deleteButton.title = 'Excluir categoria';
+        deleteButton.onclick = async () => {
+            if (confirm(`Tem certeza que deseja excluir a categoria "${category.name}"?`)) {
+                try {
+                    await deleteCategory(category.id);
+                    showNotification('Categoria excluída com sucesso!');
+                    loadUserCategories(); // Recarrega e renderiza tudo
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            }
+        };
+
+        li.appendChild(nameSpan);
+        li.appendChild(deleteButton);
+        listElement.appendChild(li);
+    };
+
+    revenueCats.forEach(cat => createCategoryListItem(cat, revenueCategoriesList));
+    expenseCats.forEach(cat => createCategoryListItem(cat, expenseCategoriesList));
+}
+
+/** Busca as categorias do usuário e atualiza a UI (listas e dropdowns). */
+async function loadUserCategories() {
+    if (!currentUser) return;
+    try {
+        userCategories = await getCategories(currentUser.uid);
+        renderCategoryManagementList();
+        // Atualiza os selects dos formulários com as novas categorias
+        const currentTransactionType = document.querySelector('input[name="transaction-type"]:checked').value;
+        populateCategorySelects(currentTransactionType, transactionCategorySelect);
+        populateCategorySelects('expense', editTransactionCategorySelect); // Assume despesa por padrão no modal de edição
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
+
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
 function showAuthForms() { loadingDiv.style.display = 'none'; authContainer.style.display = 'block'; loginSection.style.display = 'block'; registerSection.style.display = 'none';}
 function showApp() { loadingDiv.style.display = 'none'; authContainer.style.display = 'none'; appContainer.style.display = 'block'; }
@@ -537,8 +601,12 @@ payInvoiceButton.addEventListener('click', async () => {
 filterMonthSelect.addEventListener('change', loadUserDashboard);
 filterYearSelect.addEventListener('change', loadUserDashboard);
 
-transactionTypeRadios.forEach(radio => { radio.addEventListener('change', (e) => populateCategories(e.target.value, transactionCategorySelect)); });
-transactionCategorySelect.addEventListener('change', (e) => { newCategoryWrapper.style.display = e.target.value === 'outra' ? 'block' : 'none'; });
+// INÍCIO DA ALTERAÇÃO - Atualiza o listener para usar a nova função de popular categorias
+transactionTypeRadios.forEach(radio => { 
+    radio.addEventListener('change', (e) => populateCategorySelects(e.target.value, transactionCategorySelect)); 
+});
+// A lógica para a opção "Outra..." foi removida.
+// FIM DA ALTERAÇÃO
 paymentMethodSelect.addEventListener('change', (e) => { creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 
@@ -575,16 +643,15 @@ addTransactionForm.addEventListener('submit', async (e) => {
         return;
     }
     
-    let category = transactionCategorySelect.value;
-    if (category === 'outra') {
-        category = newCategoryInput.value.trim();
-        if (!category) {
-            showNotification("Por favor, informe o nome da nova categoria.", 'error');
-            submitButton.disabled = false;
-            submitButton.textContent = 'Adicionar';
-            return;
-        }
+    // INÍCIO DA ALTERAÇÃO - Simplificação da obtenção da categoria
+    const category = transactionCategorySelect.value;
+    if (!category) {
+        showNotification("Por favor, selecione uma categoria.", 'error');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Adicionar';
+        return;
     }
+    // FIM DA ALTERAÇÃO
 
     const transactionData = {
         description: transactionDescriptionInput.value,
@@ -612,9 +679,7 @@ addTransactionForm.addEventListener('submit', async (e) => {
         await addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         addTransactionForm.reset();
-        newCategoryWrapper.style.display = 'none';
         creditCardWrapper.style.display = 'none';
-        populateCategories('expense', transactionCategorySelect);
         
         if (transactionData.paymentMethod !== 'credit_card') {
             loadUserDashboard();
@@ -687,6 +752,38 @@ addCreditCardForm.addEventListener('submit', async (e) => {
     }
 });
 
+// INÍCIO DA ALTERAÇÃO - Novo listener para o formulário de adicionar categoria
+addCategoryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitButton = addCategoryForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const name = newCategoryNameInput.value.trim();
+    if (!name) {
+        showNotification("O nome da categoria não pode estar vazio.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    const type = document.querySelector('input[name="new-category-type"]:checked').value;
+
+    try {
+        await addCategory({
+            name: name,
+            type: type,
+            userId: currentUser.uid
+        });
+        showNotification("Categoria adicionada com sucesso!");
+        addCategoryForm.reset();
+        await loadUserCategories(); // Recarrega e renderiza tudo
+    } catch (error) {
+        showNotification(error.message, "error");
+    } finally {
+        submitButton.disabled = false;
+    }
+});
+// FIM DA ALTERAÇÃO
+
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
     showLoading();
@@ -696,17 +793,19 @@ function initializeApp() {
             showApp();
             
             await closeOverdueInvoices(user.uid);
-
-            populateCategories('expense', transactionCategorySelect);
             populateYearFilter();
             
+            // INÍCIO DA ALTERAÇÃO - Carrega todos os dados iniciais em paralelo
             await Promise.all([
                 loadUserDashboard(),
-                loadUserCreditCards()
+                loadUserCreditCards(),
+                loadUserCategories()
             ]);
+            // FIM DA ALTERAÇÃO
         } else {
             currentUser = null;
             userCreditCards = [];
+            userCategories = []; // Limpa as categorias ao deslogar
             showAuthForms();
         }
     });
