@@ -97,30 +97,26 @@ async function getTransactions(userId, filters = {}) {
         
         let queryConstraints = [
             where("userId", "==", userId),
-            where("paymentMethod", "!=", "credit_card")
+            // INÍCIO DA ALTERAÇÃO - Substitui o filtro '!=' por 'in' para ser compatível com o filtro de data.
+            where("paymentMethod", "in", ["pix", "debit", "cash"])
+            // FIM DA ALTERAÇÃO
         ];
 
         if (year && month && month !== 'all') {
             const startDate = new Date(year, month - 1, 1);
             const endDate = new Date(year, month, 0, 23, 59, 59);
             
-            // INÍCIO DA ALTERAÇÃO - Filtra pelo campo 'date'
             queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
             queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
-            // FIM DA ALTERAÇÃO
         } else if (year) {
             const startDate = new Date(year, 0, 1);
             const endDate = new Date(year, 11, 31, 23, 59, 59);
-            
-            // INÍCIO DA ALTERAÇÃO - Filtra pelo campo 'date'
+
             queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
             queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
-            // FIM DA ALTERAÇÃO
         }
         
-        // INÍCIO DA ALTERAÇÃO - Ordena pelo campo 'date'
         queryConstraints.push(orderBy("date", "desc"));
-        // FIM DA ALTERAÇÃO
 
         const q = query(transactionsCollectionRef, ...queryConstraints);
         
@@ -167,12 +163,10 @@ async function updateTransaction(transactionId, updatedData) {
     try {
         const transactionDocRef = doc(db, 'transactions', transactionId);
 
-        // INÍCIO DA ALTERAÇÃO - Converte a string de data para Timestamp antes de salvar
         const dataToUpdate = { ...updatedData };
         if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
             dataToUpdate.date = Timestamp.fromDate(parseDateString(dataToUpdate.date));
         }
-        // FIM DA ALTERAÇÃO
 
         await updateDoc(transactionDocRef, dataToUpdate);
     } catch (error) {
