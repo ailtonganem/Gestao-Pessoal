@@ -14,7 +14,7 @@ import { getAllUsers, updateUserStatus } from './modules/admin.js';
 import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
 // Importa o módulo de análise
 import { getMonthlySummary } from './modules/analytics.js';
-// Importa o novo módulo de orçamento
+// Importa o módulo de orçamento
 import { setBudget, getBudgets, deleteBudget } from './modules/budget.js';
 
 // --- Variáveis de Estado ---
@@ -119,8 +119,9 @@ const setBudgetForm = document.getElementById('set-budget-form');
 const budgetCategorySelect = document.getElementById('budget-category');
 const budgetAmountInput = document.getElementById('budget-amount');
 const budgetList = document.getElementById('budget-list');
-// INÍCIO DA ALTERAÇÃO - Seleção da nova lista no dashboard
 const budgetProgressList = document.getElementById('budget-progress-list');
+// INÍCIO DA ALTERAÇÃO
+const themeToggle = document.getElementById('theme-toggle');
 // FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
@@ -165,6 +166,14 @@ function renderExpensesChart(transactions) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        // Altera a cor do texto da legenda com base no tema
+                        color: document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e'
+                    }
+                }
+            }
         }
     });
 }
@@ -195,15 +204,38 @@ function renderTrendsChart(summaryData) {
         ]
     };
 
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
     trendsChart = new Chart(trendsChartCanvas, {
         type: 'bar',
         data: data,
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                }
+            },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: textColor.replace(')', ', 0.1)') // Deixa as linhas da grade mais transparentes
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: 'transparent'
+                    }
                 }
             }
         }
@@ -568,7 +600,7 @@ function updateDashboard() {
     finalBalanceEl.textContent = formatCurrency(fullPeriodRevenue - fullPeriodExpenses);
 
     renderExpensesChart(transactionsToRender);
-    renderBudgetProgress(); // Chama a renderização do progresso dos orçamentos
+    renderBudgetProgress();
 }
 
 /** Busca os dados do usuário e chama a função para atualizar o dashboard. */
@@ -842,7 +874,7 @@ function renderBudgetList() {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para renderizar o progresso dos orçamentos no dashboard
+/** Renderiza as barras de progresso dos orçamentos no dashboard. */
 function renderBudgetProgress() {
     budgetProgressList.innerHTML = '';
 
@@ -851,7 +883,6 @@ function renderBudgetProgress() {
         document.getElementById('go-to-budgets').addEventListener('click', (e) => {
             e.preventDefault();
             openSettingsModal();
-            // Simula o clique na aba de orçamentos
             document.querySelector('.tab-link[data-tab="budget-management-tab"]').click();
         });
         return;
@@ -886,7 +917,6 @@ function renderBudgetProgress() {
         budgetProgressList.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 // Funções de controle de visibilidade da UI
 function showLoading() { loadingDiv.style.display = 'block'; authContainer.style.display = 'none'; appContainer.style.display = 'none'; }
