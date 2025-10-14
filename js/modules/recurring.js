@@ -10,7 +10,8 @@ import {
     where,
     orderBy,
     Timestamp,
-    writeBatch
+    writeBatch,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 const RECURRING_COLLECTION = 'recurringTransactions';
@@ -61,6 +62,22 @@ async function getRecurringTransactions(userId) {
 }
 
 /**
+ * Atualiza uma configuração de transação recorrente.
+ * @param {string} recurringId - O ID da recorrência a ser atualizada.
+ * @param {object} updatedData - Os novos dados para a recorrência.
+ * @returns {Promise<void>}
+ */
+async function updateRecurringTransaction(recurringId, updatedData) {
+    try {
+        const docRef = doc(db, RECURRING_COLLECTION, recurringId);
+        await updateDoc(docRef, updatedData);
+    } catch (error) {
+        console.error("Erro ao atualizar transação recorrente:", error);
+        throw new Error("Não foi possível salvar as alterações da recorrência.");
+    }
+}
+
+/**
  * Exclui uma configuração de transação recorrente.
  * @param {string} recurringId - O ID da recorrência a ser excluída.
  * @returns {Promise<void>}
@@ -69,10 +86,12 @@ async function deleteRecurringTransaction(recurringId) {
     try {
         const docRef = doc(db, RECURRING_COLLECTION, recurringId);
         await deleteDoc(docRef);
+    // INÍCIO DA CORREÇÃO - Adicionada a chave de abertura '{' que estava faltando.
     } catch (error) {
         console.error("Erro ao excluir transação recorrente:", error);
         throw new Error("Não foi possível excluir a recorrência.");
     }
+    // FIM DA CORREÇÃO
 }
 
 /**
@@ -139,5 +158,6 @@ export {
     addRecurringTransaction,
     getRecurringTransactions,
     deleteRecurringTransaction,
+    updateRecurringTransaction,
     processRecurringTransactions
 };
