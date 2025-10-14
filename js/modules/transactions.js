@@ -2,6 +2,9 @@
 import { db } from '../firebase-config.js';
 // Importa a lógica de faturas.
 import { findOrCreateInvoice } from './invoices.js';
+// INÍCIO DA ALTERAÇÃO - Importa a função de autocomplete
+import { saveUniqueDescription } from './autocomplete.js';
+// FIM DA ALTERAÇÃO
 
 // Importa as funções do Firestore necessárias.
 import {
@@ -55,15 +58,13 @@ async function addTransaction(transactionData, cardData = null) {
                 const invoiceRef = doc(db, 'invoices', invoiceId);
                 const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
                 
-                // INÍCIO DA ALTERAÇÃO - Adiciona o campo 'purchaseDate'
                 const newTransactionInInvoice = {
                     description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
                     amount: installmentAmount,
                     category: transactionData.category,
-                    purchaseDate: Timestamp.fromDate(currentInstallmentDate), // Salva a data real da parcela
+                    purchaseDate: Timestamp.fromDate(currentInstallmentDate),
                     createdAt: serverTimestamp()
                 };
-                // FIM DA ALTERAÇÃO
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
                 batch.set(newTransactionRef, newTransactionInInvoice);
@@ -74,15 +75,13 @@ async function addTransaction(transactionData, cardData = null) {
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
             
-            // INÍCIO DA ALTERAÇÃO - Adiciona o campo 'purchaseDate'
             const newTransactionInInvoice = {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
-                purchaseDate: Timestamp.fromDate(transactionDate), // Salva a data real da compra
+                purchaseDate: Timestamp.fromDate(transactionDate),
                 createdAt: serverTimestamp()
             };
-            // FIM DA ALTERAÇÃO
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
             batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
@@ -90,6 +89,9 @@ async function addTransaction(transactionData, cardData = null) {
 
         try {
             await batch.commit();
+            // INÍCIO DA ALTERAÇÃO - Salva a descrição para o autocomplete
+            saveUniqueDescription(transactionData.userId, transactionData.description);
+            // FIM DA ALTERAÇÃO
         } catch (error) {
             console.error("Erro ao salvar transação de crédito:", error);
             throw new Error("Não foi possível salvar a transação no cartão.");
@@ -104,6 +106,9 @@ async function addTransaction(transactionData, cardData = null) {
                 createdAt: serverTimestamp()
             };
             await addDoc(transactionsCollectionRef, dataToSave);
+            // INÍCIO DA ALTERAÇÃO - Salva a descrição para o autocomplete
+            saveUniqueDescription(transactionData.userId, transactionData.description);
+            // FIM DA ALTERAÇÃO
         } catch (error) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
