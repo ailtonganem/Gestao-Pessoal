@@ -10,6 +10,7 @@
     --revenue-color: var(--success-color);
     --expense-color: var(--error-color);
     --paid-color: #95a5a6;
+    --pending-color: #f39c12; /* Nova cor para status pendente */
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -73,6 +74,7 @@ form { display: flex; flex-direction: column; gap: 1rem; }
 .form-control input[type="password"],
 .form-control input[type="text"],
 .form-control input[type="number"],
+.form-control input[type="date"], /* Adicionado para consistência */
 .form-control select {
     width: 100%; padding: 0.8rem; border: 1px solid #bdc3c7; border-radius: 5px;
     font-size: 1rem; font-family: var(--font-family);
@@ -202,7 +204,6 @@ a:hover { text-decoration: underline; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-/* INÍCIO DA ALTERAÇÃO */
 /* Unifica os estilos para todos os botões de fechar dos modais */
 .close-button, 
 .close-card-modal-button, 
@@ -214,7 +215,7 @@ a:hover { text-decoration: underline; }
     font-size: 2rem;
     font-weight: bold;
     cursor: pointer;
-    line-height: 1; /* Adicionado para melhor alinhamento vertical */
+    line-height: 1;
 }
 
 /* Efeito hover unificado */
@@ -226,11 +227,44 @@ a:hover { text-decoration: underline; }
 .close-settings-modal-button:focus {
     color: var(--text-color);
 }
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para as abas do modal */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--background-color);
+    margin-bottom: 1.5rem;
+}
+.tab-link {
+    background: none;
+    border: none;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #7f8c8d;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px; /* Alinha com a borda do contêiner */
+}
+.tab-link:hover {
+    color: var(--text-color);
+}
+.tab-link.active {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.5s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 /* FIM DA ALTERAÇÃO */
 
 /* Estilos Específicos do Modal de Cartões */
 #card-list-section { margin-bottom: 2rem; }
-#credit-card-list { list-style-type: none; padding: 0; max-height: 150px; overflow-y: auto; }
+#credit-card-list, #user-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
 #credit-card-list li {
     background-color: var(--background-color); padding: 0.8rem; margin-bottom: 0.5rem;
     border-radius: 5px; display: flex; justify-content: space-between; align-items: center; text-align: left;
@@ -243,13 +277,21 @@ a:hover { text-decoration: underline; }
 #back-to-cards-button { margin-bottom: 1.5rem; }
 #invoice-summary { text-align: left; margin: 1rem 0; }
 #invoice-summary p { margin: 0.5rem 0; font-size: 1rem; }
+
 .status-badge {
     padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
     color: white; font-weight: bold;
+    display: inline-block;
+    margin-top: 4px;
 }
 .status-badge.open { background-color: var(--secondary-color); }
 .status-badge.closed { background-color: var(--error-color); }
 .status-badge.paid { background-color: var(--paid-color); }
+/* INÍCIO DA ALTERAÇÃO - Novos estilos de status-badge */
+.status-badge.pending { background-color: var(--pending-color); }
+.status-badge.approved { background-color: var(--success-color); }
+/* FIM DA ALTERAÇÃO */
+
 #invoice-transactions-list { list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; }
 #invoice-transactions-list li {
     display: flex; justify-content: space-between; padding: 0.5rem;
