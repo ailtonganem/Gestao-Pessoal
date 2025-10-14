@@ -78,6 +78,12 @@ const filterMonthSelect = document.getElementById('filter-month');
 const filterYearSelect = document.getElementById('filter-year');
 const chartCanvas = document.getElementById('expenses-chart');
 
+// INÍCIO DA ALTERAÇÃO (Seleção de novos elementos)
+const settingsButton = document.getElementById('settings-button');
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsModalButton = document.querySelector('.close-settings-modal-button');
+// FIM DA ALTERAÇÃO
+
 // --- Funções de Manipulação da UI e Gráfico ---
 
 /** Renderiza o gráfico de despesas por categoria. */
@@ -350,6 +356,18 @@ function closeCardModal() {
     creditCardModal.style.display = 'none';
 }
 
+// INÍCIO DA ALTERAÇÃO (Novas funções do modal de configurações)
+/** Abre o modal de configurações. */
+function openSettingsModal() {
+    settingsModal.style.display = 'flex';
+}
+
+/** Fecha o modal de configurações. */
+function closeSettingsModal() {
+    settingsModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
+
 /** Formata um número para o padrão de moeda BRL. */
 function formatCurrency(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -478,13 +496,22 @@ function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(true); });
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(false); });
 logoutButton.addEventListener('click', () => { logoutUser().catch(error => showNotification(error.message, 'error')); });
+
+// Eventos do Modal de Edição
 closeButton.addEventListener('click', closeEditModal);
 window.addEventListener('click', (event) => { if (event.target == editModal) { closeEditModal(); } });
 
+// Eventos do Modal de Cartões
 manageCardsButton.addEventListener('click', openCardModal);
 closeCardModalButton.addEventListener('click', closeCardModal);
 window.addEventListener('click', (event) => { if (event.target == creditCardModal) { closeCardModal(); } });
 backToCardsButton.addEventListener('click', showCardManagementView);
+
+// INÍCIO DA ALTERAÇÃO (Eventos do novo modal de configurações)
+settingsButton.addEventListener('click', openSettingsModal);
+closeSettingsModalButton.addEventListener('click', closeSettingsModal);
+window.addEventListener('click', (event) => { if (event.target == settingsModal) { closeSettingsModal(); } });
+// FIM DA ALTERAÇÃO
 
 invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoiceId = e.target.value;
