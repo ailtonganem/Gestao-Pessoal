@@ -44,45 +44,45 @@ async function addTransaction(transactionData, cardData = null) {
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         const batch = writeBatch(db);
 
-        // INÍCIO DA ALTERAÇÃO - Lógica para compras parceladas
         if (transactionData.isInstallment && transactionData.installments > 1) {
             const totalAmount = transactionData.amount;
-            // Arredonda para 2 casas decimais para evitar problemas com dízimas
             const installmentAmount = parseFloat((totalAmount / transactionData.installments).toFixed(2));
 
             for (let i = 0; i < transactionData.installments; i++) {
-                // Calcula a data da compra para a parcela atual (avança um mês a cada iteração)
                 const currentInstallmentDate = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + i, transactionDate.getDate());
                 
-                // Encontra ou cria a fatura para o mês da parcela atual
                 const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, currentInstallmentDate);
                 const invoiceRef = doc(db, 'invoices', invoiceId);
                 const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
                 
+                // INÍCIO DA ALTERAÇÃO - Adiciona o campo 'purchaseDate'
                 const newTransactionInInvoice = {
                     description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
                     amount: installmentAmount,
                     category: transactionData.category,
+                    purchaseDate: Timestamp.fromDate(currentInstallmentDate), // Salva a data real da parcela
                     createdAt: serverTimestamp()
                 };
+                // FIM DA ALTERAÇÃO
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
                 batch.set(newTransactionRef, newTransactionInInvoice);
                 batch.update(invoiceRef, { totalAmount: increment(installmentAmount) });
             }
-        // FIM DA ALTERAÇÃO
         } else {
-            // Lógica para compra à vista no cartão (como era antes)
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
             
+            // INÍCIO DA ALTERAÇÃO - Adiciona o campo 'purchaseDate'
             const newTransactionInInvoice = {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
+                purchaseDate: Timestamp.fromDate(transactionDate), // Salva a data real da compra
                 createdAt: serverTimestamp()
             };
+            // FIM DA ALTERAÇÃO
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
             batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
@@ -96,7 +96,6 @@ async function addTransaction(transactionData, cardData = null) {
         }
 
     } else {
-        // Lógica para transações que não são de cartão de crédito (PIX, débito, etc.)
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
             const dataToSave = {
