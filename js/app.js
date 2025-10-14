@@ -24,6 +24,7 @@ let userCreditCards = [];
 let userCategories = [];
 let userBudgets = [];
 let allTransactions = [];
+let filteredTransactions = []; // Nova variável para a lista filtrada
 let selectedCardForInvoiceView = null;
 let currentCardInvoices = [];
 let expensesChart = null; 
@@ -121,6 +122,9 @@ const budgetAmountInput = document.getElementById('budget-amount');
 const budgetList = document.getElementById('budget-list');
 const budgetProgressList = document.getElementById('budget-progress-list');
 const themeToggle = document.getElementById('theme-toggle');
+// INÍCIO DA ALTERAÇÃO
+const exportCsvButton = document.getElementById('export-csv-button');
+// FIM DA ALTERAÇÃO
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -500,7 +504,7 @@ function updateDashboard() {
     const categoryFilter = filterCategorySelect.value;
     const paymentMethodFilter = filterPaymentMethodSelect.value;
 
-    const filteredTransactions = allTransactions.filter(transaction => {
+    filteredTransactions = allTransactions.filter(transaction => {
         const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
         const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
@@ -924,12 +928,10 @@ function toggleAuthForms(showRegister) { if (showRegister) { loginSection.style.
 
 // --- Lógica de Negócios e Eventos ---
 
-// INÍCIO DA ALTERAÇÃO - Funções e listeners para o Tema
 function enableDarkMode() {
     document.body.classList.add('dark-mode');
     localStorage.setItem('theme', 'dark');
     themeToggle.checked = true;
-    // Força a re-renderização dos gráficos para aplicar as novas cores
     if(currentUser) {
         updateDashboard(); 
         getMonthlySummary(currentUser.uid).then(renderTrendsChart);
@@ -940,7 +942,6 @@ function disableDarkMode() {
     document.body.classList.remove('dark-mode');
     localStorage.setItem('theme', 'light');
     themeToggle.checked = false;
-    // Força a re-renderização dos gráficos para aplicar as novas cores
     if(currentUser) {
         updateDashboard();
         getMonthlySummary(currentUser.uid).then(renderTrendsChart);
@@ -954,8 +955,6 @@ themeToggle.addEventListener('change', () => {
         disableDarkMode();
     }
 });
-// FIM DA ALTERAÇÃO
-
 
 showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(true); });
 showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms(false); });
@@ -1284,14 +1283,12 @@ setBudgetForm.addEventListener('submit', async (e) => {
 
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
-    // INÍCIO DA ALTERAÇÃO - Aplica o tema salvo antes de tudo
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         enableDarkMode();
     } else {
-        disableDarkMode(); // Garante o estado inicial correto
+        disableDarkMode();
     }
-    // FIM DA ALTERAÇÃO
 
     showLoading();
     monitorAuthState(async (user) => {
@@ -1338,6 +1335,7 @@ function initializeApp() {
             userCategories = [];
             userBudgets = [];
             allTransactions = [];
+            filteredTransactions = [];
             showAuthForms();
         }
     });
