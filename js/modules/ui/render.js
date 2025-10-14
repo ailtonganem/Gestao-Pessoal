@@ -75,11 +75,9 @@ function renderTransactionList(transactionsToRender) {
         li.dataset.id = transaction.id;
 
         const formattedDate = transaction.date.toLocaleDateString('pt-BR');
-        // INÍCIO DA ALTERAÇÃO - Exibe a subcategoria na lista de transações
         const categoryDisplay = transaction.subcategory 
             ? `${transaction.category} / ${transaction.subcategory}` 
             : transaction.category;
-        // FIM DA ALTERAÇÃO
 
         li.innerHTML = `
             <div style="text-align: left;">
@@ -115,7 +113,7 @@ export function populateCategorySelects(type, selectElement) {
     filteredCategories.forEach(category => {
         const option = document.createElement('option');
         option.value = category.name;
-        option.dataset.categoryId = category.id; // Adiciona o ID para referência futura
+        option.dataset.categoryId = category.id;
         option.textContent = category.name;
         selectElement.appendChild(option);
     });
@@ -249,19 +247,20 @@ export function renderInvoiceTransactionsList(transactions) {
 
 // --- Funções de Renderização para o Modal de Configurações ---
 
-// INÍCIO DA ALTERAÇÃO - Reescrita completa da função de renderização de categorias
 /** Renderiza as listas de categorias e subcategorias de forma aninhada. */
 export function renderCategoryManagementList() {
     revenueCategoriesList.innerHTML = '';
     expenseCategoriesList.innerHTML = '';
 
     const createCategoryListItem = (category) => {
-        const subcategoriesHtml = category.subcategories.map(sub => `
+        // INÍCIO DA CORREÇÃO - Garante que subcategories seja um array
+        const subcategoriesHtml = (category.subcategories || []).map(sub => `
             <li class="subcategory-item">
                 <span>${sub}</span>
                 <button class="action-btn delete-btn delete-subcategory-btn" data-subcategory-name="${sub}" title="Excluir Subcategoria">&times;</button>
             </li>
         `).join('');
+        // FIM DA CORREÇÃO
 
         const li = document.createElement('li');
         li.className = 'category-item';
@@ -288,7 +287,6 @@ export function renderCategoryManagementList() {
     state.userCategories.filter(c => c.type === 'revenue').forEach(cat => revenueCategoriesList.appendChild(createCategoryListItem(cat)));
     state.userCategories.filter(c => c.type === 'expense').forEach(cat => expenseCategoriesList.appendChild(createCategoryListItem(cat)));
 }
-// FIM DA ALTERAÇÃO
 
 /** Popula o select de categorias na aba de orçamentos. */
 export function populateBudgetCategorySelect() {
