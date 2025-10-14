@@ -98,6 +98,12 @@
                         <label for="transaction-amount">Valor (R$)</label>
                         <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
                     </div>
+                    <!-- INÍCIO DA ALTERAÇÃO -->
+                    <div class="form-control">
+                        <label for="transaction-date">Data</label>
+                        <input type="date" id="transaction-date" required>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                     <div class="form-control">
                         <label>Tipo</label>
                         <div class="radio-container">
@@ -112,10 +118,6 @@
                         <select id="transaction-category" required>
                             <!-- Categorias do usuário serão carregadas aqui -->
                         </select>
-                    </div>
-                    <div id="new-category-wrapper" class="form-control" style="display: none;">
-                        <label for="new-transaction-category">Nova Categoria</label>
-                        <input type="text" id="new-transaction-category" placeholder="Ex: Lazer">
                     </div>
                     <div class="form-control">
                         <label for="payment-method">Método de Pagamento</label>
@@ -189,6 +191,12 @@
                     <label for="edit-transaction-amount">Valor (R$)</label>
                     <input type="number" id="edit-transaction-amount" step="0.01" required>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div class="form-control">
+                    <label for="edit-transaction-date">Data</label>
+                    <input type="date" id="edit-transaction-date" required>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label>Tipo</label>
                     <div class="radio-container">
@@ -278,7 +286,7 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO - Estrutura do Modal de Configurações -->
+    <!-- Estrutura do Modal de Configurações -->
     <div id="settings-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
@@ -325,7 +333,6 @@
             </div>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
