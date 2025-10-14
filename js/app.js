@@ -8,13 +8,15 @@ import { getCategories, addCategory, deleteCategory } from './modules/categories
 import { addCreditCard, getCreditCards, deleteCreditCard } from './modules/creditCard.js';
 // Importa as funções de faturas.
 import { getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices } from './modules/invoices.js';
-// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de admin
+// Importa o módulo de admin.
 import { getAllUsers, updateUserStatus } from './modules/admin.js';
+// INÍCIO DA ALTERAÇÃO - Importa o novo módulo de recorrências
+import { addRecurringTransaction, getRecurringTransactions, deleteRecurringTransaction, processRecurringTransactions } from './modules/recurring.js';
 // FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado ---
 let currentUser = null;
-let currentUserProfile = null; // Armazena o perfil do usuário logado (incluindo role)
+let currentUserProfile = null;
 let userCreditCards = []; 
 let userCategories = [];
 let selectedCardForInvoiceView = null;
@@ -92,13 +94,19 @@ const expenseCategoriesList = document.getElementById('expense-categories-list')
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const pendingApprovalSection = document.getElementById('pending-approval');
 const logoutPendingButton = document.getElementById('logout-pending-button');
-// INÍCIO DA ALTERAÇÃO - Seleção de elementos para abas e admin
 const adminTabButton = document.getElementById('admin-tab-button');
 const userList = document.getElementById('user-list');
 const tabLinks = document.querySelectorAll('.tab-link');
 const tabContents = document.querySelectorAll('.tab-content');
+// INÍCIO DA ALTERAÇÃO - Seleção de elementos da aba de recorrências
+const addRecurringForm = document.getElementById('add-recurring-form');
+const recurringDescriptionInput = document.getElementById('recurring-description');
+const recurringAmountInput = document.getElementById('recurring-amount');
+const recurringDayInput = document.getElementById('recurring-day');
+const recurringCategorySelect = document.getElementById('recurring-category');
+const recurringTypeRadios = document.querySelectorAll('input[name="recurring-type"]');
+const recurringList = document.getElementById('recurring-list');
 // FIM DA ALTERAÇÃO
-
 
 // --- Funções de Manipulação da UI e Gráfico ---
 
@@ -381,11 +389,12 @@ function closeCardModal() {
 
 /** Abre o modal de configurações. */
 function openSettingsModal() {
-    // INÍCIO DA ALTERAÇÃO - Se for admin, carrega a lista de usuários ao abrir o modal
-    if (currentUserProfile && currentUserProfile.role === 'admin') {
-        renderUserList();
+    if (currentUserProfile) {
+        if (currentUserProfile.role === 'admin') {
+            renderUserList();
+        }
+        renderRecurringList();
     }
-    // FIM DA ALTERAÇÃO
     settingsModal.style.display = 'flex';
 }
 
@@ -563,13 +572,15 @@ async function loadUserCategories() {
         renderCategoryManagementList();
         const currentTransactionType = document.querySelector('input[name="transaction-type"]:checked').value;
         populateCategorySelects(currentTransactionType, transactionCategorySelect);
+        const currentRecurringType = document.querySelector('input[name="recurring-type"]:checked').value;
+        populateCategorySelects(currentRecurringType, recurringCategorySelect);
         populateCategorySelects('expense', editTransactionCategorySelect);
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de usuários para o admin
+/** Renderiza a lista de usuários para o admin. */
 async function renderUserList() {
     userList.innerHTML = '<li>Carregando usuários...</li>';
     try {
@@ -615,7 +626,7 @@ async function renderUserList() {
                         try {
                             await updateUserStatus(user.id, 'approved');
                             showNotification('Usuário aprovado!');
-                            renderUserList(); // Atualiza a lista
+                            renderUserList();
                         } catch (error) {
                             showNotification(error.message, 'error');
                         }
@@ -624,7 +635,6 @@ async function renderUserList() {
                 actionsDiv.appendChild(approveButton);
             }
             
-            // Futuramente, pode-se adicionar botões para 'Rejeitar' ou 'Tornar Admin'
             li.appendChild(userInfo);
             li.appendChild(actionsDiv);
             userList.appendChild(li);
@@ -632,6 +642,55 @@ async function renderUserList() {
     } catch (error) {
         showNotification(error.message, 'error');
         userList.innerHTML = '<li>Erro ao carregar usuários.</li>';
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de recorrências
+async function renderRecurringList() {
+    recurringList.innerHTML = '<li>Carregando...</li>';
+    try {
+        const recurringTxs = await getRecurringTransactions(currentUser.uid);
+        recurringList.innerHTML = '';
+
+        if (recurringTxs.length === 0) {
+            recurringList.innerHTML = '<li>Nenhuma transação recorrente cadastrada.</li>';
+            return;
+        }
+
+        recurringTxs.forEach(tx => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.padding = '0.5rem';
+            li.style.borderBottom = '1px solid var(--background-color)';
+            li.classList.add(tx.type); // Adiciona classe revenue/expense
+
+            const infoSpan = document.createElement('span');
+            infoSpan.textContent = `Todo dia ${tx.dayOfMonth}: ${tx.description} (${formatCurrency(tx.amount)})`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = '&times;';
+            deleteButton.classList.add('action-btn', 'delete-btn');
+            deleteButton.title = 'Excluir recorrência';
+            deleteButton.onclick = async () => {
+                if (confirm(`Tem certeza que deseja excluir a recorrência "${tx.description}"?`)) {
+                    try {
+                        await deleteRecurringTransaction(tx.id);
+                        showNotification('Recorrência excluída com sucesso!');
+                        renderRecurringList();
+                    } catch (error) {
+                        showNotification(error.message, 'error');
+                    }
+                }
+            };
+
+            li.appendChild(infoSpan);
+            li.appendChild(deleteButton);
+            recurringList.appendChild(li);
+        });
+    } catch (error) {
+        showNotification(error.message, 'error');
+        recurringList.innerHTML = '<li>Erro ao carregar recorrências.</li>';
     }
 }
 // FIM DA ALTERAÇÃO
@@ -675,7 +734,6 @@ settingsButton.addEventListener('click', openSettingsModal);
 closeSettingsModalButton.addEventListener('click', closeSettingsModal);
 window.addEventListener('click', (event) => { if (event.target == settingsModal) { closeSettingsModal(); } });
 
-// INÍCIO DA ALTERAÇÃO - Lógica de navegação por abas no modal de configurações
 tabLinks.forEach(button => {
     button.addEventListener('click', () => {
         const tabId = button.dataset.tab;
@@ -687,7 +745,6 @@ tabLinks.forEach(button => {
         document.getElementById(tabId).classList.add('active');
     });
 });
-// FIM DA ALTERAÇÃO
 
 invoicePeriodSelect.addEventListener('change', (e) => {
     const selectedInvoiceId = e.target.value;
@@ -723,6 +780,12 @@ transactionTypeRadios.forEach(radio => {
 });
 paymentMethodSelect.addEventListener('change', (e) => { creditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
 editPaymentMethodSelect.addEventListener('change', (e) => { editCreditCardWrapper.style.display = e.target.value === 'credit_card' ? 'block' : 'none'; });
+
+// INÍCIO DA ALTERAÇÃO - Listener para o tipo de recorrência
+recurringTypeRadios.forEach(radio => {
+    radio.addEventListener('change', e => populateCategorySelects(e.target.value, recurringCategorySelect));
+});
+// FIM DA ALTERAÇÃO
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -899,6 +962,40 @@ addCategoryForm.addEventListener('submit', async (e) => {
     }
 });
 
+// INÍCIO DA ALTERAÇÃO - Listener para o novo formulário de recorrências
+addRecurringForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitButton = addRecurringForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const recurringData = {
+        description: recurringDescriptionInput.value,
+        amount: parseFloat(recurringAmountInput.value),
+        dayOfMonth: parseInt(recurringDayInput.value),
+        type: document.querySelector('input[name="recurring-type"]:checked').value,
+        category: recurringCategorySelect.value,
+        userId: currentUser.uid
+    };
+
+    if (!recurringData.category) {
+        showNotification("Por favor, selecione uma categoria.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    try {
+        await addRecurringTransaction(recurringData);
+        showNotification("Recorrência adicionada com sucesso!");
+        addRecurringForm.reset();
+        renderRecurringList();
+    } catch (error) {
+        showNotification(error.message, "error");
+    } finally {
+        submitButton.disabled = false;
+    }
+});
+// FIM DA ALTERAÇÃO
+
 // --- Ponto de Entrada da Aplicação ---
 function initializeApp() {
     showLoading();
@@ -910,13 +1007,19 @@ function initializeApp() {
                 if (currentUserProfile && currentUserProfile.status === 'approved') {
                     showApp();
 
-                    // INÍCIO DA ALTERAÇÃO - Mostra a aba de admin se o usuário for admin
                     if (currentUserProfile.role === 'admin') {
                         adminTabButton.style.display = 'block';
                     }
-                    // FIM DA ALTERAÇÃO
 
                     transactionDateInput.value = formatDateToInput(new Date());
+
+                    // INÍCIO DA ALTERAÇÃO - Processa transações recorrentes no login
+                    const transactionsCreated = await processRecurringTransactions(user.uid);
+                    if (transactionsCreated > 0) {
+                        showNotification(`${transactionsCreated} transação(ões) recorrente(s) foram lançadas.`);
+                    }
+                    // FIM DA ALTERAÇÃO
+
                     await closeOverdueInvoices(user.uid);
                     populateYearFilter();
                     await Promise.all([
