@@ -21,6 +21,16 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
+ * Converte uma string de data (YYYY-MM-DD) para um objeto Date do JS na timezone local.
+ * @param {string} dateString - A data no formato "YYYY-MM-DD".
+ * @returns {Date}
+ */
+function parseDateString(dateString) {
+    // Adiciona T00:00:00 para evitar problemas de fuso horário que podem alterar o dia.
+    return new Date(dateString + 'T00:00:00');
+}
+
+/**
  * Adiciona um novo documento de transação.
  * Se for cartão de crédito, associa a uma fatura.
  * @param {object} transactionData - Os dados da transação.
@@ -28,18 +38,23 @@ import {
  * @returns {Promise<void>}
  */
 async function addTransaction(transactionData, cardData = null) {
+    // Converte a string de data do formulário para um objeto Date.
+    const transactionDate = parseDateString(transactionData.date);
+
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         try {
-            const transactionDate = new Date();
+            // Usa a data fornecida pelo usuário para encontrar a fatura correta.
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, 'transactions');
             const batch = writeBatch(db);
+            
+            // O lançamento na fatura usa o serverTimestamp para ordenação interna.
             const newTransactionInInvoice = {
                 description: transactionData.description,
                 amount: transactionData.amount,
                 category: transactionData.category,
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp() 
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
@@ -52,19 +67,23 @@ async function addTransaction(transactionData, cardData = null) {
     } else {
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
-            await addDoc(transactionsCollectionRef, { ...transactionData, createdAt: serverTimestamp() });
-        } catch (error)
-        {
+            // Prepara os dados para salvar, incluindo o novo campo 'date' como Timestamp.
+            const dataToSave = {
+                ...transactionData,
+                date: Timestamp.fromDate(transactionDate), // Campo principal para data da transação
+                createdAt: serverTimestamp() // Mantido para auditoria
+            };
+            await addDoc(transactionsCollectionRef, dataToSave);
+        } catch (error) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
         }
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Busca as transações de fluxo de caixa de um usuário (excluindo lançamentos de cartão de crédito)
- * com filtros opcionais de data. O filtro agora é feito diretamente no Firestore.
+ * com filtros opcionais de data. O filtro agora é feito no campo 'date'.
  * @param {string} userId - O ID do usuário.
  * @param {object} filters - Objeto com os filtros.
  * @param {number|string} filters.month - O mês para filtrar (1-12 ou 'all').
@@ -76,53 +95,58 @@ async function getTransactions(userId, filters = {}) {
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
         
-        // Constrói a base da consulta
         let queryConstraints = [
             where("userId", "==", userId),
-            // Adiciona o filtro para buscar apenas transações que não são de cartão de crédito
             where("paymentMethod", "!=", "credit_card")
         ];
 
-        // Adiciona filtros de data se fornecidos
         if (year && month && month !== 'all') {
             const startDate = new Date(year, month - 1, 1);
             const endDate = new Date(year, month, 0, 23, 59, 59);
             
-            queryConstraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
-            queryConstraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
+            // INÍCIO DA ALTERAÇÃO - Filtra pelo campo 'date'
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
+            // FIM DA ALTERAÇÃO
         } else if (year) {
             const startDate = new Date(year, 0, 1);
             const endDate = new Date(year, 11, 31, 23, 59, 59);
-
-            queryConstraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
-            queryConstraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
+            
+            // INÍCIO DA ALTERAÇÃO - Filtra pelo campo 'date'
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startDate)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endDate)));
+            // FIM DA ALTERAÇÃO
         }
-
-        // Adiciona a ordenação
-        queryConstraints.push(orderBy("createdAt", "desc"));
+        
+        // INÍCIO DA ALTERAÇÃO - Ordena pelo campo 'date'
+        queryConstraints.push(orderBy("date", "desc"));
+        // FIM DA ALTERAÇÃO
 
         const q = query(transactionsCollectionRef, ...queryConstraints);
         
         const querySnapshot = await getDocs(q);
         const transactions = [];
         querySnapshot.forEach((doc) => {
-            transactions.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            transactions.push({ 
+                id: doc.id, 
+                ...data,
+                // Converte o Timestamp de volta para objeto Date para facilitar o uso no frontend
+                date: data.date.toDate() 
+            });
         });
         
-        // O filtro no lado do cliente não é mais necessário
         return transactions;
 
     } catch (error) {
-        // Tratamento de erro específico do Firestore para essa consulta
         if (error.code === 'failed-precondition') {
              console.error("Erro de consulta no Firestore: ", error.message);
-             throw new Error("Parece que o Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação do índice.");
+             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros do navegador para o link de criação do índice.");
         }
         console.error("Erro ao buscar transações:", error);
         throw new Error("Não foi possível buscar as transações.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function deleteTransaction(transactionId) {
     try {
@@ -134,10 +158,23 @@ async function deleteTransaction(transactionId) {
     }
 }
 
+/**
+ * Atualiza uma transação existente, incluindo o novo campo de data.
+ * @param {string} transactionId - O ID da transação a ser atualizada.
+ * @param {object} updatedData - Os novos dados.
+ */
 async function updateTransaction(transactionId, updatedData) {
     try {
         const transactionDocRef = doc(db, 'transactions', transactionId);
-        await updateDoc(transactionDocRef, updatedData);
+
+        // INÍCIO DA ALTERAÇÃO - Converte a string de data para Timestamp antes de salvar
+        const dataToUpdate = { ...updatedData };
+        if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
+            dataToUpdate.date = Timestamp.fromDate(parseDateString(dataToUpdate.date));
+        }
+        // FIM DA ALTERAÇÃO
+
+        await updateDoc(transactionDocRef, dataToUpdate);
     } catch (error) {
         console.error("Erro ao atualizar transação:", error);
         throw new Error("Não foi possível salvar as alterações.");
