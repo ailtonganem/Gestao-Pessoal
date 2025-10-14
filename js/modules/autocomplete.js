@@ -1,0 +1,84 @@
+// js/modules/autocomplete.js
+
+/**
+ * Módulo para gerenciar a lógica de autocomplete de descrições.
+ * Inclui salvar novas descrições únicas e buscar sugestões.
+ */
+
+import { db } from '../firebase-config.js';
+import {
+    doc,
+    setDoc,
+    collection,
+    query,
+    where,
+    limit,
+    getDocs
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+const DESCRIPTIONS_COLLECTION = 'descriptions';
+
+/**
+ * Salva uma nova descrição de transação na subcoleção de descrições únicas do usuário.
+ * Usa o próprio texto da descrição (em minúsculas e normalizado) como ID do documento
+ * para garantir que não haja duplicatas.
+ * @param {string} userId - O ID do usuário.
+ * @param {string} description - O texto da descrição a ser salvo.
+ * @returns {Promise<void>}
+ */
+export async function saveUniqueDescription(userId, description) {
+    if (!userId || !description || description.trim().length < 3) {
+        return; // Não salva descrições vazias ou muito curtas
+    }
+
+    const normalizedDescription = description.trim().toLowerCase();
+    // O ID do documento será a própria descrição normalizada para evitar duplicatas.
+    const descriptionDocRef = doc(db, 'users', userId, DESCRIPTIONS_COLLECTION, normalizedDescription);
+
+    try {
+        // setDoc com merge:true é uma forma eficiente de "criar se não existe"
+        await setDoc(descriptionDocRef, {
+            text: description.trim() // Salva o texto original com maiúsculas/minúsculas
+        }, { merge: true });
+    } catch (error) {
+        // Erros aqui não são críticos para o usuário, então apenas registramos no console.
+        console.error("Erro ao salvar descrição para autocomplete:", error);
+    }
+}
+
+/**
+ * Busca sugestões de descrição que começam com o termo pesquisado.
+ * @param {string} userId - O ID do usuário.
+ * @param {string} searchTerm - O texto que o usuário está digitando.
+ * @returns {Promise<Array<string>>} Uma lista de até 5 sugestões de descrição.
+ */
+export async function getDescriptionSuggestions(userId, searchTerm) {
+    if (!userId || !searchTerm || searchTerm.trim().length < 2) {
+        return []; // Retorna vazio se a busca for muito curta
+    }
+
+    const normalizedSearchTerm = searchTerm.toLowerCase();
+    const descriptionsRef = collection(db, 'users', userId, DESCRIPTIONS_COLLECTION);
+    
+    // Cria uma consulta que busca documentos cujo ID (descrição normalizada)
+    // começa com o termo pesquisado.
+    const q = query(
+        descriptionsRef,
+        where(document.id, '>=', normalizedSearchTerm),
+        where(document.id, '<=', normalizedSearchTerm + '\uf8ff'),
+        limit(5)
+    );
+
+    try {
+        const querySnapshot = await getDocs(q);
+        const suggestions = [];
+        querySnapshot.forEach((doc) => {
+            // Retorna o texto original salvo, não o ID normalizado
+            suggestions.push(doc.data().text);
+        });
+        return suggestions;
+    } catch (error) {
+        console.error("Erro ao buscar sugestões:", error);
+        return [];
+    }
+}
