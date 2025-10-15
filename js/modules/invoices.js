@@ -15,6 +15,10 @@ import {
     increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
+// INÍCIO DA ALTERAÇÃO
+import { updateBalanceInBatch } from './accounts.js';
+// FIM DA ALTERAÇÃO
+
 const INVOICES_COLLECTION = 'invoices';
 const TRANSACTIONS_COLLECTION = 'transactions';
 
@@ -81,7 +85,6 @@ async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
     return docRef.id;
 }
 
-// INÍCIO DA ALTERAÇÃO - A função agora exige o userId
 /**
  * Busca todas as faturas de um cartão de crédito específico, ordenadas da mais recente para a mais antiga.
  * @param {string} cardId - O ID do cartão de crédito.
@@ -93,7 +96,7 @@ async function getInvoices(cardId, userId) {
         const invoicesRef = collection(db, INVOICES_COLLECTION);
         const q = query(invoicesRef,
             where("cardId", "==", cardId),
-            where("userId", "==", userId), // Adiciona a condição de segurança
+            where("userId", "==", userId),
             orderBy("year", "desc"),
             orderBy("month", "desc")
         );
@@ -109,7 +112,6 @@ async function getInvoices(cardId, userId) {
         throw new Error("Não foi possível carregar as faturas.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Busca todos os lançamentos (transações) de uma fatura específica.
@@ -137,33 +139,47 @@ async function getInvoiceTransactions(invoiceId) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Função modificada para aceitar accountId e debitar o saldo.
 /**
- * Marca uma fatura como paga e cria a transação de despesa correspondente.
+ * Marca uma fatura como paga, cria a transação de despesa correspondente e debita o saldo da conta.
  * @param {object} invoice - O objeto da fatura a ser paga.
  * @param {object} card - O objeto do cartão ao qual a fatura pertence.
+ * @param {object} paymentDetails - Detalhes do pagamento.
+ * @param {string} paymentDetails.accountId - ID da conta usada para o pagamento.
+ * @param {string} paymentDetails.paymentDate - Data do pagamento no formato 'YYYY-MM-DD'.
  * @returns {Promise<void>}
  */
-async function payInvoice(invoice, card) {
+async function payInvoice(invoice, card, paymentDetails) {
     try {
+        const { accountId, paymentDate } = paymentDetails;
         const batch = writeBatch(db);
 
+        // 1. Marca a fatura como paga
         const invoiceRef = doc(db, INVOICES_COLLECTION, invoice.id);
         batch.update(invoiceRef, { status: 'paid' });
 
+        // 2. Cria a transação de despesa correspondente ao pagamento
         const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+        const parsedPaymentDate = new Date(paymentDate + 'T00:00:00');
+
         const paymentTransactionData = {
             description: `Pagamento Fatura ${card.name} (${invoice.month}/${invoice.year})`,
             amount: invoice.totalAmount,
             type: 'expense',
             category: 'Fatura de Cartão',
-            paymentMethod: 'debit',
+            paymentMethod: 'debit', // Representa a saída de dinheiro da conta
             userId: invoice.userId,
-            date: Timestamp.now(), 
+            accountId: accountId, // Vincula a transação à conta de pagamento
+            date: Timestamp.fromDate(parsedPaymentDate),
             createdAt: Timestamp.now()
         };
         const newTransactionRef = doc(transactionsRef);
         batch.set(newTransactionRef, paymentTransactionData);
         
+        // 3. Debita o valor do saldo da conta selecionada
+        updateBalanceInBatch(batch, accountId, invoice.totalAmount, 'expense');
+
+        // 4. Executa todas as operações atomicamente
         await batch.commit();
 
     } catch (error) {
@@ -171,6 +187,7 @@ async function payInvoice(invoice, card) {
         throw new Error("Ocorreu um erro ao registrar o pagamento da fatura.");
     }
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Atualiza um lançamento de cartão de crédito. Lida com a mudança de valor e a migração entre faturas.
