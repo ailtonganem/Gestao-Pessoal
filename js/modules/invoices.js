@@ -81,16 +81,19 @@ async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
     return docRef.id;
 }
 
+// INÍCIO DA ALTERAÇÃO - A função agora exige o userId
 /**
  * Busca todas as faturas de um cartão de crédito específico, ordenadas da mais recente para a mais antiga.
  * @param {string} cardId - O ID do cartão de crédito.
+ * @param {string} userId - O ID do usuário para garantir a permissão.
  * @returns {Promise<Array>} Uma lista de objetos de fatura.
  */
-async function getInvoices(cardId) {
+async function getInvoices(cardId, userId) {
     try {
         const invoicesRef = collection(db, INVOICES_COLLECTION);
         const q = query(invoicesRef,
             where("cardId", "==", cardId),
+            where("userId", "==", userId), // Adiciona a condição de segurança
             orderBy("year", "desc"),
             orderBy("month", "desc")
         );
@@ -106,6 +109,7 @@ async function getInvoices(cardId) {
         throw new Error("Não foi possível carregar as faturas.");
     }
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Busca todos os lançamentos (transações) de uma fatura específica.
@@ -154,7 +158,7 @@ async function payInvoice(invoice, card) {
             category: 'Fatura de Cartão',
             paymentMethod: 'debit',
             userId: invoice.userId,
-            date: Timestamp.now(), // Adicionando a data do pagamento
+            date: Timestamp.now(), 
             createdAt: Timestamp.now()
         };
         const newTransactionRef = doc(transactionsRef);
@@ -188,32 +192,25 @@ async function updateInvoiceTransaction(originalInvoiceId, transactionId, update
         }
         const originalAmount = originalTxSnap.data().amount;
 
-        // Converte a data do formulário para um objeto Date do JS
         const newPurchaseDate = new Date(updatedData.purchaseDate + 'T00:00:00');
 
-        // Determina a qual fatura o lançamento pertence com a nova data
         const newInvoiceId = await findOrCreateInvoice(card.id, card, card.userId, newPurchaseDate);
 
-        // Prepara os dados para salvar, garantindo que a data seja um Timestamp
         const dataToSave = {
             ...updatedData,
             purchaseDate: Timestamp.fromDate(newPurchaseDate)
         };
 
         if (originalInvoiceId === newInvoiceId) {
-            // Caso 1: A transação permanece na mesma fatura
             const amountDifference = dataToSave.amount - originalAmount;
             batch.update(transactionRef, dataToSave);
             batch.update(originalInvoiceRef, { totalAmount: increment(amountDifference) });
         } else {
-            // Caso 2: A transação muda de fatura
             const newInvoiceRef = doc(db, INVOICES_COLLECTION, newInvoiceId);
             
-            // Remove da fatura antiga
             batch.update(originalInvoiceRef, { totalAmount: increment(-originalAmount) });
             batch.delete(transactionRef);
 
-            // Adiciona na fatura nova
             const newTransactionRef = doc(collection(newInvoiceRef, 'transactions'));
             batch.set(newTransactionRef, dataToSave);
             batch.update(newInvoiceRef, { totalAmount: increment(dataToSave.amount) });
