@@ -6,6 +6,8 @@ import { findOrCreateInvoice } from './invoices.js';
 import { saveUniqueDescription } from './autocomplete.js';
 // Importa a função para salvar subcategorias
 import { addSubcategory } from './categories.js';
+// INÍCIO DA ALTERAÇÃO - Importa a lógica de atualização de saldo de conta
+import { updateBalanceInBatch } from './accounts.js';
 
 // Importa as funções do Firestore necessárias.
 import {
@@ -21,7 +23,8 @@ import {
     updateDoc,
     writeBatch,
     increment,
-    Timestamp
+    Timestamp,
+    getDoc // Adicionado para a lógica de atualização
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -48,6 +51,7 @@ async function addTransaction(transactionData, cardData = null) {
     }
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
+        // Lógica de cartão de crédito permanece a mesma, pois não afeta o saldo da conta diretamente.
         const batch = writeBatch(db);
 
         if (transactionData.isInstallment && transactionData.installments > 1) {
@@ -101,8 +105,12 @@ async function addTransaction(transactionData, cardData = null) {
         }
 
     } else {
+        // INÍCIO DA ALTERAÇÃO - Lógica para transações que afetam o saldo da conta
+        const batch = writeBatch(db);
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
+            const newTransactionRef = doc(transactionsCollectionRef);
+
             const dataToSave = {
                 description: transactionData.description,
                 amount: transactionData.amount,
@@ -112,14 +120,21 @@ async function addTransaction(transactionData, cardData = null) {
                 subcategory: transactionData.subcategory || null,
                 paymentMethod: transactionData.paymentMethod,
                 userId: transactionData.userId,
+                accountId: transactionData.accountId, // Adiciona o ID da conta
                 createdAt: serverTimestamp()
             };
-            await addDoc(transactionsCollectionRef, dataToSave);
+            
+            batch.set(newTransactionRef, dataToSave);
+            updateBalanceInBatch(batch, transactionData.accountId, transactionData.amount, transactionData.type);
+            
+            await batch.commit();
             saveUniqueDescription(transactionData.userId, transactionData.description);
+
         } catch (error) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
         }
+        // FIM DA ALTERAÇÃO
     }
 }
 
@@ -130,18 +145,15 @@ async function addTransaction(transactionData, cardData = null) {
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
 async function getTransactions(userId, filters = {}) {
-    // INÍCIO DA ALTERAÇÃO - Extrai os novos filtros
     const { month, year, startDate, endDate } = filters;
-    // FIM DA ALTERAÇÃO
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
         
         let queryConstraints = [
-            where("userId", "==", userId),
-            where("paymentMethod", "in", ["pix", "debit", "cash"])
+            where("userId", "==", userId)
+            // Removido o filtro de paymentMethod para incluir pagamentos de fatura no futuro
         ];
 
-        // INÍCIO DA ALTERAÇÃO - Lógica de filtro prioriza o intervalo de datas
         if (startDate && endDate) {
             const start = new Date(startDate + 'T00:00:00');
             const end = new Date(endDate + 'T23:59:59');
@@ -158,7 +170,6 @@ async function getTransactions(userId, filters = {}) {
             queryConstraints.push(where("date", ">=", Timestamp.fromDate(startOfYear)));
             queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfYear)));
         }
-        // FIM DA ALTERAÇÃO
         
         queryConstraints.push(orderBy("date", "desc"));
 
@@ -187,35 +198,74 @@ async function getTransactions(userId, filters = {}) {
     }
 }
 
-async function deleteTransaction(transactionId) {
+// INÍCIO DA ALTERAÇÃO - Função modificada para reverter o saldo
+/**
+ * Exclui uma transação e reverte o seu impacto no saldo da conta.
+ * @param {object} transaction - O objeto completo da transação a ser excluída.
+ */
+async function deleteTransaction(transaction) {
+    // Não processa se for transação de cartão de crédito (lógica a ser implementada futuramente)
+    if (!transaction.accountId) {
+        throw new Error("Não é possível excluir transações sem conta associada.");
+    }
+    
+    const batch = writeBatch(db);
     try {
-        const transactionDocRef = doc(db, 'transactions', transactionId);
-        await deleteDoc(transactionDocRef);
+        const transactionDocRef = doc(db, 'transactions', transaction.id);
+        batch.delete(transactionDocRef);
+
+        // Define o tipo reverso para a atualização do saldo
+        const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
+        updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
+
+        await batch.commit();
     } catch (error) {
         console.error("Erro ao excluir transação:", error);
         throw new Error("Não foi possível excluir a transação.");
     }
 }
+// FIM DA ALTERAÇÃO
 
+// INÍCIO DA ALTERAÇÃO - Função modificada para atualizar o saldo
 /**
- * Atualiza uma transação existente.
+ * Atualiza uma transação e ajusta os saldos das contas envolvidas.
  * @param {string} transactionId - O ID da transação a ser atualizada.
- * @param {object} updatedData - Os novos dados.
+ * @param {object} updatedData - Os novos dados, incluindo o novo accountId.
  */
 async function updateTransaction(transactionId, updatedData) {
-    try {
-        const transactionDocRef = doc(db, 'transactions', transactionId);
+    const batch = writeBatch(db);
+    const transactionDocRef = doc(db, 'transactions', transactionId);
 
+    try {
+        // 1. Pega os dados originais da transação
+        const originalTxSnap = await getDoc(transactionDocRef);
+        if (!originalTxSnap.exists()) {
+            throw new Error("Transação não encontrada para atualização.");
+        }
+        const originalTxData = originalTxSnap.data();
+
+        // 2. Reverte o impacto da transação original no saldo da conta original
+        const reverseType = originalTxData.type === 'expense' ? 'revenue' : 'expense';
+        updateBalanceInBatch(batch, originalTxData.accountId, originalTxData.amount, reverseType);
+
+        // 3. Aplica o impacto da transação atualizada no saldo da nova conta
+        updateBalanceInBatch(batch, updatedData.accountId, updatedData.amount, updatedData.type);
+
+        // 4. Prepara os dados para atualização do documento da transação
         const dataToUpdate = { ...updatedData };
         if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
             dataToUpdate.date = Timestamp.fromDate(parseDateString(dataToUpdate.date));
         }
+        batch.update(transactionDocRef, dataToUpdate);
+        
+        // 5. Executa todas as operações atomicamente
+        await batch.commit();
 
-        await updateDoc(transactionDocRef, dataToUpdate);
     } catch (error) {
         console.error("Erro ao atualizar transação:", error);
         throw new Error("Não foi possível salvar as alterações.");
     }
 }
+// FIM DA ALTERAÇÃO
 
 export { addTransaction, getTransactions, deleteTransaction, updateTransaction };
