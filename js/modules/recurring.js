@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -26,9 +26,7 @@ import {
  */
 async function addRecurringTransaction(recurringData) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const recurringRef = collection(db, COLLECTIONS.RECURRING_TRANSACTIONS);
-        // FIM DA ALTERAÇÃO
         return await addDoc(recurringRef, {
             ...recurringData,
             createdAt: Timestamp.now(),
@@ -47,9 +45,7 @@ async function addRecurringTransaction(recurringData) {
  */
 async function getRecurringTransactions(userId) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const recurringRef = collection(db, COLLECTIONS.RECURRING_TRANSACTIONS);
-        // FIM DA ALTERAÇÃO
         const q = query(
             recurringRef,
             where("userId", "==", userId),
@@ -75,9 +71,7 @@ async function getRecurringTransactions(userId) {
  */
 async function updateRecurringTransaction(recurringId, updatedData) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const docRef = doc(db, COLLECTIONS.RECURRING_TRANSACTIONS, recurringId);
-        // FIM DA ALTERAÇÃO
         await updateDoc(docRef, updatedData);
     } catch (error) {
         console.error("Erro ao atualizar transação recorrente:", error);
@@ -92,9 +86,7 @@ async function updateRecurringTransaction(recurringId, updatedData) {
  */
 async function deleteRecurringTransaction(recurringId) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const docRef = doc(db, COLLECTIONS.RECURRING_TRANSACTIONS, recurringId);
-        // FIM DA ALTERAÇÃO
         await deleteDoc(docRef);
     } catch (error) {
         console.error("Erro ao excluir transação recorrente:", error);
@@ -144,15 +136,11 @@ async function processRecurringTransactions(userId) {
             isRecurring: true // Flag para identificar a origem
         };
         
-        // INÍCIO DA ALTERAÇÃO
         const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
-        // FIM DA ALTERAÇÃO
         batch.set(newTransactionRef, newTransactionData);
 
         // Marca a recorrência como processada para o mês atual.
-        // INÍCIO DA ALTERAÇÃO
         const recurringDocRef = doc(db, COLLECTIONS.RECURRING_TRANSACTIONS, tx.id);
-        // FIM DA ALTERAÇÃO
         batch.update(recurringDocRef, { lastProcessed: Timestamp.now() });
         
         transactionsCreated++;
