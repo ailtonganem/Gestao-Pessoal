@@ -438,7 +438,12 @@
                 </div>
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
-                <button id="pay-invoice-button" disabled>Pagar Fatura</button>
+                <!-- INÍCIO DA ALTERAÇÃO: Agrupamento dos botões de ação -->
+                <div class="invoice-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button id="advance-payment-button" class="button-secondary" style="flex: 1;">Antecipar Pagamento</button>
+                    <button id="pay-invoice-button" disabled style="flex: 1;">Pagar Fatura</button>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
         </div>
     </div>
@@ -647,7 +652,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL PARA PAGAMENTO DE FATURA -->
     <div id="pay-invoice-modal" class="modal">
         <div class="modal-content">
             <span class="close-pay-invoice-modal-button">&times;</span>
@@ -664,6 +668,31 @@
                     <input type="date" id="pay-invoice-date" required>
                 </div>
                 <button type="submit">Confirmar Pagamento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL PARA PAGAMENTO ANTECIPADO -->
+    <div id="advance-payment-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-advance-payment-modal-button">&times;</span>
+            <h2>Antecipar Pagamento de Fatura</h2>
+            <form id="advance-payment-form">
+                <input type="hidden" id="advance-payment-invoice-id">
+                <p class="subtitle">Insira o valor que deseja antecipar e de qual conta o dinheiro sairá.</p>
+                 <div class="form-control">
+                    <label for="advance-payment-amount">Valor a Antecipar (R$)</label>
+                    <input type="number" id="advance-payment-amount" placeholder="0.00" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label for="advance-payment-account-select">Conta de Origem</label>
+                    <select id="advance-payment-account-select" required></select>
+                </div>
+                <div class="form-control">
+                    <label for="advance-payment-date">Data do Pagamento</label>
+                    <input type="date" id="advance-payment-date" required>
+                </div>
+                <button type="submit">Confirmar Antecipação</button>
             </form>
         </div>
     </div>
