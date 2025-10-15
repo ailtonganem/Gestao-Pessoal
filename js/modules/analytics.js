@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -29,9 +29,7 @@ async function getMonthlySummary(userId, numberOfMonths = 6) {
     startDate.setHours(0, 0, 0, 0);
 
     // 2. Cria a consulta ao Firestore
-    // INÍCIO DA ALTERAÇÃO
     const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
-    // FIM DA ALTERAÇÃO
     const q = query(
         transactionsRef,
         where("userId", "==", userId),
