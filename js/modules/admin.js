@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -21,9 +21,7 @@ import {
  */
 async function getAllUsers() {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const usersRef = collection(db, COLLECTIONS.USERS);
-        // FIM DA ALTERAÇÃO
         const q = query(usersRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const users = [];
@@ -49,9 +47,7 @@ async function getAllUsers() {
  */
 async function updateUserStatus(uid, newStatus) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const userDocRef = doc(db, COLLECTIONS.USERS, uid);
-        // FIM DA ALTERAÇÃO
         await updateDoc(userDocRef, {
             status: newStatus
         });
