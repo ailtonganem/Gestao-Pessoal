@@ -23,7 +23,9 @@ import {
     writeBatch,
     increment,
     Timestamp,
-    getDoc 
+    getDoc,
+    limit, // INÍCIO DA ALTERAÇÃO - Importa a função 'limit'
+    startAfter // INÍCIO DA ALTERAÇÃO - Importa a função 'startAfter'
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -134,28 +136,28 @@ async function addTransaction(transactionData, cardData = null) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Função modificada para aceitar paginação
 /**
- * Busca as transações de fluxo de caixa de um usuário com filtros.
+ * Busca uma página de transações de um usuário com filtros.
  * @param {string} userId - O ID do usuário.
- * @param {object} filters - Objeto com os filtros (month, year, startDate, endDate, type).
- * @returns {Promise<Array>} Uma lista de objetos de transação.
+ * @param {object} options - Opções de filtro e paginação.
+ * @param {object} options.filters - Objeto com os filtros (month, year, startDate, endDate, type).
+ * @param {number} options.limitNum - O número de transações a serem buscadas.
+ * @param {DocumentSnapshot} [options.lastDoc=null] - O último documento da página anterior para continuar a busca.
+ * @returns {Promise<{transactions: Array, lastVisible: DocumentSnapshot}>} Um objeto contendo a lista de transações e o último documento visível.
  */
-async function getTransactions(userId, filters = {}) {
-    // INÍCIO DA ALTERAÇÃO - Extrai o novo filtro 'type'
+async function getTransactions(userId, options = {}) {
+    const { filters = {}, limitNum = 25, lastDoc = null } = options;
     const { month, year, startDate, endDate, type } = filters;
-    // FIM DA ALTERAÇÃO
+
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
         
-        let queryConstraints = [
-            where("userId", "==", userId)
-        ];
+        let queryConstraints = [where("userId", "==", userId)];
 
-        // INÍCIO DA ALTERAÇÃO - Adiciona o filtro por tipo à consulta do Firestore
         if (type && type !== 'all') {
             queryConstraints.push(where("type", "==", type));
         }
-        // FIM DA ALTERAÇÃO
 
         if (startDate && endDate) {
             const start = new Date(startDate + 'T00:00:00');
@@ -174,8 +176,12 @@ async function getTransactions(userId, filters = {}) {
             queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfYear)));
         }
         
-        // A ordenação por data permanece como padrão. A ordenação final será feita no cliente.
         queryConstraints.push(orderBy("date", "desc"));
+        queryConstraints.push(limit(limitNum));
+
+        if (lastDoc) {
+            queryConstraints.push(startAfter(lastDoc));
+        }
 
         const q = query(transactionsCollectionRef, ...queryConstraints);
         
@@ -190,7 +196,8 @@ async function getTransactions(userId, filters = {}) {
             });
         });
         
-        return transactions;
+        const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+        return { transactions, lastVisible };
 
     } catch (error) {
         if (error.code === 'failed-precondition') {
@@ -201,6 +208,7 @@ async function getTransactions(userId, filters = {}) {
         throw new Error("Não foi possível buscar as transações.");
     }
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Exclui uma transação e reverte o seu impacto no saldo da conta.
