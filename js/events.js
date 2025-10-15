@@ -43,9 +43,7 @@ const addAccountForm = document.getElementById('add-account-form');
 const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
-// INÍCIO DA ALTERAÇÃO
 const editTransferForm = document.getElementById('edit-transfer-form');
-// FIM DA ALTERAÇÃO
 
 let debounceTimer;
 
@@ -292,18 +290,17 @@ export function initializeEventListeners() {
         const transaction = state.allTransactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
+        // INÍCIO DA ALTERAÇÃO - Lógica para gerenciar cliques em transferências
         if (transaction.type === 'transfer') {
             if (target.matches('.edit-btn')) {
-                // INÍCIO DA ALTERAÇÃO
                 modals.openEditTransferModal(transaction);
-                // FIM DA ALTERAÇÃO
             }
             if (target.matches('.delete-btn')) {
-                // handleDeleteTransfer(transaction); // Será criado no futuro
-                showNotification("A exclusão de transferências será implementada em breve.", "error");
+                handleDeleteTransfer(transaction);
             }
-            return; 
+            return;
         }
+        // FIM DA ALTERAÇÃO
 
         if (target.matches('.edit-btn')) {
             modals.openEditModal(transaction);
@@ -317,10 +314,8 @@ export function initializeEventListeners() {
     editTransactionForm.addEventListener('submit', handleUpdateTransaction);
     document.querySelector('.close-button').addEventListener('click', modals.closeEditModal);
 
-    // INÍCIO DA ALTERAÇÃO - Listeners para o novo modal de edição de transferência
     editTransferForm.addEventListener('submit', handleUpdateTransfer);
     document.querySelector('.close-edit-transfer-modal-button').addEventListener('click', modals.closeEditTransferModal);
-    // FIM DA ALTERAÇÃO
 
     document.querySelector('.close-card-modal-button').addEventListener('click', modals.closeCardModal);
     document.getElementById('back-to-cards-button').addEventListener('click', modals.showCardManagementView);
@@ -579,7 +574,7 @@ async function handleAddTransfer(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função handler para atualizar a transferência
+// INÍCIO DA ALTERAÇÃO - Implementação completa dos handlers de transferência
 async function handleUpdateTransfer(e) {
     e.preventDefault();
     const form = e.target;
@@ -596,15 +591,28 @@ async function handleUpdateTransfer(e) {
     };
 
     try {
-        // await transfers.updateTransfer(transferId, updatedData); // Será criada no futuro
-        showNotification('Transferência atualizada com sucesso!'); // Placeholder
+        await transfers.updateTransfer(transferId, updatedData);
+        showNotification('Transferência atualizada com sucesso!');
         modals.closeEditTransferModal();
-        // await app.loadUserDashboard();
-        // await app.loadUserAccounts();
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
+    }
+}
+
+async function handleDeleteTransfer(transfer) {
+    if (confirm(`Tem certeza que deseja excluir esta transferência?`)) {
+        try {
+            await transfers.deleteTransfer(transfer);
+            showNotification('Transferência excluída com sucesso!');
+            await app.loadUserDashboard();
+            await app.loadUserAccounts();
+        } catch (error) {
+            showNotification(error.message, 'error');
+        }
     }
 }
 // FIM DA ALTERAÇÃO
