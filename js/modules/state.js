@@ -17,13 +17,17 @@ export let userBudgets = [];
 export let allTransactions = []; // Contém todas as transações do período selecionado
 export let filteredTransactions = []; // Contém as transações após a aplicação de filtros na UI
 export let userRecurringTransactions = [];
-export let userAccounts = []; // INÍCIO DA ALTERAÇÃO - Nova variável de estado para contas
+export let userAccounts = [];
 
 // --- Estado da Interface (UI State) ---
 export let selectedCardForInvoiceView = null; // Armazena o objeto do cartão selecionado no modal de faturas
 export let currentCardInvoices = []; // Armazena as faturas do cartão que está sendo visualizado
 export let expensesChart = null; // Instância do gráfico de despesas (tipo pizza)
 export let trendsChart = null; // Instância do gráfico de tendências (tipo barras)
+// INÍCIO DA ALTERAÇÃO - Novas variáveis de estado para paginação
+export let lastTransactionDoc = null; // Armazena o último documento da página de transações
+export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções "Setters" ---
@@ -63,9 +67,17 @@ export function setUserRecurringTransactions(transactions) {
     userRecurringTransactions = transactions;
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função "setter" para contas
 export function setUserAccounts(accounts) {
     userAccounts = accounts;
+}
+
+// INÍCIO DA ALTERAÇÃO - Novas funções "setter" para paginação
+export function setLastTransactionDoc(doc) {
+    lastTransactionDoc = doc;
+}
+
+export function setHasMoreTransactions(value) {
+    hasMoreTransactions = value;
 }
 // FIM DA ALTERAÇÃO
 
