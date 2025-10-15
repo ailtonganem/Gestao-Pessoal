@@ -1,5 +1,10 @@
+// js/modules/invoices.js
+
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
+import { COLLECTIONS } from '../config/constants.js';
+// FIM DA ALTERAÇÃO
 import {
     collection,
     query,
@@ -16,9 +21,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 import { updateBalanceInBatch } from './accounts.js';
-
-const INVOICES_COLLECTION = 'invoices';
-const TRANSACTIONS_COLLECTION = 'transactions';
 
 /**
  * Determina o mês e ano de uma fatura com base na data da transação e no dia de fechamento do cartão.
@@ -51,7 +53,9 @@ function getInvoicePeriod(transactionDate, closingDay) {
 async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
     const { month, year } = getInvoicePeriod(transactionDate, cardData.closingDay);
 
-    const invoicesRef = collection(db, INVOICES_COLLECTION);
+    // INÍCIO DA ALTERAÇÃO
+    const invoicesRef = collection(db, COLLECTIONS.INVOICES);
+    // FIM DA ALTERAÇÃO
     const q = query(invoicesRef,
         where("cardId", "==", cardId),
         where("userId", "==", userId),
@@ -91,7 +95,9 @@ async function findOrCreateInvoice(cardId, cardData, userId, transactionDate) {
  */
 async function getInvoices(cardId, userId) {
     try {
-        const invoicesRef = collection(db, INVOICES_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const invoicesRef = collection(db, COLLECTIONS.INVOICES);
+        // FIM DA ALTERAÇÃO
         const q = query(invoicesRef,
             where("cardId", "==", cardId),
             where("userId", "==", userId),
@@ -118,7 +124,9 @@ async function getInvoices(cardId, userId) {
  */
 async function getInvoiceTransactions(invoiceId) {
     try {
-        const invoiceTransactionsRef = collection(db, INVOICES_COLLECTION, invoiceId, 'transactions');
+        // INÍCIO DA ALTERAÇÃO
+        const invoiceTransactionsRef = collection(db, COLLECTIONS.INVOICES, invoiceId, COLLECTIONS.INVOICE_TRANSACTIONS);
+        // FIM DA ALTERAÇÃO
         const q = query(invoiceTransactionsRef, orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const transactions = [];
@@ -152,11 +160,15 @@ async function payInvoice(invoice, card, paymentDetails) {
         const batch = writeBatch(db);
 
         // 1. Marca a fatura como paga
-        const invoiceRef = doc(db, INVOICES_COLLECTION, invoice.id);
+        // INÍCIO DA ALTERAÇÃO
+        const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoice.id);
+        // FIM DA ALTERAÇÃO
         batch.update(invoiceRef, { status: 'paid' });
 
         // 2. Cria a transação de despesa correspondente ao pagamento
-        const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+        // FIM DA ALTERAÇÃO
         const parsedPaymentDate = new Date(paymentDate + 'T00:00:00');
 
         const paymentTransactionData = {
@@ -185,7 +197,6 @@ async function payInvoice(invoice, card, paymentDetails) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para pagamento antecipado
 /**
  * Realiza um pagamento parcial/antecipado de uma fatura.
  * @param {string} invoiceId - O ID da fatura.
@@ -196,7 +207,9 @@ async function payInvoice(invoice, card, paymentDetails) {
  */
 async function makeAdvancePayment(invoiceId, amount, accountId, date) {
     const batch = writeBatch(db);
-    const invoiceRef = doc(db, INVOICES_COLLECTION, invoiceId);
+    // INÍCIO DA ALTERAÇÃO
+    const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+    // FIM DA ALTERAÇÃO
 
     try {
         // Validação para garantir que o valor não é negativo ou zero.
@@ -216,7 +229,9 @@ async function makeAdvancePayment(invoiceId, amount, accountId, date) {
         }
 
         // 1. Cria a transação de despesa para o pagamento antecipado
-        const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+        // FIM DA ALTERAÇÃO
         const paymentDate = new Date(date + 'T00:00:00');
 
         const advancePaymentData = {
@@ -247,7 +262,6 @@ async function makeAdvancePayment(invoiceId, amount, accountId, date) {
         throw error;
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Atualiza um lançamento de cartão de crédito. Lida com a mudança de valor e a migração entre faturas.
@@ -259,8 +273,10 @@ async function makeAdvancePayment(invoiceId, amount, accountId, date) {
  */
 async function updateInvoiceTransaction(originalInvoiceId, transactionId, updatedData, card) {
     const batch = writeBatch(db);
-    const originalInvoiceRef = doc(db, INVOICES_COLLECTION, originalInvoiceId);
-    const transactionRef = doc(originalInvoiceRef, 'transactions', transactionId);
+    // INÍCIO DA ALTERAÇÃO
+    const originalInvoiceRef = doc(db, COLLECTIONS.INVOICES, originalInvoiceId);
+    const transactionRef = doc(originalInvoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS, transactionId);
+    // FIM DA ALTERAÇÃO
 
     try {
         const originalTxSnap = await getDoc(transactionRef);
@@ -283,12 +299,16 @@ async function updateInvoiceTransaction(originalInvoiceId, transactionId, update
             batch.update(transactionRef, dataToSave);
             batch.update(originalInvoiceRef, { totalAmount: increment(amountDifference) });
         } else {
-            const newInvoiceRef = doc(db, INVOICES_COLLECTION, newInvoiceId);
+            // INÍCIO DA ALTERAÇÃO
+            const newInvoiceRef = doc(db, COLLECTIONS.INVOICES, newInvoiceId);
+            // FIM DA ALTERAÇÃO
             
             batch.update(originalInvoiceRef, { totalAmount: increment(-originalAmount) });
             batch.delete(transactionRef);
 
-            const newTransactionRef = doc(collection(newInvoiceRef, 'transactions'));
+            // INÍCIO DA ALTERAÇÃO
+            const newTransactionRef = doc(collection(newInvoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS));
+            // FIM DA ALTERAÇÃO
             batch.set(newTransactionRef, dataToSave);
             batch.update(newInvoiceRef, { totalAmount: increment(dataToSave.amount) });
         }
@@ -307,7 +327,9 @@ async function updateInvoiceTransaction(originalInvoiceId, transactionId, update
  */
 async function closeOverdueInvoices(userId) {
     try {
-        const invoicesRef = collection(db, INVOICES_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const invoicesRef = collection(db, COLLECTIONS.INVOICES);
+        // FIM DA ALTERAÇÃO
         const now = new Date();
 
         const q = query(invoicesRef,
