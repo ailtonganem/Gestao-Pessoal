@@ -105,7 +105,6 @@ async function loadInitialData(userId) {
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
-    // INÍCIO DA ALTERAÇÃO - Coleta o novo filtro de tipo
     const filters = {
         month: document.getElementById('filter-month').value,
         year: document.getElementById('filter-year').value,
@@ -113,7 +112,6 @@ export async function loadUserDashboard() {
         endDate: document.getElementById('filter-end-date').value,
         type: document.getElementById('filter-type').value
     };
-    // FIM DA ALTERAÇÃO
 
     try {
         const userTransactions = await transactions.getTransactions(state.currentUser.uid, filters);
@@ -188,25 +186,24 @@ export async function loadUserBudgets() {
  * Aplica os filtros e a ordenação da UI sobre a lista de transações e chama a renderização.
  */
 export function applyFiltersAndUpdateDashboard() {
-    // INÍCIO DA ALTERAÇÃO - Coleta de todos os filtros, incluindo os novos
     const descriptionFilter = document.getElementById('filter-description').value.toLowerCase();
     const categoryFilter = document.getElementById('filter-category').value;
     const typeFilter = document.getElementById('filter-type').value; 
-    const sortFilter = document.getElementById('filter-sort').value; 
-    // FIM DA ALTERAÇÃO
+    const sortFilter = document.getElementById('filter-sort').value;
+    // INÍCIO DA ALTERAÇÃO - Lógica do filtro de método de pagamento restaurada
+    const paymentMethodFilter = document.getElementById('filter-payment-method').value;
 
     // Aplica filtros
     let filtered = state.allTransactions.filter(transaction => {
         const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
         const typeMatch = (typeFilter === 'all') || (transaction.type === typeFilter);
-        // O filtro de `paymentMethod` foi removido daqui para simplificar, pois
-        // a consulta principal ao Firestore já separa transações de cartão e de conta.
-        // Se precisarmos dele de volta, podemos adicioná-lo.
-        return descriptionMatch && categoryMatch && typeMatch;
+        const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
+        return descriptionMatch && categoryMatch && typeMatch && paymentMethodMatch;
     });
+    // FIM DA ALTERAÇÃO
 
-    // INÍCIO DA ALTERAÇÃO - Lógica de Ordenação
+    // Lógica de Ordenação
     switch (sortFilter) {
         case 'date_asc':
             filtered.sort((a, b) => a.date - b.date);
@@ -222,7 +219,6 @@ export function applyFiltersAndUpdateDashboard() {
             filtered.sort((a, b) => b.date - a.date);
             break;
     }
-    // FIM DA ALTERAÇÃO
 
     state.setFilteredTransactions(filtered);
     render.updateDashboard();
