@@ -2,21 +2,21 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
+import { COLLECTIONS } from '../config/constants.js';
+// FIM DA ALTERAÇÃO
 import {
     collection,
     doc,
     writeBatch,
     Timestamp,
     serverTimestamp,
-    getDoc, // INÍCIO DA ALTERAÇÃO
+    getDoc,
     deleteDoc
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // Importa a função auxiliar para atualizar saldos de contas
 import { updateBalanceInBatch } from './accounts.js';
-
-const TRANSACTIONS_COLLECTION = 'transactions';
 
 /**
  * Registra uma transferência entre duas contas.
@@ -38,7 +38,9 @@ async function addTransfer(transferData) {
 
     const batch = writeBatch(db);
     try {
-        const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+        // FIM DA ALTERAÇÃO
         const newTransactionRef = doc(transactionsRef);
 
         const transferDate = new Date(transferData.date + 'T00:00:00');
@@ -71,8 +73,6 @@ async function addTransfer(transferData) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para deletar e atualizar transferências
-
 /**
  * Exclui uma transferência e reverte o impacto nos saldos das contas envolvidas.
  * @param {object} transfer - O objeto completo da transferência a ser excluída.
@@ -81,7 +81,9 @@ async function addTransfer(transferData) {
 async function deleteTransfer(transfer) {
     const batch = writeBatch(db);
     try {
-        const transferDocRef = doc(db, TRANSACTIONS_COLLECTION, transfer.id);
+        // INÍCIO DA ALTERAÇÃO
+        const transferDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transfer.id);
+        // FIM DA ALTERAÇÃO
         
         // 1. Reverte o débito na conta de origem (soma o valor de volta)
         updateBalanceInBatch(batch, transfer.fromAccountId, transfer.amount, 'revenue');
@@ -111,7 +113,9 @@ async function updateTransfer(transferId, updatedData) {
     }
 
     const batch = writeBatch(db);
-    const transferDocRef = doc(db, TRANSACTIONS_COLLECTION, transferId);
+    // INÍCIO DA ALTERAÇÃO
+    const transferDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transferId);
+    // FIM DA ALTERAÇÃO
     
     try {
         // Pega os dados originais da transferência para poder revertê-los
@@ -148,4 +152,3 @@ async function updateTransfer(transferId, updatedData) {
 }
 
 export { addTransfer, deleteTransfer, updateTransfer };
-// FIM DA ALTERAÇÃO
