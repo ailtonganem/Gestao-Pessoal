@@ -30,10 +30,8 @@ const editTransactionDateInput = document.getElementById('edit-transaction-date'
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
-// INÍCIO DA ALTERAÇÃO - Novos elementos para o modal de edição
 const editAccountWrapper = document.getElementById('edit-account-wrapper');
 const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Recorrência
 const editRecurringIdInput = document.getElementById('edit-recurring-id');
@@ -64,7 +62,6 @@ const adminTabButton = document.getElementById('admin-tab-button');
 
 // --- Funções de Gerenciamento do Modal de Edição de Transação ---
 
-// INÍCIO DA ALTERAÇÃO - Lógica atualizada para lidar com contas
 export function openEditModal(transaction) {
     editTransactionIdInput.value = transaction.id;
     editTransactionDescriptionInput.value = transaction.description;
@@ -89,7 +86,6 @@ export function openEditModal(transaction) {
 
     editModal.style.display = 'flex';
 }
-// FIM DA ALTERAÇÃO
 
 export function closeEditModal() {
     editModal.style.display = 'none';
@@ -125,17 +121,14 @@ export function openEditInvoiceTransactionModal(transactionId) {
         return;
     }
 
-    // Preenche os campos ocultos com os IDs necessários para a lógica de atualização
     editInvoiceTxIdInput.value = tx.id;
     editInvoiceIdInput.value = document.getElementById('invoice-period-select').value;
     editInvoiceCardIdInput.value = state.selectedCardForInvoiceView.id;
 
-    // Preenche os campos visíveis do formulário
     editInvoiceTxDescriptionInput.value = tx.description;
     editInvoiceTxAmountInput.value = tx.amount;
     editInvoiceTxDateInput.value = formatDateToInput(tx.purchaseDate);
     
-    // Popula e seleciona a categoria correta
     render.populateCategorySelects('expense', editInvoiceTxCategorySelect);
     editInvoiceTxCategorySelect.value = tx.category;
 
@@ -169,28 +162,30 @@ export function showInvoiceDetailsView(card) {
 export function showCardManagementView() {
     state.setSelectedCardForInvoiceView(null);
     state.setCurrentCardInvoices([]);
-    _currentInvoiceTransactions = []; // Limpa a lista de transações
+    _currentInvoiceTransactions = [];
     cardManagementView.style.display = 'block';
     invoiceDetailsView.style.display = 'none';
 }
 
+// INÍCIO DA ALTERAÇÃO - Passa o userId para a função getInvoices
 export async function loadAndDisplayInvoices(card) {
     invoicePeriodSelect.innerHTML = '<option>Carregando faturas...</option>';
     try {
-        const invoices = await getInvoices(card.id);
+        const invoices = await getInvoices(card.id, state.currentUser.uid); // Adiciona o userId
         state.setCurrentCardInvoices(invoices);
 
         if (invoices.length === 0) {
             render.renderEmptyInvoiceDetails();
         } else {
             render.renderInvoicePeriodSelect(invoices);
-            await displayInvoiceDetails(invoices[0]); // Aguarda o carregamento dos detalhes
+            await displayInvoiceDetails(invoices[0]);
         }
     } catch (error) {
         showNotification(error.message, 'error');
         invoicePeriodSelect.innerHTML = '<option>Erro ao carregar faturas</option>';
     }
 }
+// FIM DA ALTERAÇÃO
 
 export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceSummary(invoice);
@@ -199,11 +194,11 @@ export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceTransactionsList([{ description: 'Carregando...', amount: '' }]);
     try {
         const transactions = await getInvoiceTransactions(invoice.id);
-        _currentInvoiceTransactions = transactions; // Armazena a lista de transações
+        _currentInvoiceTransactions = transactions;
         render.renderInvoiceTransactionsList(transactions);
     } catch (error) {
         showNotification(error.message, 'error');
-        _currentInvoiceTransactions = []; // Limpa em caso de erro
+        _currentInvoiceTransactions = [];
         render.renderInvoiceTransactionsList([{ description: 'Erro ao carregar.', amount: '' }]);
     }
 }
@@ -233,7 +228,7 @@ export async function openSettingsModal() {
         }
 
         render.renderBudgetList();
-        render.renderAccountList(); // Renderiza a lista de contas
+        render.renderAccountList();
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -243,20 +238,14 @@ export function closeSettingsModal() {
     settingsModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para trocar de aba nas configurações
 /**
  * Alterna a visibilidade das abas no modal de configurações.
  * @param {string} tabId - O ID do conteúdo da aba a ser exibida.
  */
 export function switchSettingsTab(tabId) {
-    // Esconde todos os conteúdos
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    // Remove o estado ativo de todos os botões
     document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
 
-    // Mostra o conteúdo da aba selecionada
     document.getElementById(tabId).classList.add('active');
-    // Marca o botão da aba como ativo
     document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
 }
-// FIM DA ALTERAÇÃO
