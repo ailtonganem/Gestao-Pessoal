@@ -16,6 +16,7 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
+import * as accounts from './modules/accounts.js'; // INÍCIO DA ALTERAÇÃO - Importa o módulo de contas
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 
 // --- Módulos de UI ---
@@ -36,6 +37,7 @@ const addRecurringForm = document.getElementById('add-recurring-form');
 const editRecurringForm = document.getElementById('edit-recurring-form');
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
 const themeToggle = document.getElementById('theme-toggle');
+const addAccountForm = document.getElementById('add-account-form'); // INÍCIO DA ALTERAÇÃO - Novo formulário
 
 let debounceTimer;
 
@@ -126,17 +128,23 @@ export function initializeEventListeners() {
         }
     });
 
+    // INÍCIO DA ALTERAÇÃO - Lógica para exibir/ocultar campo de conta
     document.getElementById('payment-method').addEventListener('change', (e) => {
         const creditCardWrapper = document.getElementById('credit-card-wrapper');
         const installmentOptionsWrapper = document.getElementById('installment-options-wrapper');
+        const accountWrapper = document.getElementById('transaction-account-wrapper');
+
         if (e.target.value === 'credit_card') {
             creditCardWrapper.style.display = 'block';
             installmentOptionsWrapper.style.display = 'block';
+            accountWrapper.style.display = 'none';
         } else {
             creditCardWrapper.style.display = 'none';
             installmentOptionsWrapper.style.display = 'none';
+            accountWrapper.style.display = 'block';
         }
     });
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('is-installment-checkbox').addEventListener('change', (e) => {
         const installmentsCountWrapper = document.getElementById('installments-count-wrapper');
@@ -152,7 +160,6 @@ export function initializeEventListeners() {
 
 
     // --- Listeners dos Filtros do Histórico ---
-    // INÍCIO DA ALTERAÇÃO - Lógica de interação entre os filtros de data
     const filterMonth = document.getElementById('filter-month');
     const filterYear = document.getElementById('filter-year');
     const filterStartDate = document.getElementById('filter-start-date');
@@ -176,7 +183,6 @@ export function initializeEventListeners() {
             filterMonth.disabled = true;
             app.loadUserDashboard();
         } else if (!filterStartDate.value && !filterEndDate.value) {
-            // Se ambos os campos de data estiverem vazios, reabilita os seletores de mês/ano
             filterYear.disabled = false;
             filterMonth.disabled = false;
         }
@@ -184,7 +190,6 @@ export function initializeEventListeners() {
 
     filterStartDate.addEventListener('change', dateFilterHandler);
     filterEndDate.addEventListener('change', dateFilterHandler);
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('filter-description').addEventListener('input', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-category').addEventListener('change', app.applyFiltersAndUpdateDashboard);
@@ -200,12 +205,14 @@ export function initializeEventListeners() {
         const transactionLi = target.closest('li');
         if (!transactionLi || !transactionLi.dataset.id) return;
         const transactionId = transactionLi.dataset.id;
+        const transaction = state.filteredTransactions.find(t => t.id === transactionId);
+        if (!transaction) return;
+
         if (target.matches('.edit-btn')) {
-            const transaction = state.filteredTransactions.find(t => t.id === transactionId);
-            if (transaction) modals.openEditModal(transaction);
+            modals.openEditModal(transaction);
         }
         if (target.matches('.delete-btn')) {
-            handleDeleteTransaction(transactionId);
+            handleDeleteTransaction(transaction); // Passa o objeto completo
         }
     });
 
@@ -258,13 +265,11 @@ export function initializeEventListeners() {
     document.querySelector('.modal-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.tab-link')) {
             const tabId = e.target.dataset.tab;
-            document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            e.target.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            modals.switchSettingsTab(tabId);
         }
     });
 
+    addAccountForm.addEventListener('submit', handleAddAccount); // INÍCIO DA ALTERAÇÃO
     addCategoryForm.addEventListener('submit', handleAddCategory);
     setBudgetForm.addEventListener('submit', handleSetBudget);
     addRecurringForm.addEventListener('submit', handleAddRecurring);
@@ -308,6 +313,16 @@ export function initializeEventListeners() {
             handleDeleteBudget(budgetId);
         }
     });
+
+    // INÍCIO DA ALTERAÇÃO - Novo listener para a lista de contas
+    document.getElementById('account-list').addEventListener('click', (e) => {
+        const deleteButton = e.target.closest('.delete-btn[data-account-id]');
+        if (deleteButton) {
+            const accountId = deleteButton.dataset.accountId;
+            handleDeleteAccount(accountId);
+        }
+    });
+    // FIM DA ALTERAÇÃO
     
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
@@ -334,6 +349,21 @@ export function initializeEventListeners() {
             }
         }
     });
+
+    // INÍCIO DA ALTERAÇÃO - Novo listener para links de navegação interna
+    document.body.addEventListener('click', (e) => {
+        if (e.target.id === 'go-to-accounts') {
+            e.preventDefault();
+            modals.openSettingsModal();
+            modals.switchSettingsTab('account-management-tab');
+        }
+        if (e.target.id === 'go-to-budgets') {
+            e.preventDefault();
+            modals.openSettingsModal();
+            modals.switchSettingsTab('budget-management-tab');
+        }
+    });
+    // FIM DA ALTERAÇÃO
     
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
@@ -358,6 +388,7 @@ async function handleDescriptionAutocomplete(searchTerm) {
     });
 }
 
+// INÍCIO DA ALTERAÇÃO - Lógica de adição de transação atualizada
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -369,6 +400,7 @@ async function handleAddTransaction(e) {
     const categoryName = selectedCategoryOption.value;
     const categoryId = selectedCategoryOption.dataset.categoryId;
     const subcategoryName = form['transaction-subcategory'].value.trim();
+    const paymentMethod = form['payment-method'].value;
 
     if (!categoryName) {
         showNotification("Por favor, selecione uma categoria.", 'error');
@@ -384,7 +416,7 @@ async function handleAddTransaction(e) {
         category: categoryName,
         categoryId: categoryId,
         subcategory: subcategoryName,
-        paymentMethod: form['payment-method'].value,
+        paymentMethod: paymentMethod,
         userId: state.currentUser.uid,
         isInstallment: false
     };
@@ -409,6 +441,14 @@ async function handleAddTransaction(e) {
                 return;
             }
         }
+    } else {
+        const accountId = form['transaction-account'].value;
+        if (!accountId) {
+            showNotification("Por favor, selecione uma conta.", 'error');
+            submitButton.disabled = false;
+            return;
+        }
+        transactionData.accountId = accountId;
     }
     
     try {
@@ -422,9 +462,9 @@ async function handleAddTransaction(e) {
         document.getElementById('transaction-amount-label').textContent = 'Valor (R$)';
         document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
         
-        if (transactionData.paymentMethod !== 'credit_card') {
-            app.loadUserDashboard();
-        }
+        // Sempre recarrega os dados do dashboard e das contas para refletir o novo saldo
+        await Promise.all([app.loadUserDashboard(), app.loadUserAccounts()]);
+        
         if (subcategoryName) {
             app.loadUserCategories();
         }
@@ -434,42 +474,107 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
+// FIM DA ALTERAÇÃO
 
-// ... (Demais funções handler permanecem inalteradas)
-async function handleDeleteTransaction(transactionId) {
-    const tx = state.filteredTransactions.find(t => t.id === transactionId);
-    if (confirm(`Tem certeza que deseja excluir a transação "${tx.description}"?`)) {
+// INÍCIO DA ALTERAÇÃO - Lógica de exclusão atualizada
+async function handleDeleteTransaction(transaction) { // Recebe o objeto completo
+    if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
         try {
-            await transactions.deleteTransaction(transactionId);
+            await transactions.deleteTransaction(transaction); // Passa o objeto completo
             showNotification('Transação excluída com sucesso!');
-            app.loadUserDashboard();
+            await Promise.all([app.loadUserDashboard(), app.loadUserAccounts()]);
         } catch (error) {
             showNotification(error.message, 'error');
         }
     }
 }
+// FIM DA ALTERAÇÃO
 
+// INÍCIO DA ALTERAÇÃO - Lógica de atualização atualizada
 async function handleUpdateTransaction(e) {
     e.preventDefault();
     const form = e.target;
     const transactionId = form['edit-transaction-id'].value;
+    const paymentMethod = form['edit-payment-method'].value;
+
     const updatedData = {
         description: form['edit-transaction-description'].value,
         amount: parseFloat(form['edit-transaction-amount'].value),
         date: form['edit-transaction-date'].value,
         type: form['edit-transaction-type'].value,
         category: form['edit-transaction-category'].value,
-        paymentMethod: form['edit-payment-method'].value,
+        paymentMethod: paymentMethod,
     };
+    
+    // Adiciona accountId ou cardId conforme o método de pagamento
+    if (paymentMethod === 'credit_card') {
+        updatedData.cardId = form['edit-credit-card-select'].value;
+    } else {
+        updatedData.accountId = form['edit-transaction-account'].value;
+        if (!updatedData.accountId) {
+            showNotification("Por favor, selecione uma conta.", "error");
+            return;
+        }
+    }
+
     try {
         await transactions.updateTransaction(transactionId, updatedData);
         showNotification('Transação atualizada com sucesso!');
         modals.closeEditModal();
-        app.loadUserDashboard();
+        await Promise.all([app.loadUserDashboard(), app.loadUserAccounts()]);
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
+// FIM DA ALTERAÇÃO
+
+// INÍCIO DA ALTERAÇÃO - Nova função para adicionar conta
+async function handleAddAccount(e) {
+    e.preventDefault();
+    const form = e.target;
+    const accountData = {
+        name: form['account-name'].value,
+        initialBalance: parseFloat(form['account-initial-balance'].value),
+        type: 'checking', // Tipo padrão, pode ser expandido no futuro
+        userId: state.currentUser.uid
+    };
+    try {
+        await accounts.addAccount(accountData);
+        showNotification("Conta adicionada com sucesso!");
+        form.reset();
+        await app.loadUserAccounts(); // Recarrega a lista de contas
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
+
+// INÍCIO DA ALTERAÇÃO - Nova função para excluir conta
+async function handleDeleteAccount(accountId) {
+    const account = state.userAccounts.find(acc => acc.id === accountId);
+    if (!account) return;
+
+    if (account.currentBalance !== 0) {
+        if (!confirm(`A conta "${account.name}" possui um saldo de ${formatCurrency(account.currentBalance)}. Excluir uma conta com saldo pode causar inconsistências. Deseja continuar?`)) {
+            return;
+        }
+    } else {
+        if (!confirm(`Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`)) {
+            return;
+        }
+    }
+
+    try {
+        // Futuramente, verificar se existem transações ligadas a esta conta antes de excluir.
+        await accounts.deleteAccount(accountId);
+        showNotification('Conta excluída com sucesso!');
+        await app.loadUserAccounts();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
+
 
 async function handleUpdateInvoiceTransaction(e) {
     e.preventDefault();
