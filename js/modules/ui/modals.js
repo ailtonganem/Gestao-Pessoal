@@ -21,8 +21,9 @@ const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
 const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
-// INÍCIO DA ALTERAÇÃO
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
+// INÍCIO DA ALTERAÇÃO
+const advancePaymentModal = document.getElementById('advance-payment-modal');
 // FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
@@ -62,9 +63,14 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 // Elementos do Modal de Configurações
 const adminTabButton = document.getElementById('admin-tab-button');
 
-// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Pagamento de Fatura
+// Elementos do Modal de Pagamento de Fatura
 const payInvoiceIdInput = document.getElementById('pay-invoice-id');
 const payInvoiceDateInput = document.getElementById('pay-invoice-date');
+
+// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Pagamento Antecipado
+const advancePaymentInvoiceIdInput = document.getElementById('advance-payment-invoice-id');
+const advancePaymentDateInput = document.getElementById('advance-payment-date');
+const advancePaymentAmountInput = document.getElementById('advance-payment-amount');
 // FIM DA ALTERAÇÃO
 
 
@@ -256,7 +262,7 @@ export function switchSettingsTab(tabId) {
     document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de pagamento de fatura
+// --- Funções para o modal de pagamento de fatura ---
 
 /**
  * Abre o modal para pagamento de fatura, preenchendo os dados necessários.
@@ -288,5 +294,44 @@ export function closePayInvoiceModal() {
         form.reset();
     }
     payInvoiceModal.style.display = 'none';
+}
+
+// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de pagamento antecipado
+
+/**
+ * Abre o modal para pagamento antecipado de fatura.
+ */
+export function openAdvancePaymentModal() {
+    const selectedInvoiceId = invoicePeriodSelect.value;
+    const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
+
+    if (!selectedInvoice) {
+        showNotification("Nenhuma fatura selecionada.", "error");
+        return;
+    }
+    
+    // Não permitir antecipação se a fatura não estiver aberta ou fechada
+    if (selectedInvoice.status === 'paid') {
+        showNotification("Não é possível antecipar pagamento de uma fatura já paga.", "error");
+        return;
+    }
+
+    advancePaymentInvoiceIdInput.value = selectedInvoice.id;
+    advancePaymentDateInput.value = formatDateToInput(new Date());
+    advancePaymentAmountInput.max = selectedInvoice.totalAmount; // Impede o usuário de pagar mais do que o devido
+    advancePaymentAmountInput.placeholder = `Valor máximo: ${selectedInvoice.totalAmount.toFixed(2)}`;
+
+    advancePaymentModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de pagamento antecipado e reseta o formulário.
+ */
+export function closeAdvancePaymentModal() {
+    const form = document.getElementById('advance-payment-form');
+    if (form) {
+        form.reset();
+    }
+    advancePaymentModal.style.display = 'none';
 }
 // FIM DA ALTERAÇÃO
