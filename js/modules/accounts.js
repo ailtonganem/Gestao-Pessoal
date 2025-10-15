@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -31,9 +31,7 @@ import {
  */
 async function addAccount(accountData) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
-        // FIM DA ALTERAÇÃO
         const dataToSave = {
             ...accountData,
             currentBalance: accountData.initialBalance, // Saldo atual começa com o saldo inicial
@@ -53,9 +51,7 @@ async function addAccount(accountData) {
  */
 async function getAccounts(userId) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
-        // FIM DA ALTERAÇÃO
         const q = query(
             accountsRef,
             where("userId", "==", userId),
@@ -84,9 +80,7 @@ async function getAccounts(userId) {
  */
 async function updateAccount(accountId, updatedData) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-        // FIM DA ALTERAÇÃO
         await updateDoc(accountDocRef, updatedData);
     } catch (error) {
         console.error("Erro ao atualizar conta:", error);
@@ -105,9 +99,7 @@ async function deleteAccount(accountId) {
     try {
         // Futuramente, podemos adicionar uma verificação se a conta possui transações
         // e impedir a exclusão ou pedir confirmação extra.
-        // INÍCIO DA ALTERAÇÃO
         const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-        // FIM DA ALTERAÇÃO
         await deleteDoc(accountDocRef);
     } catch (error) {
         console.error("Erro ao excluir conta:", error);
@@ -123,9 +115,7 @@ async function deleteAccount(accountId) {
  * @param {string} transactionType - 'revenue' ou 'expense'.
  */
 function updateBalanceInBatch(batch, accountId, amount, transactionType) {
-    // INÍCIO DA ALTERAÇÃO
     const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-    // FIM DA ALTERAÇÃO
     const amountToUpdate = transactionType === 'revenue' ? amount : -amount;
     batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
 }
