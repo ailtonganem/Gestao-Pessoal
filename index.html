@@ -92,7 +92,6 @@
                 </div>
             </section>
             
-            <!-- INÍCIO DA ALTERAÇÃO - Adição do atributo draggable="true" -->
             <section class="dashboard-section" data-section-id="accounts-summary" draggable="true">
                 <div class="section-header">
                     <h2>Minhas Contas</h2>
@@ -337,14 +336,13 @@
                     </div>
                 </div>
             </section>
-            <!-- FIM DA ALTERAÇÃO -->
         </main>
     </div>
 
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
-    <!-- Modais ... (O restante do arquivo permanece inalterado) -->
+    <!-- Modais -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -648,6 +646,28 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL PARA PAGAMENTO DE FATURA -->
+    <div id="pay-invoice-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-pay-invoice-modal-button">&times;</span>
+            <h2>Pagar Fatura</h2>
+            <form id="pay-invoice-form">
+                <input type="hidden" id="pay-invoice-id">
+                <p class="subtitle">Selecione a conta que será usada para pagar esta fatura.</p>
+                <div class="form-control">
+                    <label for="pay-invoice-account-select">Conta para Pagamento</label>
+                    <select id="pay-invoice-account-select" required></select>
+                </div>
+                <div class="form-control">
+                    <label for="pay-invoice-date">Data do Pagamento</label>
+                    <input type="date" id="pay-invoice-date" required>
+                </div>
+                <button type="submit">Confirmar Pagamento</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
