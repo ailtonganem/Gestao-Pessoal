@@ -1,10 +1,14 @@
+// js/modules/creditCard.js
+
 // Importa a instância do Firestore que configuramos.
 import { db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
+import { COLLECTIONS } from '../config/constants.js';
+// FIM DA ALTERAÇÃO
 
 // Importa as funções do Firestore necessárias para manipular os dados.
 import {
     collection,
-
     addDoc,
     query,
     where,
@@ -15,7 +19,6 @@ import {
     orderBy
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-const CARDS_COLLECTION = 'creditCards';
 
 /**
  * Adiciona um novo cartão de crédito ao Firestore.
@@ -28,7 +31,9 @@ const CARDS_COLLECTION = 'creditCards';
  */
 async function addCreditCard(cardData) {
     try {
-        const cardsCollectionRef = collection(db, CARDS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const cardsCollectionRef = collection(db, COLLECTIONS.CREDIT_CARDS);
+        // FIM DA ALTERAÇÃO
         const docRef = await addDoc(cardsCollectionRef, cardData);
         console.log("Cartão de crédito adicionado com ID:", docRef.id);
         return docRef;
@@ -45,7 +50,9 @@ async function addCreditCard(cardData) {
  */
 async function getCreditCards(userId) {
     try {
-        const cardsCollectionRef = collection(db, CARDS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const cardsCollectionRef = collection(db, COLLECTIONS.CREDIT_CARDS);
+        // FIM DA ALTERAÇÃO
         const q = query(
             cardsCollectionRef,
             where("userId", "==", userId),
@@ -73,7 +80,9 @@ async function getCreditCards(userId) {
  */
 async function deleteCreditCard(cardId) {
     try {
-        const cardDocRef = doc(db, CARDS_COLLECTION, cardId);
+        // INÍCIO DA ALTERAÇÃO
+        const cardDocRef = doc(db, COLLECTIONS.CREDIT_CARDS, cardId);
+        // FIM DA ALTERAÇÃO
         await deleteDoc(cardDocRef);
         console.log(`Cartão com ID ${cardId} foi excluído.`);
     } catch (error) {
@@ -90,7 +99,9 @@ async function deleteCreditCard(cardId) {
  */
 async function updateCreditCard(cardId, updatedData) {
     try {
-        const cardDocRef = doc(db, CARDS_COLLECTION, cardId);
+        // INÍCIO DA ALTERAÇÃO
+        const cardDocRef = doc(db, COLLECTIONS.CREDIT_CARDS, cardId);
+        // FIM DA ALTERAÇÃO
         await updateDoc(cardDocRef, updatedData);
         console.log(`Cartão com ID ${cardId} foi atualizado.`);
     } catch (error) {
