@@ -92,233 +92,259 @@
                 </div>
             </section>
             
-            <section id="accounts-summary-section">
-                <h2>Minhas Contas</h2>
-                <ul id="accounts-summary-list">
-                    <li>Carregando contas...</li>
-                </ul>
-            </section>
-
-            <section id="chart-section">
-                <h2>Análise de Despesas por Categoria</h2>
-                <div class="chart-container">
-                    <canvas id="expenses-chart"></canvas>
+            <!-- INÍCIO DA ALTERAÇÃO - Estrutura de seção recolhível -->
+            <section class="dashboard-section" data-section-id="accounts-summary">
+                <div class="section-header">
+                    <h2>Minhas Contas</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <ul id="accounts-summary-list">
+                        <li>Carregando contas...</li>
+                    </ul>
                 </div>
             </section>
 
-            <section id="trends-chart-section">
-                <h2>Evolução Mensal (Últimos 6 Meses)</h2>
-                <div class="chart-container">
-                    <canvas id="trends-chart"></canvas>
+            <section class="dashboard-section" data-section-id="expenses-chart">
+                <div class="section-header">
+                    <h2>Análise de Despesas por Categoria</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="expenses-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard-section" data-section-id="trends-chart">
+                <div class="section-header">
+                    <h2>Evolução Mensal (Últimos 6 Meses)</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <div class="chart-container">
+                        <canvas id="trends-chart"></canvas>
+                    </div>
                 </div>
             </section>
             
-            <section id="budget-progress-section">
-                <h2>Acompanhamento de Orçamentos</h2>
-                <p class="subtitle" style="text-align: left;">Progresso dos seus gastos em relação aos limites definidos para o mês atual.</p>
-                <ul id="budget-progress-list">
-                    <li>Carregando orçamentos...</li>
-                </ul>
+            <section class="dashboard-section" data-section-id="budget-progress">
+                <div class="section-header">
+                    <h2>Acompanhamento de Orçamentos</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <p class="subtitle" style="text-align: left;">Progresso dos seus gastos em relação aos limites definidos para o mês atual.</p>
+                    <ul id="budget-progress-list">
+                        <li>Carregando orçamentos...</li>
+                    </ul>
+                </div>
             </section>
 
-            <!-- INÍCIO DA ALTERAÇÃO - Adição de abas para os formulários -->
-            <div class="form-tabs">
-                <button class="tab-link active" data-form="transaction-form-section">Transação</button>
-                <button class="tab-link" data-form="transfer-form-section">Transferência</button>
-            </div>
+            <section class="dashboard-section" data-section-id="forms">
+                <div class="section-header">
+                    <h2>Lançamentos</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <div class="form-tabs">
+                        <button class="tab-link active" data-form="transaction-form-section">Transação</button>
+                        <button class="tab-link" data-form="transfer-form-section">Transferência</button>
+                    </div>
+
+                    <section id="transaction-form-section" class="form-section active">
+                        <h3>Adicionar Transação</h3>
+                        <form id="add-transaction-form">
+                            <div class="form-control">
+                                <label for="transaction-description">Descrição</label>
+                                <input type="text" id="transaction-description" list="description-suggestions" placeholder="Ex: Salário, Almoço" required>
+                                <datalist id="description-suggestions"></datalist>
+                            </div>
+                            <div class="form-control">
+                                <label for="transaction-amount" id="transaction-amount-label">Valor (R$)</label>
+                                <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="transaction-date">Data</label>
+                                <input type="date" id="transaction-date" required>
+                            </div>
+                            <div class="form-control">
+                                <label>Tipo</label>
+                                <div class="radio-container">
+                                    <input type="radio" id="type-revenue" name="transaction-type" value="revenue" required>
+                                    <label for="type-revenue">Receita</label>
+                                    <input type="radio" id="type-expense" name="transaction-type" value="expense" checked>
+                                    <label for="type-expense">Despesa</label>
+                                </div>
+                            </div>
+                            <div class="form-control">
+                                <label for="transaction-category">Categoria</label>
+                                <select id="transaction-category" required></select>
+                            </div>
+                            <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
+                                <label for="transaction-subcategory">Subcategoria (opcional)</label>
+                                <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
+                                <datalist id="subcategory-suggestions"></datalist>
+                            </div>
+                            <div class="form-control">
+                                <label for="payment-method">Método de Pagamento</label>
+                                <select id="payment-method" required>
+                                    <option value="pix">PIX</option>
+                                    <option value="debit">Débito</option>
+                                    <option value="cash">Dinheiro</option>
+                                    <option value="credit_card">Cartão de Crédito</option>
+                                </select>
+                            </div>
+                            <div id="transaction-account-wrapper" class="form-control">
+                                <label for="transaction-account">Conta</label>
+                                <select id="transaction-account" required>
+                                    <option>Nenhuma conta cadastrada</option>
+                                </select>
+                            </div>
+                            <div id="credit-card-wrapper" class="form-control" style="display: none;">
+                                <label for="credit-card-select">Cartão</label>
+                                <select id="credit-card-select">
+                                    <option>Nenhuma cartão cadastrado</option>
+                                </select>
+                            </div>
+                            <div id="installment-options-wrapper" class="form-control" style="display: none;">
+                                <div class="radio-container" style="margin-bottom: 1rem;">
+                                    <input type="checkbox" id="is-installment-checkbox" style="width: auto;">
+                                    <label for="is-installment-checkbox" style="font-weight: normal; margin-bottom: 0;">É uma compra parcelada?</label>
+                                </div>
+                                <div id="installments-count-wrapper" style="display: none;">
+                                    <label for="installments-count">Número de Parcelas</label>
+                                    <input type="number" id="installments-count" min="2" max="48" value="2">
+                                </div>
+                            </div>
+                            <button type="submit">Adicionar</button>
+                        </form>
+                    </section>
+                    <section id="transfer-form-section" class="form-section" style="display: none;">
+                        <h3>Realizar Transferência</h3>
+                        <form id="add-transfer-form">
+                            <div class="form-control">
+                                <label for="transfer-description">Descrição (opcional)</label>
+                                <input type="text" id="transfer-description" placeholder="Ex: Dinheiro para a carteira">
+                            </div>
+                            <div class="form-control">
+                                <label for="transfer-amount">Valor (R$)</label>
+                                <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="transfer-date">Data</label>
+                                <input type="date" id="transfer-date" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="transfer-from-account">Conta de Origem</label>
+                                <select id="transfer-from-account" required></select>
+                            </div>
+                            <div class="form-control">
+                                <label for="transfer-to-account">Conta de Destino</label>
+                                <select id="transfer-to-account" required></select>
+                            </div>
+                            <button type="submit">Transferir</button>
+                        </form>
+                    </section>
+                </div>
+            </section>
+
+            <section class="dashboard-section" data-section-id="history">
+                <div class="section-header">
+                    <h2>Histórico</h2>
+                    <span class="toggle-icon">&#9658;</span>
+                </div>
+                <div class="section-content">
+                    <div class="filter-container">
+                        <div class="filter-controls">
+                            <div class="form-control">
+                                <label for="filter-month">Mês</label>
+                                <select id="filter-month">
+                                    <option value="all">Todos</option>
+                                    <option value="1">Janeiro</option>
+                                    <option value="2">Fevereiro</option>
+                                    <option value="3">Março</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Maio</option>
+                                    <option value="6">Junho</option>
+                                    <option value="7">Julho</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Setembro</option>
+                                    <option value="10">Outubro</option>
+                                    <option value="11">Novembro</option>
+                                    <option value="12">Dezembro</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-year">Ano</label>
+                                <select id="filter-year"></select>
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-start-date">De:</label>
+                                <input type="date" id="filter-start-date">
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-end-date">Até:</label>
+                                <input type="date" id="filter-end-date">
+                            </div>
+                        </div>
+                        <div class="filter-controls">
+                            <div class="form-control" style="flex-grow: 2;">
+                                <label for="filter-description">Buscar por Descrição</label>
+                                <input type="text" id="filter-description" placeholder="Ex: Almoço, mercado...">
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-category">Categoria</label>
+                                <select id="filter-category">
+                                    <option value="all">Todas</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-payment-method">Método de Pagamento</label>
+                                <select id="filter-payment-method">
+                                    <option value="all">Todos</option>
+                                    <option value="pix">PIX</option>
+                                    <option value="debit">Débito</option>
+                                    <option value="cash">Dinheiro</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-type">Tipo</label>
+                                <select id="filter-type">
+                                    <option value="all">Todos</option>
+                                    <option value="expense">Despesas</option>
+                                    <option value="revenue">Receitas</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label for="filter-sort">Ordenar por</label>
+                                <select id="filter-sort">
+                                    <option value="date_desc">Data (Mais Recente)</option>
+                                    <option value="date_asc">Data (Mais Antiga)</option>
+                                    <option value="amount_desc">Valor (Maior)</option>
+                                    <option value="amount_asc">Valor (Menor)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="export-container" style="text-align: right; margin-bottom: 1rem;">
+                        <button id="export-csv-button" class="button-secondary">Exportar para CSV</button>
+                    </div>
+                    <ul id="transactions-list"></ul>
+                    <div class="pagination-container" style="text-align: center; margin-top: 1.5rem;">
+                        <button id="load-more-button" class="button-secondary" style="display: none;">Carregar Mais</button>
+                    </div>
+                </div>
+            </section>
             <!-- FIM DA ALTERAÇÃO -->
-
-            <section id="transaction-form-section" class="form-section active">
-                <h2>Adicionar Transação</h2>
-                <form id="add-transaction-form">
-                    <div class="form-control">
-                        <label for="transaction-description">Descrição</label>
-                        <input type="text" id="transaction-description" list="description-suggestions" placeholder="Ex: Salário, Almoço" required>
-                        <datalist id="description-suggestions"></datalist>
-                    </div>
-                    <div class="form-control">
-                        <label for="transaction-amount" id="transaction-amount-label">Valor (R$)</label>
-                        <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="transaction-date">Data</label>
-                        <input type="date" id="transaction-date" required>
-                    </div>
-                    <div class="form-control">
-                        <label>Tipo</label>
-                        <div class="radio-container">
-                            <input type="radio" id="type-revenue" name="transaction-type" value="revenue" required>
-                            <label for="type-revenue">Receita</label>
-                            <input type="radio" id="type-expense" name="transaction-type" value="expense" checked>
-                            <label for="type-expense">Despesa</label>
-                        </div>
-                    </div>
-                    <div class="form-control">
-                        <label for="transaction-category">Categoria</label>
-                        <select id="transaction-category" required></select>
-                    </div>
-                    <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
-                        <label for="transaction-subcategory">Subcategoria (opcional)</label>
-                        <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
-                        <datalist id="subcategory-suggestions"></datalist>
-                    </div>
-                    <div class="form-control">
-                        <label for="payment-method">Método de Pagamento</label>
-                        <select id="payment-method" required>
-                            <option value="pix">PIX</option>
-                            <option value="debit">Débito</option>
-                            <option value="cash">Dinheiro</option>
-                            <option value="credit_card">Cartão de Crédito</option>
-                        </select>
-                    </div>
-                    <div id="transaction-account-wrapper" class="form-control">
-                        <label for="transaction-account">Conta</label>
-                        <select id="transaction-account" required>
-                            <option>Nenhuma conta cadastrada</option>
-                        </select>
-                    </div>
-                    <div id="credit-card-wrapper" class="form-control" style="display: none;">
-                        <label for="credit-card-select">Cartão</label>
-                        <select id="credit-card-select">
-                            <option>Nenhum cartão cadastrado</option>
-                        </select>
-                    </div>
-                    <div id="installment-options-wrapper" class="form-control" style="display: none;">
-                        <div class="radio-container" style="margin-bottom: 1rem;">
-                             <input type="checkbox" id="is-installment-checkbox" style="width: auto;">
-                             <label for="is-installment-checkbox" style="font-weight: normal; margin-bottom: 0;">É uma compra parcelada?</label>
-                        </div>
-                        <div id="installments-count-wrapper" style="display: none;">
-                            <label for="installments-count">Número de Parcelas</label>
-                            <input type="number" id="installments-count" min="2" max="48" value="2">
-                        </div>
-                    </div>
-                    <button type="submit">Adicionar</button>
-                </form>
-            </section>
-
-            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o formulário de transferência -->
-            <section id="transfer-form-section" class="form-section" style="display: none;">
-                <h2>Realizar Transferência</h2>
-                <form id="add-transfer-form">
-                    <div class="form-control">
-                        <label for="transfer-description">Descrição (opcional)</label>
-                        <input type="text" id="transfer-description" placeholder="Ex: Dinheiro para a carteira">
-                    </div>
-                    <div class="form-control">
-                        <label for="transfer-amount">Valor (R$)</label>
-                        <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="transfer-date">Data</label>
-                        <input type="date" id="transfer-date" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="transfer-from-account">Conta de Origem</label>
-                        <select id="transfer-from-account" required></select>
-                    </div>
-                    <div class="form-control">
-                        <label for="transfer-to-account">Conta de Destino</label>
-                        <select id="transfer-to-account" required></select>
-                    </div>
-                    <button type="submit">Transferir</button>
-                </form>
-            </section>
-            <!-- FIM DA ALTERAÇÃO -->
-            
-            <section id="transactions-list-section">
-                <h2>Histórico</h2>
-                
-                <div class="filter-container">
-                    <div class="filter-controls">
-                        <div class="form-control">
-                            <label for="filter-month">Mês</label>
-                            <select id="filter-month">
-                                <option value="all">Todos</option>
-                                <option value="1">Janeiro</option>
-                                <option value="2">Fevereiro</option>
-                                <option value="3">Março</option>
-                                <option value="4">Abril</option>
-                                <option value="5">Maio</option>
-                                <option value="6">Junho</option>
-                                <option value="7">Julho</option>
-                                <option value="8">Agosto</option>
-                                <option value="9">Setembro</option>
-                                <option value="10">Outubro</option>
-                                <option value="11">Novembro</option>
-                                <option value="12">Dezembro</option>
-                            </select>
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-year">Ano</label>
-                            <select id="filter-year"></select>
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-start-date">De:</label>
-                            <input type="date" id="filter-start-date">
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-end-date">Até:</label>
-                            <input type="date" id="filter-end-date">
-                        </div>
-                    </div>
-                    <div class="filter-controls">
-                        <div class="form-control" style="flex-grow: 2;">
-                            <label for="filter-description">Buscar por Descrição</label>
-                            <input type="text" id="filter-description" placeholder="Ex: Almoço, mercado...">
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-category">Categoria</label>
-                            <select id="filter-category">
-                                <option value="all">Todas</option>
-                            </select>
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-payment-method">Método de Pagamento</label>
-                            <select id="filter-payment-method">
-                                <option value="all">Todos</option>
-                                <option value="pix">PIX</option>
-                                <option value="debit">Débito</option>
-                                <option value="cash">Dinheiro</option>
-                            </select>
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-type">Tipo</label>
-                            <select id="filter-type">
-                                <option value="all">Todos</option>
-                                <option value="expense">Despesas</option>
-                                <option value="revenue">Receitas</option>
-                            </select>
-                        </div>
-                        <div class="form-control">
-                            <label for="filter-sort">Ordenar por</label>
-                            <select id="filter-sort">
-                                <option value="date_desc">Data (Mais Recente)</option>
-                                <option value="date_asc">Data (Mais Antiga)</option>
-                                <option value="amount_desc">Valor (Maior)</option>
-                                <option value="amount_asc">Valor (Menor)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="export-container" style="text-align: right; margin-bottom: 1rem;">
-                    <button id="export-csv-button" class="button-secondary">Exportar para CSV</button>
-                </div>
-
-                <ul id="transactions-list"></ul>
-                
-                <div class="pagination-container" style="text-align: center; margin-top: 1.5rem;">
-                    <button id="load-more-button" class="button-secondary" style="display: none;">Carregar Mais</button>
-                </div>
-            </section>
         </main>
     </div>
 
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
-    <!-- Modais ... -->
+    <!-- Modais ... (O restante do arquivo permanece inalterado) -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -371,7 +397,6 @@
             </form>
         </div>
     </div>
-
     <div id="credit-card-modal" class="modal">
         <div class="modal-content">
             <span class="close-card-modal-button">&times;</span>
@@ -419,7 +444,6 @@
             </div>
         </div>
     </div>
-
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
@@ -561,7 +585,6 @@
             </div>
         </div>
     </div>
-
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-recurring-modal-button">&times;</span>
@@ -597,7 +620,6 @@
             </form>
         </div>
     </div>
-
     <div id="edit-invoice-transaction-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-invoice-tx-modal-button">&times;</span>
