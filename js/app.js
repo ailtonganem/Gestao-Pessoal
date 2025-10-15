@@ -20,7 +20,8 @@ import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
 const TRANSACTIONS_PER_PAGE = 25;
-const COLLAPSIBLE_STATE_KEY = 'dashboardCollapsibleState'; // INÍCIO DA ALTERAÇÃO
+const COLLAPSIBLE_STATE_KEY = 'dashboardCollapsibleState';
+const DASHBOARD_ORDER_KEY = 'dashboardSectionOrder'; // INÍCIO DA ALTERAÇÃO
 
 // --- Ponto de Entrada da Aplicação ---
 
@@ -33,7 +34,8 @@ function initializeApp() {
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
-    initializeCollapsibleSections(); // INÍCIO DA ALTERAÇÃO
+    initializeCollapsibleSections();
+    applyDashboardOrder(); // INÍCIO DA ALTERAÇÃO
 
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
@@ -167,10 +169,9 @@ export async function loadMoreTransactions() {
             lastDoc: state.lastTransactionDoc
         });
         
-        const currentTransactions = state.allTransactions;
-        render.renderTransactionList(newTransactions, true); // Renderiza apenas os novos, anexando
+        render.renderTransactionList(newTransactions, true);
         
-        state.setAllTransactions([...currentTransactions, ...newTransactions]);
+        state.setAllTransactions([...state.allTransactions, ...newTransactions]);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(newTransactions.length === TRANSACTIONS_PER_PAGE);
 
@@ -279,7 +280,7 @@ export function applyFiltersAndUpdateDashboard() {
     }
 
     state.setFilteredTransactions(filtered);
-    render.renderTransactionList(filtered); // Renderiza a lista filtrada e ordenada
+    render.renderTransactionList(filtered);
     render.updateDashboard();
 }
 
@@ -305,12 +306,8 @@ export function toggleTheme(isDarkMode) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Lógica para seções recolhíveis
+// --- Lógica para seções recolhíveis ---
 
-/**
- * Lê o estado salvo no localStorage.
- * @returns {object} O estado das seções.
- */
 function getCollapsibleState() {
     try {
         const savedState = localStorage.getItem(COLLAPSIBLE_STATE_KEY);
@@ -320,18 +317,10 @@ function getCollapsibleState() {
     }
 }
 
-/**
- * Salva o estado atual das seções no localStorage.
- * @param {object} state - O estado a ser salvo.
- */
 function saveCollapsibleState(state) {
     localStorage.setItem(COLLAPSIBLE_STATE_KEY, JSON.stringify(state));
 }
 
-/**
- * Alterna a visibilidade de uma seção e salva o estado.
- * @param {HTMLElement} sectionHeader - O elemento do cabeçalho da seção que foi clicado.
- */
 export function toggleSection(sectionHeader) {
     const section = sectionHeader.closest('.dashboard-section');
     const sectionId = section.dataset.sectionId;
@@ -340,9 +329,9 @@ export function toggleSection(sectionHeader) {
     const isExpanded = section.classList.toggle('expanded');
     
     if (isExpanded) {
-        icon.innerHTML = '&#9660;'; // Seta para baixo
+        icon.innerHTML = '&#9660;';
     } else {
-        icon.innerHTML = '&#9658;'; // Seta para direita
+        icon.innerHTML = '&#9658;';
     }
 
     const currentState = getCollapsibleState();
@@ -350,9 +339,6 @@ export function toggleSection(sectionHeader) {
     saveCollapsibleState(currentState);
 }
 
-/**
- * Inicializa as seções com base no estado salvo no localStorage.
- */
 function initializeCollapsibleSections() {
     const savedState = getCollapsibleState();
     const sections = document.querySelectorAll('.dashboard-section');
@@ -362,19 +348,64 @@ function initializeCollapsibleSections() {
         const header = section.querySelector('.section-header');
         const icon = header.querySelector('.toggle-icon');
 
-        // Por padrão, todas começam recolhidas
         section.classList.remove('expanded');
         icon.innerHTML = '&#9658;';
 
-        // Se o estado salvo for 'expanded', expande a seção
         if (savedState[sectionId] === true) {
             section.classList.add('expanded');
             icon.innerHTML = '&#9660;';
         }
     });
 }
-// FIM DA ALTERAÇÃO
 
+// INÍCIO DA ALTERAÇÃO - Lógica para seções reordenáveis
+
+/**
+ * Salva a ordem das seções no localStorage.
+ * @param {string[]} order - Array com os IDs das seções na nova ordem.
+ */
+export function saveDashboardOrder(order) {
+    localStorage.setItem(DASHBOARD_ORDER_KEY, JSON.stringify(order));
+}
+
+/**
+ * Lê a ordem salva do localStorage.
+ * @returns {string[]|null} O array com a ordem ou null se não houver.
+ */
+function getDashboardOrder() {
+    try {
+        const savedOrder = localStorage.getItem(DASHBOARD_ORDER_KEY);
+        return savedOrder ? JSON.parse(savedOrder) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Aplica a ordem salva às seções do dashboard.
+ */
+function applyDashboardOrder() {
+    const order = getDashboardOrder();
+    if (!order) return; // Se não houver ordem salva, mantém a ordem do HTML
+
+    const appContent = document.getElementById('app-content');
+    const summarySection = document.getElementById('summary-section'); // A seção de resumo é fixa
+    const sections = Array.from(appContent.querySelectorAll('.dashboard-section'));
+
+    const sectionsMap = new Map();
+    sections.forEach(section => {
+        sectionsMap.set(section.dataset.sectionId, section);
+    });
+
+    // Reanexa as seções na ordem correta, mantendo a de resumo no topo
+    order.forEach(sectionId => {
+        const section = sectionsMap.get(sectionId);
+        if (section) {
+            appContent.appendChild(section);
+        }
+    });
+}
+// FIM DA ALTERAÇÃO
 
 // --- Inicia a aplicação ---
 initializeApp();
