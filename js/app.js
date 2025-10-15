@@ -19,6 +19,10 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
+// INÍCIO DA ALTERAÇÃO - Adiciona constante para o limite de transações por página
+const TRANSACTIONS_PER_PAGE = 25;
+// FIM DA ALTERAÇÃO
+
 // --- Ponto de Entrada da Aplicação ---
 
 /**
@@ -68,6 +72,10 @@ async function handleAuthStateChange(user) {
         state.setUserBudgets([]);
         state.setUserRecurringTransactions([]);
         state.setUserAccounts([]);
+        // INÍCIO DA ALTERAÇÃO - Reseta o estado da paginação no logout
+        state.setLastTransactionDoc(null);
+        state.setHasMoreTransactions(true);
+        // FIM DA ALTERAÇÃO
         views.showAuthForms();
     }
 }
@@ -93,7 +101,7 @@ async function loadInitialData(userId) {
         loadUserCreditCards(),
         loadUserAccounts(),
         loadUserBudgets(),
-        loadUserDashboard(),
+        loadUserDashboard(), // Esta chamada já carrega a primeira página de transações
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
@@ -101,10 +109,15 @@ async function loadInitialData(userId) {
 
 // --- Funções "Controladoras" / Orquestradadoras ---
 
-/** Busca as transações, armazena no estado e atualiza o dashboard. */
+// INÍCIO DA ALTERAÇÃO - Função modificada para buscar a primeira página
+/** Busca a primeira página de transações, reseta o estado e atualiza o dashboard. */
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
+    // Reseta o estado da paginação para uma nova busca
+    state.setLastTransactionDoc(null);
+    state.setHasMoreTransactions(true);
+
     const filters = {
         month: document.getElementById('filter-month').value,
         year: document.getElementById('filter-year').value,
@@ -114,13 +127,64 @@ export async function loadUserDashboard() {
     };
 
     try {
-        const userTransactions = await transactions.getTransactions(state.currentUser.uid, filters);
-        state.setAllTransactions(userTransactions);
+        const { transactions: userTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
+            filters,
+            limitNum: TRANSACTIONS_PER_PAGE,
+            lastDoc: null // Inicia do começo
+        });
+
+        state.setAllTransactions(userTransactions); // Seta a primeira página de transações
+        state.setLastTransactionDoc(lastVisible);
+        state.setHasMoreTransactions(userTransactions.length === TRANSACTIONS_PER_PAGE);
+
         applyFiltersAndUpdateDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
+// FIM DA ALTERAÇÃO
+
+// INÍCIO DA ALTERAÇÃO - Nova função para carregar mais transações
+/**
+ * Busca a próxima página de transações e as anexa à lista existente no estado.
+ */
+export async function loadMoreTransactions() {
+    if (!state.currentUser || !state.hasMoreTransactions) return;
+
+    const loadMoreButton = document.getElementById('load-more-button');
+    loadMoreButton.disabled = true;
+    loadMoreButton.textContent = 'Carregando...';
+
+    const filters = {
+        month: document.getElementById('filter-month').value,
+        year: document.getElementById('filter-year').value,
+        startDate: document.getElementById('filter-start-date').value,
+        endDate: document.getElementById('filter-end-date').value,
+        type: document.getElementById('filter-type').value
+    };
+
+    try {
+        const { transactions: newTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
+            filters,
+            limitNum: TRANSACTIONS_PER_PAGE,
+            lastDoc: state.lastTransactionDoc // Continua da última busca
+        });
+
+        // Anexa as novas transações à lista existente no estado
+        state.setAllTransactions([...state.allTransactions, ...newTransactions]);
+        state.setLastTransactionDoc(lastVisible);
+        state.setHasMoreTransactions(newTransactions.length === TRANSACTIONS_PER_PAGE);
+
+        applyFiltersAndUpdateDashboard(); // Re-aplica filtros e ordenação na lista completa
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        loadMoreButton.disabled = false;
+        loadMoreButton.textContent = 'Carregar Mais';
+    }
+}
+// FIM DA ALTERAÇÃO
 
 /** Busca as categorias, armazena no estado e atualiza os componentes da UI. */
 export async function loadUserCategories() {
@@ -190,10 +254,8 @@ export function applyFiltersAndUpdateDashboard() {
     const categoryFilter = document.getElementById('filter-category').value;
     const typeFilter = document.getElementById('filter-type').value; 
     const sortFilter = document.getElementById('filter-sort').value;
-    // INÍCIO DA ALTERAÇÃO - Lógica do filtro de método de pagamento restaurada
     const paymentMethodFilter = document.getElementById('filter-payment-method').value;
 
-    // Aplica filtros
     let filtered = state.allTransactions.filter(transaction => {
         const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
@@ -201,9 +263,7 @@ export function applyFiltersAndUpdateDashboard() {
         const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
         return descriptionMatch && categoryMatch && typeMatch && paymentMethodMatch;
     });
-    // FIM DA ALTERAÇÃO
 
-    // Lógica de Ordenação
     switch (sortFilter) {
         case 'date_asc':
             filtered.sort((a, b) => a.date - b.date);
