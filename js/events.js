@@ -17,6 +17,7 @@ import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
+import * as transfers from './modules/transfers.js'; // INÍCIO DA ALTERAÇÃO - Importa o módulo de transferências
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 
 // --- Módulos de UI ---
@@ -29,6 +30,7 @@ import { showNotification } from './modules/ui/notifications.js';
 const loginForm = document.querySelector('#login-form form');
 const registerForm = document.querySelector('#register-form form');
 const addTransactionForm = document.getElementById('add-transaction-form');
+const addTransferForm = document.getElementById('add-transfer-form'); // INÍCIO DA ALTERAÇÃO
 const editTransactionForm = document.getElementById('edit-transaction-form');
 const addCreditCardForm = document.getElementById('add-credit-card-form');
 const addCategoryForm = document.getElementById('add-category-form');
@@ -87,9 +89,24 @@ export function initializeEventListeners() {
         }
     });
 
+    // INÍCIO DA ALTERAÇÃO - Listener para as abas de formulário (Transação/Transferência)
+    document.querySelector('.form-tabs').addEventListener('click', (e) => {
+        if (e.target.matches('.tab-link')) {
+            const formId = e.target.dataset.form;
+            
+            document.querySelectorAll('.form-tabs .tab-link').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+
+            document.querySelectorAll('.form-section').forEach(form => form.style.display = 'none');
+            document.getElementById(formId).style.display = 'block';
+        }
+    });
+    // FIM DA ALTERAÇÃO
+
 
     // --- Listeners do Formulário Principal de Transações ---
     addTransactionForm.addEventListener('submit', handleAddTransaction);
+    addTransferForm.addEventListener('submit', handleAddTransfer); // INÍCIO DA ALTERAÇÃO
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             render.populateCategorySelects(e.target.value, document.getElementById('transaction-category'));
@@ -209,6 +226,9 @@ export function initializeEventListeners() {
         const transactionId = transactionLi.dataset.id;
         const transaction = state.allTransactions.find(t => t.id === transactionId);
         if (!transaction) return;
+
+        // Não permite edição/exclusão de transferências por enquanto
+        if (transaction.type === 'transfer') return;
 
         if (target.matches('.edit-btn')) {
             modals.openEditModal(transaction);
@@ -373,6 +393,39 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+
+// INÍCIO DA ALTERAÇÃO - Novo handler para o formulário de transferência
+async function handleAddTransfer(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const transferData = {
+        description: form['transfer-description'].value,
+        amount: parseFloat(form['transfer-amount'].value),
+        date: form['transfer-date'].value,
+        fromAccountId: form['transfer-from-account'].value,
+        toAccountId: form['transfer-to-account'].value,
+        userId: state.currentUser.uid,
+    };
+    
+    try {
+        await transfers.addTransfer(transferData);
+        showNotification("Transferência realizada com sucesso!");
+        form.reset();
+        document.getElementById('transfer-date').value = new Date().toISOString().split('T')[0];
+
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleDescriptionAutocomplete(searchTerm) {
     const datalist = document.getElementById('description-suggestions');
