@@ -237,6 +237,17 @@
                                 <option value="all">Todas</option>
                             </select>
                         </div>
+                        <!-- INÍCIO DA ALTERAÇÃO - Filtro de "Método de Pagamento" restaurado -->
+                        <div class="form-control">
+                            <label for="filter-payment-method">Método de Pagamento</label>
+                            <select id="filter-payment-method">
+                                <option value="all">Todos</option>
+                                <option value="pix">PIX</option>
+                                <option value="debit">Débito</option>
+                                <option value="cash">Dinheiro</option>
+                            </select>
+                        </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                         <div class="form-control">
                             <label for="filter-type">Tipo</label>
                             <select id="filter-type">
@@ -262,12 +273,10 @@
                 </div>
 
                 <ul id="transactions-list"></ul>
-
-                <!-- INÍCIO DA ALTERAÇÃO - Adição do botão para carregar mais transações -->
+                
                 <div class="pagination-container" style="text-align: center; margin-top: 1.5rem;">
                     <button id="load-more-button" class="button-secondary" style="display: none;">Carregar Mais</button>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
             </section>
         </main>
     </div>
