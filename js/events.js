@@ -17,7 +17,7 @@ import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
-import * as transfers from './modules/transfers.js'; // INÍCIO DA ALTERAÇÃO - Importa o módulo de transferências
+import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 
 // --- Módulos de UI ---
@@ -30,7 +30,7 @@ import { showNotification } from './modules/ui/notifications.js';
 const loginForm = document.querySelector('#login-form form');
 const registerForm = document.querySelector('#register-form form');
 const addTransactionForm = document.getElementById('add-transaction-form');
-const addTransferForm = document.getElementById('add-transfer-form'); // INÍCIO DA ALTERAÇÃO
+const addTransferForm = document.getElementById('add-transfer-form');
 const editTransactionForm = document.getElementById('edit-transaction-form');
 const addCreditCardForm = document.getElementById('add-credit-card-form');
 const addCategoryForm = document.getElementById('add-category-form');
@@ -40,6 +40,7 @@ const editRecurringForm = document.getElementById('edit-recurring-form');
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
 const themeToggle = document.getElementById('theme-toggle');
 const addAccountForm = document.getElementById('add-account-form');
+const appContent = document.getElementById('app-content'); // INÍCIO DA ALTERAÇÃO
 
 let debounceTimer;
 
@@ -89,7 +90,15 @@ export function initializeEventListeners() {
         }
     });
 
-    // INÍCIO DA ALTERAÇÃO - Listener para as abas de formulário (Transação/Transferência)
+    // --- INÍCIO DA ALTERAÇÃO - Delegação de eventos para seções recolhíveis
+    appContent.addEventListener('click', (e) => {
+        const sectionHeader = e.target.closest('.section-header');
+        if (sectionHeader) {
+            app.toggleSection(sectionHeader);
+        }
+    });
+    // FIM DA ALTERAÇÃO
+
     document.querySelector('.form-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.tab-link')) {
             const formId = e.target.dataset.form;
@@ -101,12 +110,11 @@ export function initializeEventListeners() {
             document.getElementById(formId).style.display = 'block';
         }
     });
-    // FIM DA ALTERAÇÃO
 
 
     // --- Listeners do Formulário Principal de Transações ---
     addTransactionForm.addEventListener('submit', handleAddTransaction);
-    addTransferForm.addEventListener('submit', handleAddTransfer); // INÍCIO DA ALTERAÇÃO
+    addTransferForm.addEventListener('submit', handleAddTransfer);
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             render.populateCategorySelects(e.target.value, document.getElementById('transaction-category'));
@@ -227,7 +235,6 @@ export function initializeEventListeners() {
         const transaction = state.allTransactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
-        // Não permite edição/exclusão de transferências por enquanto
         if (transaction.type === 'transfer') return;
 
         if (target.matches('.edit-btn')) {
@@ -394,7 +401,6 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO - Novo handler para o formulário de transferência
 async function handleAddTransfer(e) {
     e.preventDefault();
     const form = e.target;
@@ -425,7 +431,6 @@ async function handleAddTransfer(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleDescriptionAutocomplete(searchTerm) {
     const datalist = document.getElementById('description-suggestions');
