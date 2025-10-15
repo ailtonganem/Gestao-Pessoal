@@ -2,7 +2,9 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
+// FIM DA ALTERAÇÃO
 import {
     collection,
     query,
@@ -133,10 +135,10 @@ async function deleteCategory(categoryId) {
     try {
         const categoryDocRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
         await deleteDoc(categoryDocRef);
-    } catch (error) { // INÍCIO DA CORREÇÃO - Adicionada a chave de abertura '{'
+    } catch (error) {
         console.error("Erro ao excluir categoria:", error);
         throw new Error("Não foi possível excluir a categoria.");
-    } // FIM DA CORREÇÃO
+    }
 }
 
 /**
