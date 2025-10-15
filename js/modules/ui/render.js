@@ -36,6 +36,9 @@ const accountList = document.getElementById('account-list');
 const loadMoreButton = document.getElementById('load-more-button');
 const transferFromAccountSelect = document.getElementById('transfer-from-account');
 const transferToAccountSelect = document.getElementById('transfer-to-account');
+// INÍCIO DA ALTERAÇÃO
+const periodBalanceEl = document.getElementById('period-balance');
+// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -65,6 +68,18 @@ export function updateDashboard() {
     totalRevenueEl.textContent = formatCurrency(periodRevenue);
     totalExpensesEl.textContent = formatCurrency(periodExpenses);
 
+    // INÍCIO DA ALTERAÇÃO - Cálculo e renderização do balanço do período
+    const balance = periodRevenue - periodExpenses;
+    periodBalanceEl.textContent = formatCurrency(balance);
+    if (balance > 0) {
+        periodBalanceEl.style.color = 'var(--revenue-color)';
+    } else if (balance < 0) {
+        periodBalanceEl.style.color = 'var(--expense-color)';
+    } else {
+        periodBalanceEl.style.color = 'var(--text-color)';
+    }
+    // FIM DA ALTERAÇÃO
+
     renderAccountsSummaryList();
     renderTransactionList(state.filteredTransactions);
     charts.renderExpensesChart(state.filteredTransactions.filter(t => t.type === 'expense')); // Garante que o gráfico só receba despesas
@@ -90,7 +105,6 @@ export function renderTransactionList(transactionsToRender, append = false) {
 
             const formattedDate = transaction.date.toLocaleDateString('pt-BR');
 
-            // INÍCIO DA ALTERAÇÃO - Adiciona botões de ação para transferências
             if (transaction.type === 'transfer') {
                 li.classList.add('transfer');
                 const fromAccount = state.userAccounts.find(acc => acc.id === transaction.fromAccountId);
@@ -138,7 +152,6 @@ export function renderTransactionList(transactionsToRender, append = false) {
                     </div>
                 `;
             }
-            // FIM DA ALTERAÇÃO
             transactionsListEl.appendChild(li);
         });
     }
@@ -193,17 +206,22 @@ export function populateCreditCardSelects() {
 
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
-    // INÍCIO DA ALTERAÇÃO - Adiciona o novo select do modal de pagamento antecipado
     const advancePaymentAccountSelect = document.getElementById('advance-payment-account-select');
-    // FIM DA ALTERAÇÃO
     const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
+    // INÍCIO DA ALTERAÇÃO - Adiciona os selects do modal de edição de transferência
+    const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
+    const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
+    // FIM DA ALTERAÇÃO
+
     transactionAccountSelect.innerHTML = '';
     editTransactionAccountSelect.innerHTML = '';
     transferFromAccountSelect.innerHTML = '';
     transferToAccountSelect.innerHTML = '';
     payInvoiceAccountSelect.innerHTML = '';
-    // INÍCIO DA ALTERAÇÃO
     advancePaymentAccountSelect.innerHTML = '';
+    // INÍCIO DA ALTERAÇÃO
+    editTransferFromAccountSelect.innerHTML = '';
+    editTransferToAccountSelect.innerHTML = '';
     // FIM DA ALTERAÇÃO
 
 
@@ -214,8 +232,10 @@ export function populateAccountSelects() {
         transferFromAccountSelect.innerHTML = option;
         transferToAccountSelect.innerHTML = option;
         payInvoiceAccountSelect.innerHTML = option;
-        // INÍCIO DA ALTERAÇÃO
         advancePaymentAccountSelect.innerHTML = option;
+        // INÍCIO DA ALTERAÇÃO
+        editTransferFromAccountSelect.innerHTML = option;
+        editTransferToAccountSelect.innerHTML = option;
         // FIM DA ALTERAÇÃO
     } else {
         state.userAccounts.forEach(account => {
@@ -227,8 +247,10 @@ export function populateAccountSelects() {
             transferFromAccountSelect.appendChild(option.cloneNode(true));
             transferToAccountSelect.appendChild(option.cloneNode(true));
             payInvoiceAccountSelect.appendChild(option.cloneNode(true));
-            // INÍCIO DA ALTERAÇÃO
             advancePaymentAccountSelect.appendChild(option.cloneNode(true));
+            // INÍCIO DA ALTERAÇÃO
+            editTransferFromAccountSelect.appendChild(option.cloneNode(true));
+            editTransferToAccountSelect.appendChild(option.cloneNode(true));
             // FIM DA ALTERAÇÃO
         });
     }
