@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
-import { COLLECTIONS } from '/js/config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
+import { COLLECTIONS } from '../config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
