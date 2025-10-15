@@ -12,10 +12,10 @@
     --paid-color: #95a5a6;
     --pending-color: #f39c12;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --border-radius: 8px; /* INÍCIO DA ALTERAÇÃO */
+    --border-radius: 8px;
     --border-color: #e0e0e0;
     --hover-color: #f9f9f9;
-    --header-bg-color: var(--container-bg-color); /* FIM DA ALTERAÇÃO */
+    --header-bg-color: var(--container-bg-color);
 }
 
 /* Variáveis do Tema Escuro */
@@ -25,9 +25,9 @@ body.dark-mode {
     --background-color: #2c3e50; /* Fundo escuro */
     --text-color: #bdc3c7; /* Texto cinza claro */
     --container-bg-color: #34495e; /* Contêineres escuros */
-    --border-color: #4a627a; /* INÍCIO DA ALTERAÇÃO */
+    --border-color: #4a627a;
     --hover-color: #3b5269;
-    --header-bg-color: #3b5269; /* FIM DA ALTERAÇÃO */
+    --header-bg-color: #3b5269;
 }
 
 
@@ -123,7 +123,7 @@ a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
 /* Estilos do Dashboard (App) */
-#app-container { max-width: 1024px; display: none; } /* Alterado para max-width */
+#app-container { max-width: 1024px; display: none; }
 #app-container header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #bdc3c7;
@@ -132,7 +132,7 @@ a:hover { text-decoration: underline; }
 #app-container header h1 { margin-bottom: 0; }
 #logout-button { background-color: var(--error-color); padding: 0.5rem 1rem; font-size: 0.9rem; }
 #logout-button:hover { background-color: #c0392b; }
-#app-content > section { margin-bottom: 1rem; } /* Espaçamento entre seções */
+#app-content > section { margin-bottom: 1rem; }
 
 /* Estilos da Seção de Resumo Financeiro */
 #summary-section { display: flex; flex-direction: column; gap: 1rem; }
@@ -145,7 +145,6 @@ a:hover { text-decoration: underline; }
 body.dark-mode .summary-card.balance { color: #2c3e50; }
 .summary-card.balance h3 { color: #bdc3c7; }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para Lista de Contas no Dashboard */
 #accounts-summary-list {
     list-style-type: none;
     padding: 0;
@@ -169,7 +168,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     font-size: 1.2rem;
     font-family: monospace;
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos da Seção de Gráfico */
 .chart-container {
@@ -191,8 +189,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     flex-direction: column;
     gap: 0.5rem;
 }
-.filter-controls { display: flex; flex-wrap: wrap; gap: 1rem; } /* Permite quebra de linha */
-.filter-controls .form-control { flex: 1 1 180px; } /* Ajusta o tamanho e permite quebra */
+.filter-controls { display: flex; flex-wrap: wrap; gap: 1rem; }
+.filter-controls .form-control { flex: 1 1 180px; }
 .filter-controls .form-control label { font-size: 0.9rem; }
 
 /* Estilos da Lista de Histórico de Transações */
@@ -204,9 +202,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 #transactions-list li.revenue { border-left-color: var(--revenue-color); }
 #transactions-list li.expense { border-left-color: var(--expense-color); }
-/* INÍCIO DA ALTERAÇÃO - Estilo para transferências */
 #transactions-list li.transfer { border-left-color: var(--secondary-color); }
-/* FIM DA ALTERAÇÃO */
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
@@ -292,7 +288,6 @@ input:checked + .slider:before { transform: translateX(26px); }
 .tab-content.active { display: block; animation: fadeIn 0.5s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para as abas dos formulários de transação/transferência */
 .form-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color);
@@ -303,7 +298,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     color: var(--text-color);
     flex: 1;
 }
-/* FIM DA ALTERAÇÃO */
 
 
 /* Estilos Específicos do Modal de Cartões e Listas de Admin */
@@ -411,12 +405,12 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
     main { max-width: 600px; }
     #app-container { max-width: 1200px; }
     #app-content {
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex; /* INÍCIO DA ALTERAÇÃO - Alterado para flex para reordenação */
+        flex-direction: column;
         gap: 1rem;
     }
     
-    #summary-section { grid-area: unset; flex-direction: row; }
+    #summary-section { order: 0; flex-direction: row; } /* Garante que o resumo seja sempre o primeiro */
     #transactions-list { max-height: 80vh; overflow-y: auto; padding-right: 0.5rem; }
     
     .summary-card { flex: 1; }
@@ -425,7 +419,7 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
     .category-management-container { flex-direction: row; }
 }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para Seções Recolhíveis */
+/* Estilos para Seções Recolhíveis */
 .dashboard-section {
     border-radius: var(--border-radius);
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -467,7 +461,7 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 }
 
 .dashboard-section.expanded .section-content {
-    max-height: 4000px; /* Um valor alto para permitir expansão de qualquer conteúdo */
+    max-height: 4000px;
     padding: 1.5rem 1rem;
     transition: max-height 0.5s ease-in, padding 0.5s ease-in;
 }
@@ -479,5 +473,15 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .dashboard-section.expanded .section-header {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+}
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para Drag-and-Drop */
+.dashboard-section.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--secondary-color);
+}
+
+.dashboard-section[draggable="true"] .section-header {
+    cursor: move; /* Indica que o cabeçalho é arrastável */
 }
 /* FIM DA ALTERAÇÃO */
