@@ -16,7 +16,7 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as admin from './modules/admin.js';
 import * as app from './app.js';
-import * as accounts from './modules/accounts.js'; // INÍCIO DA ALTERAÇÃO - Importa o módulo de contas
+import * as accounts from './modules/accounts.js'; 
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 
 // --- Módulos de UI ---
@@ -37,7 +37,7 @@ const addRecurringForm = document.getElementById('add-recurring-form');
 const editRecurringForm = document.getElementById('edit-recurring-form');
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
 const themeToggle = document.getElementById('theme-toggle');
-const addAccountForm = document.getElementById('add-account-form'); // INÍCIO DA ALTERAÇÃO - Novo formulário
+const addAccountForm = document.getElementById('add-account-form');
 
 let debounceTimer;
 
@@ -128,7 +128,6 @@ export function initializeEventListeners() {
         }
     });
 
-    // INÍCIO DA ALTERAÇÃO - Lógica para exibir/ocultar campo de conta
     document.getElementById('payment-method').addEventListener('change', (e) => {
         const creditCardWrapper = document.getElementById('credit-card-wrapper');
         const installmentOptionsWrapper = document.getElementById('installment-options-wrapper');
@@ -144,7 +143,6 @@ export function initializeEventListeners() {
             accountWrapper.style.display = 'block';
         }
     });
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('is-installment-checkbox').addEventListener('change', (e) => {
         const installmentsCountWrapper = document.getElementById('installments-count-wrapper');
@@ -194,6 +192,10 @@ export function initializeEventListeners() {
     document.getElementById('filter-description').addEventListener('input', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-category').addEventListener('change', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-payment-method').addEventListener('change', app.applyFiltersAndUpdateDashboard);
+    // INÍCIO DA ALTERAÇÃO - Adição dos listeners para os novos filtros
+    document.getElementById('filter-type').addEventListener('change', app.loadUserDashboard);
+    document.getElementById('filter-sort').addEventListener('change', app.applyFiltersAndUpdateDashboard);
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('export-csv-button').addEventListener('click', handleExportCsv);
     document.getElementById('settings-button').addEventListener('click', modals.openSettingsModal);
@@ -212,7 +214,7 @@ export function initializeEventListeners() {
             modals.openEditModal(transaction);
         }
         if (target.matches('.delete-btn')) {
-            handleDeleteTransaction(transaction); // Passa o objeto completo
+            handleDeleteTransaction(transaction);
         }
     });
 
@@ -269,7 +271,7 @@ export function initializeEventListeners() {
         }
     });
 
-    addAccountForm.addEventListener('submit', handleAddAccount); // INÍCIO DA ALTERAÇÃO
+    addAccountForm.addEventListener('submit', handleAddAccount);
     addCategoryForm.addEventListener('submit', handleAddCategory);
     setBudgetForm.addEventListener('submit', handleSetBudget);
     addRecurringForm.addEventListener('submit', handleAddRecurring);
@@ -314,7 +316,6 @@ export function initializeEventListeners() {
         }
     });
 
-    // INÍCIO DA ALTERAÇÃO - Novo listener para a lista de contas
     document.getElementById('account-list').addEventListener('click', (e) => {
         const deleteButton = e.target.closest('.delete-btn[data-account-id]');
         if (deleteButton) {
@@ -322,7 +323,6 @@ export function initializeEventListeners() {
             handleDeleteAccount(accountId);
         }
     });
-    // FIM DA ALTERAÇÃO
     
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
@@ -350,7 +350,6 @@ export function initializeEventListeners() {
         }
     });
 
-    // INÍCIO DA ALTERAÇÃO - Novo listener para links de navegação interna
     document.body.addEventListener('click', (e) => {
         if (e.target.id === 'go-to-accounts') {
             e.preventDefault();
@@ -363,7 +362,6 @@ export function initializeEventListeners() {
             modals.switchSettingsTab('budget-management-tab');
         }
     });
-    // FIM DA ALTERAÇÃO
     
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
@@ -388,7 +386,6 @@ async function handleDescriptionAutocomplete(searchTerm) {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO - Lógica de adição de transação atualizada
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -462,7 +459,6 @@ async function handleAddTransaction(e) {
         document.getElementById('transaction-amount-label').textContent = 'Valor (R$)';
         document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
         
-        // Sempre recarrega os dados do dashboard e das contas para refletir o novo saldo
         await Promise.all([app.loadUserDashboard(), app.loadUserAccounts()]);
         
         if (subcategoryName) {
@@ -474,13 +470,11 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Lógica de exclusão atualizada
-async function handleDeleteTransaction(transaction) { // Recebe o objeto completo
+async function handleDeleteTransaction(transaction) {
     if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
         try {
-            await transactions.deleteTransaction(transaction); // Passa o objeto completo
+            await transactions.deleteTransaction(transaction);
             showNotification('Transação excluída com sucesso!');
             await Promise.all([app.loadUserDashboard(), app.loadUserAccounts()]);
         } catch (error) {
@@ -488,9 +482,7 @@ async function handleDeleteTransaction(transaction) { // Recebe o objeto complet
         }
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Lógica de atualização atualizada
 async function handleUpdateTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -506,7 +498,6 @@ async function handleUpdateTransaction(e) {
         paymentMethod: paymentMethod,
     };
     
-    // Adiciona accountId ou cardId conforme o método de pagamento
     if (paymentMethod === 'credit_card') {
         updatedData.cardId = form['edit-credit-card-select'].value;
     } else {
@@ -526,30 +517,26 @@ async function handleUpdateTransaction(e) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Nova função para adicionar conta
 async function handleAddAccount(e) {
     e.preventDefault();
     const form = e.target;
     const accountData = {
         name: form['account-name'].value,
         initialBalance: parseFloat(form['account-initial-balance'].value),
-        type: 'checking', // Tipo padrão, pode ser expandido no futuro
+        type: 'checking',
         userId: state.currentUser.uid
     };
     try {
         await accounts.addAccount(accountData);
         showNotification("Conta adicionada com sucesso!");
         form.reset();
-        await app.loadUserAccounts(); // Recarrega a lista de contas
+        await app.loadUserAccounts();
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Nova função para excluir conta
 async function handleDeleteAccount(accountId) {
     const account = state.userAccounts.find(acc => acc.id === accountId);
     if (!account) return;
@@ -565,7 +552,6 @@ async function handleDeleteAccount(accountId) {
     }
 
     try {
-        // Futuramente, verificar se existem transações ligadas a esta conta antes de excluir.
         await accounts.deleteAccount(accountId);
         showNotification('Conta excluída com sucesso!');
         await app.loadUserAccounts();
@@ -573,7 +559,6 @@ async function handleDeleteAccount(accountId) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 
 async function handleUpdateInvoiceTransaction(e) {
