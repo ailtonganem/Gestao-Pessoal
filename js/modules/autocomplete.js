@@ -6,8 +6,8 @@
  */
 
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     doc,
@@ -17,7 +17,7 @@ import {
     where,
     limit,
     getDocs,
-    documentId // Importa documentId para a consulta
+    documentId
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 
@@ -36,9 +36,7 @@ export async function saveUniqueDescription(userId, description) {
 
     const normalizedDescription = description.trim().toLowerCase();
     // O ID do documento será a própria descrição normalizada para evitar duplicatas.
-    // INÍCIO DA ALTERAÇÃO
     const descriptionDocRef = doc(db, COLLECTIONS.USERS, userId, COLLECTIONS.DESCRIPTIONS, normalizedDescription);
-    // FIM DA ALTERAÇÃO
 
     try {
         // setDoc com merge:true é uma forma eficiente de "criar se não existe"
@@ -63,9 +61,7 @@ export async function getDescriptionSuggestions(userId, searchTerm) {
     }
 
     const normalizedSearchTerm = searchTerm.toLowerCase();
-    // INÍCIO DA ALTERAÇÃO
     const descriptionsRef = collection(db, COLLECTIONS.USERS, userId, COLLECTIONS.DESCRIPTIONS);
-    // FIM DA ALTERAÇÃO
     
     // Cria uma consulta que busca documentos cujo ID (descrição normalizada)
     // começa com o termo pesquisado.
