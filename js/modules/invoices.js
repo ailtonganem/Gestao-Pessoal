@@ -15,9 +15,7 @@ import {
     increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-// INÍCIO DA ALTERAÇÃO
 import { updateBalanceInBatch } from './accounts.js';
-// FIM DA ALTERAÇÃO
 
 const INVOICES_COLLECTION = 'invoices';
 const TRANSACTIONS_COLLECTION = 'transactions';
@@ -139,7 +137,6 @@ async function getInvoiceTransactions(invoiceId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Função modificada para aceitar accountId e debitar o saldo.
 /**
  * Marca uma fatura como paga, cria a transação de despesa correspondente e debita o saldo da conta.
  * @param {object} invoice - O objeto da fatura a ser paga.
@@ -185,6 +182,69 @@ async function payInvoice(invoice, card, paymentDetails) {
     } catch (error) {
         console.error("Erro ao pagar fatura:", error);
         throw new Error("Ocorreu um erro ao registrar o pagamento da fatura.");
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO - Nova função para pagamento antecipado
+/**
+ * Realiza um pagamento parcial/antecipado de uma fatura.
+ * @param {string} invoiceId - O ID da fatura.
+ * @param {number} amount - O valor a ser pago.
+ * @param {string} accountId - O ID da conta de origem do pagamento.
+ * @param {string} date - A data do pagamento no formato 'YYYY-MM-DD'.
+ * @returns {Promise<void>}
+ */
+async function makeAdvancePayment(invoiceId, amount, accountId, date) {
+    const batch = writeBatch(db);
+    const invoiceRef = doc(db, INVOICES_COLLECTION, invoiceId);
+
+    try {
+        // Validação para garantir que o valor não é negativo ou zero.
+        if (amount <= 0) {
+            throw new Error("O valor do pagamento deve ser positivo.");
+        }
+        
+        const invoiceSnap = await getDoc(invoiceRef);
+        if (!invoiceSnap.exists()) {
+            throw new Error("Fatura não encontrada.");
+        }
+        const invoiceData = invoiceSnap.data();
+
+        // Garante que o usuário não pague mais do que o valor restante
+        if (amount > invoiceData.totalAmount) {
+            throw new Error(`O valor do pagamento (R$ ${amount.toFixed(2)}) não pode ser maior que o saldo devedor da fatura (R$ ${invoiceData.totalAmount.toFixed(2)}).`);
+        }
+
+        // 1. Cria a transação de despesa para o pagamento antecipado
+        const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+        const paymentDate = new Date(date + 'T00:00:00');
+
+        const advancePaymentData = {
+            description: `Pagamento antecipado Fatura (${invoiceData.month}/${invoiceData.year})`,
+            amount: amount,
+            type: 'expense',
+            category: 'Fatura de Cartão',
+            paymentMethod: 'debit',
+            userId: invoiceData.userId,
+            accountId: accountId,
+            date: Timestamp.fromDate(paymentDate),
+            createdAt: Timestamp.now()
+        };
+        const newTransactionRef = doc(transactionsRef);
+        batch.set(newTransactionRef, advancePaymentData);
+
+        // 2. Atualiza o saldo da conta de origem
+        updateBalanceInBatch(batch, accountId, amount, 'expense');
+
+        // 3. Abate o valor do total da fatura
+        batch.update(invoiceRef, { totalAmount: increment(-amount) });
+
+        await batch.commit();
+
+    } catch (error) {
+        console.error("Erro ao realizar pagamento antecipado:", error);
+        // Lança o erro original para ser tratado no frontend
+        throw error;
     }
 }
 // FIM DA ALTERAÇÃO
@@ -275,4 +335,4 @@ async function closeOverdueInvoices(userId) {
     }
 }
 
-export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction };
+export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction, makeAdvancePayment };
