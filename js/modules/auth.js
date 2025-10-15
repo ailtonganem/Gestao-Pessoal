@@ -1,5 +1,10 @@
+// js/modules/auth.js
+
 // Importa a instância de autenticação e o banco de dados.
 import { auth, db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
+import { COLLECTIONS } from '../config/constants.js';
+// FIM DA ALTERAÇÃO
 
 // Importa as funções específicas de autenticação do SDK do Firebase.
 import {
@@ -7,12 +12,11 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    sendPasswordResetEmail // Nova importação para recuperação de senha
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
-// INÍCIO DA ALTERAÇÃO - Importa funções do Firestore para gerenciar perfis de usuário
+// Importa funções do Firestore para gerenciar perfis de usuário
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-// FIM DA ALTERAÇÃO
 
 // Importa a função para criar categorias padrão.
 import { createDefaultCategoriesForUser } from './categories.js';
@@ -30,14 +34,15 @@ async function registerUser(email, password) {
         const user = userCredential.user;
 
         if (user) {
-            // INÍCIO DA ALTERAÇÃO - Cria um documento de perfil para o novo usuário no Firestore.
-            const userProfileRef = doc(db, "users", user.uid);
+            // Cria um documento de perfil para o novo usuário no Firestore.
+            // INÍCIO DA ALTERAÇÃO
+            const userProfileRef = doc(db, COLLECTIONS.USERS, user.uid);
+            // FIM DA ALTERAÇÃO
             await setDoc(userProfileRef, {
                 email: user.email,
                 status: "pending", // Status inicial
                 createdAt: new Date()
             });
-            // FIM DA ALTERAÇÃO
 
             // Cria as categorias padrão para o novo usuário.
             await createDefaultCategoriesForUser(user.uid);
@@ -80,7 +85,6 @@ async function logoutUser() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para buscar o perfil do usuário no Firestore.
 /**
  * Busca o perfil de um usuário no Firestore para verificar seu status.
  * @param {string} uid - O ID do usuário.
@@ -88,7 +92,9 @@ async function logoutUser() {
  */
 async function getUserProfile(uid) {
     try {
-        const userProfileRef = doc(db, "users", uid);
+        // INÍCIO DA ALTERAÇÃO
+        const userProfileRef = doc(db, COLLECTIONS.USERS, uid);
+        // FIM DA ALTERAÇÃO
         const docSnap = await getDoc(userProfileRef);
         if (docSnap.exists()) {
             return docSnap.data();
@@ -102,9 +108,7 @@ async function getUserProfile(uid) {
         throw error;
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Nova função para envio de e-mail de redefinição de senha.
 /**
  * Envia um e-mail para redefinição de senha para o endereço fornecido.
  * @param {string} email O e-mail do usuário.
@@ -118,7 +122,6 @@ async function sendPasswordReset(email) {
         throw error;
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Monitora o estado de autenticação do usuário em tempo real.
