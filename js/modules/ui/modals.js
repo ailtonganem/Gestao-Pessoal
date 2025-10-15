@@ -20,7 +20,7 @@ const editModal = document.getElementById('edit-modal');
 const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
 const editRecurringModal = document.getElementById('edit-recurring-modal');
-const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal'); // INÍCIO DA ALTERAÇÃO
+const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
 
 // Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
@@ -30,6 +30,10 @@ const editTransactionDateInput = document.getElementById('edit-transaction-date'
 const editTransactionCategorySelect = document.getElementById('edit-transaction-category');
 const editPaymentMethodSelect = document.getElementById('edit-payment-method');
 const editCreditCardWrapper = document.getElementById('edit-credit-card-wrapper');
+// INÍCIO DA ALTERAÇÃO - Novos elementos para o modal de edição
+const editAccountWrapper = document.getElementById('edit-account-wrapper');
+const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
+// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Recorrência
 const editRecurringIdInput = document.getElementById('edit-recurring-id');
@@ -38,7 +42,7 @@ const editRecurringAmountInput = document.getElementById('edit-recurring-amount'
 const editRecurringDayInput = document.getElementById('edit-recurring-day');
 const editRecurringCategorySelect = document.getElementById('edit-recurring-category');
 
-// Elementos do Modal de Edição de Lançamento de Fatura (Novos)
+// Elementos do Modal de Edição de Lançamento de Fatura
 const editInvoiceTxIdInput = document.getElementById('edit-invoice-transaction-id');
 const editInvoiceIdInput = document.getElementById('edit-invoice-id');
 const editInvoiceCardIdInput = document.getElementById('edit-invoice-card-id');
@@ -60,6 +64,7 @@ const adminTabButton = document.getElementById('admin-tab-button');
 
 // --- Funções de Gerenciamento do Modal de Edição de Transação ---
 
+// INÍCIO DA ALTERAÇÃO - Lógica atualizada para lidar com contas
 export function openEditModal(transaction) {
     editTransactionIdInput.value = transaction.id;
     editTransactionDescriptionInput.value = transaction.description;
@@ -71,10 +76,20 @@ export function openEditModal(transaction) {
     editTransactionCategorySelect.value = transaction.category;
 
     editPaymentMethodSelect.value = transaction.paymentMethod;
-    editCreditCardWrapper.style.display = transaction.paymentMethod === 'credit_card' ? 'block' : 'none';
+
+    if (transaction.paymentMethod === 'credit_card') {
+        editCreditCardWrapper.style.display = 'block';
+        editAccountWrapper.style.display = 'none';
+        // Futuramente, popular e selecionar o cartão correto aqui, se necessário
+    } else {
+        editCreditCardWrapper.style.display = 'none';
+        editAccountWrapper.style.display = 'block';
+        editTransactionAccountSelect.value = transaction.accountId;
+    }
 
     editModal.style.display = 'flex';
 }
+// FIM DA ALTERAÇÃO
 
 export function closeEditModal() {
     editModal.style.display = 'none';
@@ -101,7 +116,7 @@ export function closeEditRecurringModal() {
 }
 
 
-// --- INÍCIO DA ALTERAÇÃO - Funções para o novo modal de edição de lançamento de fatura ---
+// --- Funções para o modal de edição de lançamento de fatura ---
 
 export function openEditInvoiceTransactionModal(transactionId) {
     const tx = _currentInvoiceTransactions.find(t => t.id === transactionId);
@@ -130,7 +145,6 @@ export function openEditInvoiceTransactionModal(transactionId) {
 export function closeEditInvoiceTransactionModal() {
     editInvoiceTxModal.style.display = 'none';
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções de Gerenciamento do Modal de Cartões ---
@@ -219,6 +233,7 @@ export async function openSettingsModal() {
         }
 
         render.renderBudgetList();
+        render.renderAccountList(); // Renderiza a lista de contas
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -227,3 +242,21 @@ export async function openSettingsModal() {
 export function closeSettingsModal() {
     settingsModal.style.display = 'none';
 }
+
+// INÍCIO DA ALTERAÇÃO - Nova função para trocar de aba nas configurações
+/**
+ * Alterna a visibilidade das abas no modal de configurações.
+ * @param {string} tabId - O ID do conteúdo da aba a ser exibida.
+ */
+export function switchSettingsTab(tabId) {
+    // Esconde todos os conteúdos
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    // Remove o estado ativo de todos os botões
+    document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+
+    // Mostra o conteúdo da aba selecionada
+    document.getElementById(tabId).classList.add('active');
+    // Marca o botão da aba como ativo
+    document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
+}
+// FIM DA ALTERAÇÃO
