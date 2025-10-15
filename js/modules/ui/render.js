@@ -34,10 +34,8 @@ const transactionAccountSelect = document.getElementById('transaction-account');
 const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
 const accountList = document.getElementById('account-list');
 const loadMoreButton = document.getElementById('load-more-button');
-// INÍCIO DA ALTERAÇÃO - Novos elementos para o formulário de transferência
 const transferFromAccountSelect = document.getElementById('transfer-from-account');
 const transferToAccountSelect = document.getElementById('transfer-to-account');
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -56,7 +54,6 @@ export function updateDashboard() {
 
     let periodRevenue = 0;
     let periodExpenses = 0;
-    // INÍCIO DA ALTERAÇÃO - Ignora transferências no cálculo de receitas e despesas
     state.allTransactions.forEach(t => {
         if (t.type === 'revenue') {
             periodRevenue += t.amount;
@@ -64,7 +61,6 @@ export function updateDashboard() {
             periodExpenses += t.amount;
         }
     });
-    // FIM DA ALTERAÇÃO
 
     totalRevenueEl.textContent = formatCurrency(periodRevenue);
     totalExpensesEl.textContent = formatCurrency(periodExpenses);
@@ -94,7 +90,7 @@ export function renderTransactionList(transactionsToRender, append = false) {
 
             const formattedDate = transaction.date.toLocaleDateString('pt-BR');
 
-            // INÍCIO DA ALTERAÇÃO - Lógica para renderizar transferências de forma diferente
+            // INÍCIO DA ALTERAÇÃO - Adiciona botões de ação para transferências
             if (transaction.type === 'transfer') {
                 li.classList.add('transfer');
                 const fromAccount = state.userAccounts.find(acc => acc.id === transaction.fromAccountId);
@@ -111,7 +107,10 @@ export function renderTransactionList(transactionsToRender, append = false) {
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
-                        <div class="transaction-actions" style="width: 58px;"></div>
+                        <div class="transaction-actions">
+                            <button class="action-btn edit-btn" title="Editar">&#9998;</button>
+                            <button class="action-btn delete-btn" title="Excluir">&times;</button>
+                        </div>
                     </div>
                 `;
             } else {
@@ -192,13 +191,21 @@ export function populateCreditCardSelects() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Função atualizada para popular todos os selects de conta
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
+    // INÍCIO DA ALTERAÇÃO - Adiciona o novo select do modal de pagamento antecipado
+    const advancePaymentAccountSelect = document.getElementById('advance-payment-account-select');
+    // FIM DA ALTERAÇÃO
+    const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
     transactionAccountSelect.innerHTML = '';
     editTransactionAccountSelect.innerHTML = '';
     transferFromAccountSelect.innerHTML = '';
     transferToAccountSelect.innerHTML = '';
+    payInvoiceAccountSelect.innerHTML = '';
+    // INÍCIO DA ALTERAÇÃO
+    advancePaymentAccountSelect.innerHTML = '';
+    // FIM DA ALTERAÇÃO
+
 
     if (state.userAccounts.length === 0) {
         const option = '<option disabled value="">Nenhuma conta cadastrada</option>';
@@ -206,6 +213,10 @@ export function populateAccountSelects() {
         editTransactionAccountSelect.innerHTML = option;
         transferFromAccountSelect.innerHTML = option;
         transferToAccountSelect.innerHTML = option;
+        payInvoiceAccountSelect.innerHTML = option;
+        // INÍCIO DA ALTERAÇÃO
+        advancePaymentAccountSelect.innerHTML = option;
+        // FIM DA ALTERAÇÃO
     } else {
         state.userAccounts.forEach(account => {
             const option = document.createElement('option');
@@ -215,10 +226,13 @@ export function populateAccountSelects() {
             editTransactionAccountSelect.appendChild(option.cloneNode(true));
             transferFromAccountSelect.appendChild(option.cloneNode(true));
             transferToAccountSelect.appendChild(option.cloneNode(true));
+            payInvoiceAccountSelect.appendChild(option.cloneNode(true));
+            // INÍCIO DA ALTERAÇÃO
+            advancePaymentAccountSelect.appendChild(option.cloneNode(true));
+            // FIM DA ALTERAÇÃO
         });
     }
 }
-// FIM DA ALTERAÇÃO
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
@@ -246,7 +260,6 @@ export function populateCategoryFilter() {
 
 
 // --- Funções de Renderização para Modais ---
-// ... (O restante do arquivo permanece inalterado)
 
 /** Renderiza a lista de cartões de crédito no modal. */
 export function renderCreditCardList() {
