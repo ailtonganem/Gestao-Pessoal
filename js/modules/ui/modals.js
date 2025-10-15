@@ -22,8 +22,9 @@ const settingsModal = document.getElementById('settings-modal');
 const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
-// INÍCIO DA ALTERAÇÃO
 const advancePaymentModal = document.getElementById('advance-payment-modal');
+// INÍCIO DA ALTERAÇÃO
+const editTransferModal = document.getElementById('edit-transfer-modal');
 // FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
@@ -67,10 +68,18 @@ const adminTabButton = document.getElementById('admin-tab-button');
 const payInvoiceIdInput = document.getElementById('pay-invoice-id');
 const payInvoiceDateInput = document.getElementById('pay-invoice-date');
 
-// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Pagamento Antecipado
+// Elementos do Modal de Pagamento Antecipado
 const advancePaymentInvoiceIdInput = document.getElementById('advance-payment-invoice-id');
 const advancePaymentDateInput = document.getElementById('advance-payment-date');
 const advancePaymentAmountInput = document.getElementById('advance-payment-amount');
+
+// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Edição de Transferência
+const editTransferIdInput = document.getElementById('edit-transfer-id');
+const editTransferDescriptionInput = document.getElementById('edit-transfer-description');
+const editTransferAmountInput = document.getElementById('edit-transfer-amount');
+const editTransferDateInput = document.getElementById('edit-transfer-date');
+const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
+const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
 // FIM DA ALTERAÇÃO
 
 
@@ -296,7 +305,7 @@ export function closePayInvoiceModal() {
     payInvoiceModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de pagamento antecipado
+// --- Funções para o modal de pagamento antecipado ---
 
 /**
  * Abre o modal para pagamento antecipado de fatura.
@@ -333,5 +342,37 @@ export function closeAdvancePaymentModal() {
         form.reset();
     }
     advancePaymentModal.style.display = 'none';
+}
+
+// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de edição de transferência
+
+/**
+ * Abre o modal para editar uma transferência, preenchendo os dados existentes.
+ * @param {object} transfer - O objeto da transferência a ser editada.
+ */
+export function openEditTransferModal(transfer) {
+    editTransferIdInput.value = transfer.id;
+    editTransferDescriptionInput.value = transfer.description;
+    editTransferAmountInput.value = transfer.amount;
+    editTransferDateInput.value = formatDateToInput(transfer.date);
+
+    // Garante que os selects de conta estejam atualizados antes de selecionar os valores
+    render.populateAccountSelects(); 
+
+    editTransferFromAccountSelect.value = transfer.fromAccountId;
+    editTransferToAccountSelect.value = transfer.toAccountId;
+    
+    editTransferModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de edição de transferência.
+ */
+export function closeEditTransferModal() {
+    const form = document.getElementById('edit-transfer-form');
+    if (form) {
+        form.reset();
+    }
+    editTransferModal.style.display = 'none';
 }
 // FIM DA ALTERAÇÃO
