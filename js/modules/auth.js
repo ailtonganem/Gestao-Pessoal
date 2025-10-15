@@ -2,8 +2,8 @@
 
 // Importa a instância de autenticação e o banco de dados.
 import { auth, db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 
 // Importa as funções específicas de autenticação do SDK do Firebase.
@@ -35,9 +35,7 @@ async function registerUser(email, password) {
 
         if (user) {
             // Cria um documento de perfil para o novo usuário no Firestore.
-            // INÍCIO DA ALTERAÇÃO
             const userProfileRef = doc(db, COLLECTIONS.USERS, user.uid);
-            // FIM DA ALTERAÇÃO
             await setDoc(userProfileRef, {
                 email: user.email,
                 status: "pending", // Status inicial
@@ -92,9 +90,7 @@ async function logoutUser() {
  */
 async function getUserProfile(uid) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const userProfileRef = doc(db, COLLECTIONS.USERS, uid);
-        // FIM DA ALTERAÇÃO
         const docSnap = await getDoc(userProfileRef);
         if (docSnap.exists()) {
             return docSnap.data();
