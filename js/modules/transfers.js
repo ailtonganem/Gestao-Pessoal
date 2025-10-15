@@ -7,7 +7,10 @@ import {
     doc,
     writeBatch,
     Timestamp,
-    serverTimestamp
+    serverTimestamp,
+    getDoc, // INÍCIO DA ALTERAÇÃO
+    deleteDoc
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // Importa a função auxiliar para atualizar saldos de contas
@@ -68,4 +71,81 @@ async function addTransfer(transferData) {
     }
 }
 
-export { addTransfer };
+// INÍCIO DA ALTERAÇÃO - Novas funções para deletar e atualizar transferências
+
+/**
+ * Exclui uma transferência e reverte o impacto nos saldos das contas envolvidas.
+ * @param {object} transfer - O objeto completo da transferência a ser excluída.
+ * @returns {Promise<void>}
+ */
+async function deleteTransfer(transfer) {
+    const batch = writeBatch(db);
+    try {
+        const transferDocRef = doc(db, TRANSACTIONS_COLLECTION, transfer.id);
+        
+        // 1. Reverte o débito na conta de origem (soma o valor de volta)
+        updateBalanceInBatch(batch, transfer.fromAccountId, transfer.amount, 'revenue');
+        
+        // 2. Reverte o crédito na conta de destino (subtrai o valor)
+        updateBalanceInBatch(batch, transfer.toAccountId, transfer.amount, 'expense');
+
+        // 3. Exclui o documento da transferência
+        batch.delete(transferDocRef);
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao excluir transferência:", error);
+        throw new Error("Não foi possível excluir a transferência.");
+    }
+}
+
+/**
+ * Atualiza uma transferência, revertendo a operação original e aplicando a nova.
+ * @param {string} transferId - O ID da transferência a ser atualizada.
+ * @param {object} updatedData - Os novos dados da transferência.
+ * @returns {Promise<void>}
+ */
+async function updateTransfer(transferId, updatedData) {
+    if (updatedData.fromAccountId === updatedData.toAccountId) {
+        throw new Error("A conta de origem e destino não podem ser a mesma.");
+    }
+
+    const batch = writeBatch(db);
+    const transferDocRef = doc(db, TRANSACTIONS_COLLECTION, transferId);
+    
+    try {
+        // Pega os dados originais da transferência para poder revertê-los
+        const originalTransferSnap = await getDoc(transferDocRef);
+        if (!originalTransferSnap.exists()) {
+            throw new Error("Transferência original não encontrada.");
+        }
+        const originalData = originalTransferSnap.data();
+
+        // 1. Reverte a transferência original
+        // Soma na origem original
+        updateBalanceInBatch(batch, originalData.fromAccountId, originalData.amount, 'revenue');
+        // Subtrai no destino original
+        updateBalanceInBatch(batch, originalData.toAccountId, originalData.amount, 'expense');
+
+        // 2. Aplica a nova transferência
+        // Subtrai da nova origem
+        updateBalanceInBatch(batch, updatedData.fromAccountId, updatedData.amount, 'expense');
+        // Soma no novo destino
+        updateBalanceInBatch(batch, updatedData.toAccountId, updatedData.amount, 'revenue');
+        
+        // 3. Atualiza o documento da transferência com os novos dados
+        const dataToSave = {
+            ...updatedData,
+            date: Timestamp.fromDate(new Date(updatedData.date + 'T00:00:00'))
+        };
+        batch.update(transferDocRef, dataToSave);
+
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao atualizar transferência:", error);
+        throw new Error("Não foi possível salvar as alterações na transferência.");
+    }
+}
+
+export { addTransfer, deleteTransfer, updateTransfer };
+// FIM DA ALTERAÇÃO
