@@ -15,8 +15,8 @@ import { showNotification } from './notifications.js';
 // --- Seleção de Elementos do DOM ---
 const totalRevenueEl = document.getElementById('total-revenue');
 const totalExpensesEl = document.getElementById('total-expenses');
-const totalBalanceAccountsEl = document.getElementById('total-balance-accounts'); // INÍCIO DA ALTERAÇÃO - Novo elemento
-const accountsSummaryListEl = document.getElementById('accounts-summary-list'); // INÍCIO DA ALTERAÇÃO - Novo elemento
+const totalBalanceAccountsEl = document.getElementById('total-balance-accounts');
+const accountsSummaryListEl = document.getElementById('accounts-summary-list');
 const transactionsListEl = document.getElementById('transactions-list');
 const creditCardSelect = document.getElementById('credit-card-select');
 const editCreditCardSelect = document.getElementById('edit-credit-card-select');
@@ -30,11 +30,10 @@ const recurringList = document.getElementById('recurring-list');
 const budgetCategorySelect = document.getElementById('budget-category');
 const budgetList = document.getElementById('budget-list');
 const budgetProgressList = document.getElementById('budget-progress-list');
-// INÍCIO DA ALTERAÇÃO - Novos elementos para contas
 const transactionAccountSelect = document.getElementById('transaction-account');
 const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
 const accountList = document.getElementById('account-list');
-// FIM DA ALTERAÇÃO
+const loadMoreButton = document.getElementById('load-more-button'); // INÍCIO DA ALTERAÇÃO - Novo elemento
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -48,14 +47,12 @@ const invoicePeriodSelect = document.getElementById('invoice-period-select');
 
 /** Renderiza o dashboard: calcula totais, exibe a lista, e atualiza gráficos e orçamentos. */
 export function updateDashboard() {
-    // Calcula o saldo total somando o saldo de todas as contas
     const totalBalance = state.userAccounts.reduce((sum, account) => sum + account.currentBalance, 0);
     totalBalanceAccountsEl.textContent = formatCurrency(totalBalance);
 
-    // Calcula receitas e despesas apenas do período filtrado
     let periodRevenue = 0;
     let periodExpenses = 0;
-    state.filteredTransactions.forEach(t => { // Usa as transações filtradas
+    state.filteredTransactions.forEach(t => {
         if (t.type === 'revenue') periodRevenue += t.amount;
         else periodExpenses += t.amount;
     });
@@ -63,56 +60,66 @@ export function updateDashboard() {
     totalRevenueEl.textContent = formatCurrency(periodRevenue);
     totalExpensesEl.textContent = formatCurrency(periodExpenses);
 
-    renderAccountsSummaryList(); // INÍCIO DA ALTERAÇÃO - Renderiza a lista de contas no dashboard
+    renderAccountsSummaryList();
     renderTransactionList(state.filteredTransactions);
     charts.renderExpensesChart(state.filteredTransactions);
     renderBudgetProgress();
 }
 
+// INÍCIO DA ALTERAÇÃO - Função modificada para suportar paginação
 /**
- * Renderiza a lista de transações na tela.
+ * Renderiza a lista de transações na tela, com opção de adicionar ao final da lista.
  * @param {Array<object>} transactionsToRender - A lista de transações a ser exibida.
+ * @param {boolean} [append=false] - Se true, adiciona as transações ao final da lista existente.
  */
-function renderTransactionList(transactionsToRender) {
-    transactionsListEl.innerHTML = '';
-    if (transactionsToRender.length === 0) {
-        transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
-        return;
+function renderTransactionList(transactionsToRender, append = false) {
+    if (!append) {
+        transactionsListEl.innerHTML = '';
     }
 
-    transactionsToRender.forEach(transaction => {
-        const li = document.createElement('li');
-        li.classList.add(transaction.type);
-        li.dataset.id = transaction.id;
+    if (!append && transactionsToRender.length === 0) {
+        transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
+    } else {
+        transactionsToRender.forEach(transaction => {
+            const li = document.createElement('li');
+            li.classList.add(transaction.type);
+            li.dataset.id = transaction.id;
 
-        const formattedDate = transaction.date.toLocaleDateString('pt-BR');
-        const categoryDisplay = transaction.subcategory 
-            ? `${transaction.category} / ${transaction.subcategory}` 
-            : transaction.category;
+            const formattedDate = transaction.date.toLocaleDateString('pt-BR');
+            const categoryDisplay = transaction.subcategory 
+                ? `${transaction.category} / ${transaction.subcategory}` 
+                : transaction.category;
 
-        // INÍCIO DA ALTERAÇÃO - Adiciona a informação da conta na descrição
-        const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
-        const accountName = account ? account.name : 'Conta não informada';
-        // FIM DA ALTERAÇÃO
+            const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
+            const accountName = account ? account.name : 'Conta não informada';
 
-        li.innerHTML = `
-            <div style="text-align: left;">
-                <span class="transaction-description">${transaction.description}</span>
-                <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
-                    ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
-                </span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
-                <div class="transaction-actions">
-                    <button class="action-btn edit-btn" title="Editar">&#9998;</button>
-                    <button class="action-btn delete-btn" title="Excluir">&times;</button>
+            li.innerHTML = `
+                <div style="text-align: left;">
+                    <span class="transaction-description">${transaction.description}</span>
+                    <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
+                        ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
+                    </span>
                 </div>
-            </div>
-        `;
-        transactionsListEl.appendChild(li);
-    });
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
+                    <div class="transaction-actions">
+                        <button class="action-btn edit-btn" title="Editar">&#9998;</button>
+                        <button class="action-btn delete-btn" title="Excluir">&times;</button>
+                    </div>
+                </div>
+            `;
+            transactionsListEl.appendChild(li);
+        });
+    }
+
+    // Controla a visibilidade do botão "Carregar Mais"
+    if (state.hasMoreTransactions) {
+        loadMoreButton.style.display = 'block';
+    } else {
+        loadMoreButton.style.display = 'none';
+    }
 }
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Renderização para Formulários e Selects ---
@@ -155,7 +162,6 @@ export function populateCreditCardSelects() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para popular selects de conta
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
     transactionAccountSelect.innerHTML = '';
@@ -175,7 +181,6 @@ export function populateAccountSelects() {
         });
     }
 }
-// FIM DA ALTERAÇÃO
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
@@ -285,7 +290,6 @@ export function renderInvoiceTransactionsList(transactions) {
 
 // --- Funções de Renderização para o Modal de Configurações ---
 
-// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de contas nas configurações
 /** Renderiza a lista de contas na aba de gerenciamento de contas. */
 export function renderAccountList() {
     accountList.innerHTML = '';
@@ -303,7 +307,6 @@ export function renderAccountList() {
         accountList.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 /** Renderiza as listas de categorias e subcategorias de forma aninhada. */
 export function renderCategoryManagementList() {
@@ -433,7 +436,6 @@ export function renderUserList(users) {
 
 // --- Renderização de Componentes Específicos ---
 
-// INÍCIO DA ALTERAÇÃO - Nova função para renderizar a lista de contas no dashboard
 /** Renderiza a lista de contas e saldos na tela principal. */
 function renderAccountsSummaryList() {
     accountsSummaryListEl.innerHTML = '';
@@ -451,7 +453,6 @@ function renderAccountsSummaryList() {
         accountsSummaryListEl.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 /** Renderiza as barras de progresso dos orçamentos no dashboard. */
 function renderBudgetProgress() {
@@ -462,7 +463,6 @@ function renderBudgetProgress() {
         return;
     }
 
-    // Usa as transações do período completo para calcular o progresso do orçamento do mês
     const currentMonthTransactions = state.allTransactions
         .filter(t => t.date.getMonth() === new Date().getMonth() && t.date.getFullYear() === new Date().getFullYear());
 
