@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -29,9 +29,7 @@ async function setBudget(budgetData) {
     try {
         // Usamos um ID de documento composto para garantir unicidade e facilitar a busca.
         const budgetDocId = `${budgetData.userId}_${budgetData.category}`;
-        // INÍCIO DA ALTERAÇÃO
         const budgetDocRef = doc(db, COLLECTIONS.BUDGETS, budgetDocId);
-        // FIM DA ALTERAÇÃO
         
         await setDoc(budgetDocRef, {
             userId: budgetData.userId,
@@ -51,9 +49,7 @@ async function setBudget(budgetData) {
  */
 async function getBudgets(userId) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const budgetsRef = collection(db, COLLECTIONS.BUDGETS);
-        // FIM DA ALTERAÇÃO
         const q = query(
             budgetsRef,
             where("userId", "==", userId),
@@ -81,9 +77,7 @@ async function getBudgets(userId) {
  */
 async function deleteBudget(budgetId) {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const budgetDocRef = doc(db, COLLECTIONS.BUDGETS, budgetId);
-        // FIM DA ALTERAÇÃO
         await deleteDoc(budgetDocRef);
     } catch (error) {
         console.error("Erro ao excluir orçamento:", error);
