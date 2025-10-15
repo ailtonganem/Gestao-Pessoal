@@ -19,9 +19,10 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
-const TRANSACTIONS_PER_PAGE = 25;
-const COLLAPSIBLE_STATE_KEY = 'dashboardCollapsibleState';
-const DASHBOARD_ORDER_KEY = 'dashboardSectionOrder'; // INÍCIO DA ALTERAÇÃO
+// INÍCIO DA ALTERAÇÃO - Importação das constantes centralizadas
+import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
+// FIM DA ALTERAÇÃO
+
 
 // --- Ponto de Entrada da Aplicação ---
 
@@ -30,12 +31,14 @@ const DASHBOARD_ORDER_KEY = 'dashboardSectionOrder'; // INÍCIO DA ALTERAÇÃO
  * e começa a monitorar o estado de autenticação do usuário.
  */
 function initializeApp() {
-    const savedTheme = localStorage.getItem('theme');
+    // INÍCIO DA ALTERAÇÃO
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+    // FIM DA ALTERAÇÃO
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
     initializeCollapsibleSections();
-    applyDashboardOrder(); // INÍCIO DA ALTERAÇÃO
+    applyDashboardOrder(); 
 
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
@@ -128,15 +131,17 @@ export async function loadUserDashboard() {
     };
 
     try {
+        // INÍCIO DA ALTERAÇÃO
         const { transactions: userTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
-            limitNum: TRANSACTIONS_PER_PAGE,
+            limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
             lastDoc: null
         });
 
         state.setAllTransactions(userTransactions);
         state.setLastTransactionDoc(lastVisible);
-        state.setHasMoreTransactions(userTransactions.length === TRANSACTIONS_PER_PAGE);
+        state.setHasMoreTransactions(userTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
+        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
     } catch (error) {
@@ -163,9 +168,10 @@ export async function loadMoreTransactions() {
     };
 
     try {
+        // INÍCIO DA ALTERAÇÃO
         const { transactions: newTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
-            limitNum: TRANSACTIONS_PER_PAGE,
+            limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
             lastDoc: state.lastTransactionDoc
         });
         
@@ -173,7 +179,8 @@ export async function loadMoreTransactions() {
         
         state.setAllTransactions([...state.allTransactions, ...newTransactions]);
         state.setLastTransactionDoc(lastVisible);
-        state.setHasMoreTransactions(newTransactions.length === TRANSACTIONS_PER_PAGE);
+        state.setHasMoreTransactions(newTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
+        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
 
@@ -292,11 +299,15 @@ export function toggleTheme(isDarkMode) {
     const themeToggle = document.getElementById('theme-toggle');
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
+        // INÍCIO DA ALTERAÇÃO
+        localStorage.setItem(STORAGE_KEYS.THEME, 'dark');
+        // FIM DA ALTERAÇÃO
         themeToggle.checked = true;
     } else {
         document.body.classList.remove('dark-mode');
-        localStorage.setItem('theme', 'light');
+        // INÍCIO DA ALTERAÇÃO
+        localStorage.setItem(STORAGE_KEYS.THEME, 'light');
+        // FIM DA ALTERAÇÃO
         themeToggle.checked = false;
     }
 
@@ -310,7 +321,9 @@ export function toggleTheme(isDarkMode) {
 
 function getCollapsibleState() {
     try {
-        const savedState = localStorage.getItem(COLLAPSIBLE_STATE_KEY);
+        // INÍCIO DA ALTERAÇÃO
+        const savedState = localStorage.getItem(STORAGE_KEYS.COLLAPSIBLE_STATE);
+        // FIM DA ALTERAÇÃO
         return savedState ? JSON.parse(savedState) : {};
     } catch (e) {
         return {};
@@ -318,7 +331,9 @@ function getCollapsibleState() {
 }
 
 function saveCollapsibleState(state) {
-    localStorage.setItem(COLLAPSIBLE_STATE_KEY, JSON.stringify(state));
+    // INÍCIO DA ALTERAÇÃO
+    localStorage.setItem(STORAGE_KEYS.COLLAPSIBLE_STATE, JSON.stringify(state));
+    // FIM DA ALTERAÇÃO
 }
 
 export function toggleSection(sectionHeader) {
@@ -358,14 +373,16 @@ function initializeCollapsibleSections() {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO - Lógica para seções reordenáveis
+// Lógica para seções reordenáveis
 
 /**
  * Salva a ordem das seções no localStorage.
  * @param {string[]} order - Array com os IDs das seções na nova ordem.
  */
 export function saveDashboardOrder(order) {
-    localStorage.setItem(DASHBOARD_ORDER_KEY, JSON.stringify(order));
+    // INÍCIO DA ALTERAÇÃO
+    localStorage.setItem(STORAGE_KEYS.DASHBOARD_ORDER, JSON.stringify(order));
+    // FIM DA ALTERAÇÃO
 }
 
 /**
@@ -374,7 +391,9 @@ export function saveDashboardOrder(order) {
  */
 function getDashboardOrder() {
     try {
-        const savedOrder = localStorage.getItem(DASHBOARD_ORDER_KEY);
+        // INÍCIO DA ALTERAÇÃO
+        const savedOrder = localStorage.getItem(STORAGE_KEYS.DASHBOARD_ORDER);
+        // FIM DA ALTERAÇÃO
         return savedOrder ? JSON.parse(savedOrder) : null;
     } catch (e) {
         return null;
@@ -386,10 +405,10 @@ function getDashboardOrder() {
  */
 function applyDashboardOrder() {
     const order = getDashboardOrder();
-    if (!order) return; // Se não houver ordem salva, mantém a ordem do HTML
+    if (!order) return; 
 
     const appContent = document.getElementById('app-content');
-    const summarySection = document.getElementById('summary-section'); // A seção de resumo é fixa
+    const summarySection = document.getElementById('summary-section'); 
     const sections = Array.from(appContent.querySelectorAll('.dashboard-section'));
 
     const sectionsMap = new Map();
@@ -397,7 +416,6 @@ function applyDashboardOrder() {
         sectionsMap.set(section.dataset.sectionId, section);
     });
 
-    // Reanexa as seções na ordem correta, mantendo a de resumo no topo
     order.forEach(sectionId => {
         const section = sectionsMap.get(sectionId);
         if (section) {
@@ -405,7 +423,7 @@ function applyDashboardOrder() {
         }
     });
 }
-// FIM DA ALTERAÇÃO
+
 
 // --- Inicia a aplicação ---
 initializeApp();
