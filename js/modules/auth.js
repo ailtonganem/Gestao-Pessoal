@@ -2,8 +2,8 @@
 
 // Importa a instância de autenticação e o banco de dados.
 import { auth, db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
-import { COLLECTIONS } from '/js/config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
+import { COLLECTIONS } from '../config/constants.js';
 // FIM DA ALTERAÇÃO
 
 // Importa as funções específicas de autenticação do SDK do Firebase.
