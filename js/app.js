@@ -19,8 +19,8 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
-// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
-import { PAGINATION, STORAGE_KEYS } from '/js/config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
+import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
 // FIM DA ALTERAÇÃO
 
 
