@@ -33,7 +33,11 @@ const budgetProgressList = document.getElementById('budget-progress-list');
 const transactionAccountSelect = document.getElementById('transaction-account');
 const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
 const accountList = document.getElementById('account-list');
-const loadMoreButton = document.getElementById('load-more-button'); // INÍCIO DA ALTERAÇÃO - Novo elemento
+const loadMoreButton = document.getElementById('load-more-button');
+// INÍCIO DA ALTERAÇÃO - Novos elementos para o formulário de transferência
+const transferFromAccountSelect = document.getElementById('transfer-from-account');
+const transferToAccountSelect = document.getElementById('transfer-to-account');
+// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -52,74 +56,100 @@ export function updateDashboard() {
 
     let periodRevenue = 0;
     let periodExpenses = 0;
-    state.filteredTransactions.forEach(t => {
-        if (t.type === 'revenue') periodRevenue += t.amount;
-        else periodExpenses += t.amount;
+    // INÍCIO DA ALTERAÇÃO - Ignora transferências no cálculo de receitas e despesas
+    state.allTransactions.forEach(t => {
+        if (t.type === 'revenue') {
+            periodRevenue += t.amount;
+        } else if (t.type === 'expense') {
+            periodExpenses += t.amount;
+        }
     });
+    // FIM DA ALTERAÇÃO
 
     totalRevenueEl.textContent = formatCurrency(periodRevenue);
     totalExpensesEl.textContent = formatCurrency(periodExpenses);
 
     renderAccountsSummaryList();
     renderTransactionList(state.filteredTransactions);
-    charts.renderExpensesChart(state.filteredTransactions);
+    charts.renderExpensesChart(state.filteredTransactions.filter(t => t.type === 'expense')); // Garante que o gráfico só receba despesas
     renderBudgetProgress();
 }
 
-// INÍCIO DA ALTERAÇÃO - Função modificada para suportar paginação
 /**
  * Renderiza a lista de transações na tela, com opção de adicionar ao final da lista.
  * @param {Array<object>} transactionsToRender - A lista de transações a ser exibida.
  * @param {boolean} [append=false] - Se true, adiciona as transações ao final da lista existente.
  */
-function renderTransactionList(transactionsToRender, append = false) {
+export function renderTransactionList(transactionsToRender, append = false) {
     if (!append) {
         transactionsListEl.innerHTML = '';
     }
 
-    if (!append && transactionsToRender.length === 0) {
+    if (state.allTransactions.length === 0) {
         transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
     } else {
         transactionsToRender.forEach(transaction => {
             const li = document.createElement('li');
-            li.classList.add(transaction.type);
             li.dataset.id = transaction.id;
 
             const formattedDate = transaction.date.toLocaleDateString('pt-BR');
-            const categoryDisplay = transaction.subcategory 
-                ? `${transaction.category} / ${transaction.subcategory}` 
-                : transaction.category;
 
-            const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
-            const accountName = account ? account.name : 'Conta não informada';
+            // INÍCIO DA ALTERAÇÃO - Lógica para renderizar transferências de forma diferente
+            if (transaction.type === 'transfer') {
+                li.classList.add('transfer');
+                const fromAccount = state.userAccounts.find(acc => acc.id === transaction.fromAccountId);
+                const toAccount = state.userAccounts.find(acc => acc.id === transaction.toAccountId);
 
-            li.innerHTML = `
-                <div style="text-align: left;">
-                    <span class="transaction-description">${transaction.description}</span>
-                    <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
-                        ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
-                    </span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
-                    <div class="transaction-actions">
-                        <button class="action-btn edit-btn" title="Editar">&#9998;</button>
-                        <button class="action-btn delete-btn" title="Excluir">&times;</button>
+                li.innerHTML = `
+                    <div style="text-align: left;">
+                        <span class="transaction-description">
+                            &#8644; Transferência de <strong>${fromAccount?.name || '?'}</strong> para <strong>${toAccount?.name || '?'}</strong>
+                        </span>
+                        <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
+                            ${formattedDate} ${transaction.description ? `• ${transaction.description}` : ''}
+                        </span>
                     </div>
-                </div>
-            `;
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
+                        <div class="transaction-actions" style="width: 58px;"></div>
+                    </div>
+                `;
+            } else {
+                li.classList.add(transaction.type);
+                const categoryDisplay = transaction.subcategory 
+                    ? `${transaction.category} / ${transaction.subcategory}` 
+                    : transaction.category;
+
+                const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
+                const accountName = account ? account.name : 'Conta não informada';
+
+                li.innerHTML = `
+                    <div style="text-align: left;">
+                        <span class="transaction-description">${transaction.description}</span>
+                        <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
+                            ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
+                        <div class="transaction-actions">
+                            <button class="action-btn edit-btn" title="Editar">&#9998;</button>
+                            <button class="action-btn delete-btn" title="Excluir">&times;</button>
+                        </div>
+                    </div>
+                `;
+            }
+            // FIM DA ALTERAÇÃO
             transactionsListEl.appendChild(li);
         });
     }
 
-    // Controla a visibilidade do botão "Carregar Mais"
     if (state.hasMoreTransactions) {
         loadMoreButton.style.display = 'block';
     } else {
         loadMoreButton.style.display = 'none';
     }
 }
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Renderização para Formulários e Selects ---
@@ -162,15 +192,20 @@ export function populateCreditCardSelects() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Função atualizada para popular todos os selects de conta
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
     transactionAccountSelect.innerHTML = '';
     editTransactionAccountSelect.innerHTML = '';
+    transferFromAccountSelect.innerHTML = '';
+    transferToAccountSelect.innerHTML = '';
 
     if (state.userAccounts.length === 0) {
         const option = '<option disabled value="">Nenhuma conta cadastrada</option>';
         transactionAccountSelect.innerHTML = option;
         editTransactionAccountSelect.innerHTML = option;
+        transferFromAccountSelect.innerHTML = option;
+        transferToAccountSelect.innerHTML = option;
     } else {
         state.userAccounts.forEach(account => {
             const option = document.createElement('option');
@@ -178,9 +213,12 @@ export function populateAccountSelects() {
             option.textContent = `${account.name} (${formatCurrency(account.currentBalance)})`;
             transactionAccountSelect.appendChild(option.cloneNode(true));
             editTransactionAccountSelect.appendChild(option.cloneNode(true));
+            transferFromAccountSelect.appendChild(option.cloneNode(true));
+            transferToAccountSelect.appendChild(option.cloneNode(true));
         });
     }
 }
+// FIM DA ALTERAÇÃO
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
@@ -208,6 +246,7 @@ export function populateCategoryFilter() {
 
 
 // --- Funções de Renderização para Modais ---
+// ... (O restante do arquivo permanece inalterado)
 
 /** Renderiza a lista de cartões de crédito no modal. */
 export function renderCreditCardList() {
