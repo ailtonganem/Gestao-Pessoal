@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 import {
     collection,
@@ -38,9 +38,7 @@ async function addTransfer(transferData) {
 
     const batch = writeBatch(db);
     try {
-        // INÍCIO DA ALTERAÇÃO
         const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
-        // FIM DA ALTERAÇÃO
         const newTransactionRef = doc(transactionsRef);
 
         const transferDate = new Date(transferData.date + 'T00:00:00');
@@ -81,9 +79,7 @@ async function addTransfer(transferData) {
 async function deleteTransfer(transfer) {
     const batch = writeBatch(db);
     try {
-        // INÍCIO DA ALTERAÇÃO
         const transferDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transfer.id);
-        // FIM DA ALTERAÇÃO
         
         // 1. Reverte o débito na conta de origem (soma o valor de volta)
         updateBalanceInBatch(batch, transfer.fromAccountId, transfer.amount, 'revenue');
@@ -113,9 +109,7 @@ async function updateTransfer(transferId, updatedData) {
     }
 
     const batch = writeBatch(db);
-    // INÍCIO DA ALTERAÇÃO
     const transferDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transferId);
-    // FIM DA ALTERAÇÃO
     
     try {
         // Pega os dados originais da transferência para poder revertê-los
