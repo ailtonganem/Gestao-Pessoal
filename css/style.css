@@ -12,6 +12,10 @@
     --paid-color: #95a5a6;
     --pending-color: #f39c12;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --border-radius: 8px; /* INÍCIO DA ALTERAÇÃO */
+    --border-color: #e0e0e0;
+    --hover-color: #f9f9f9;
+    --header-bg-color: var(--container-bg-color); /* FIM DA ALTERAÇÃO */
 }
 
 /* Variáveis do Tema Escuro */
@@ -21,6 +25,9 @@ body.dark-mode {
     --background-color: #2c3e50; /* Fundo escuro */
     --text-color: #bdc3c7; /* Texto cinza claro */
     --container-bg-color: #34495e; /* Contêineres escuros */
+    --border-color: #4a627a; /* INÍCIO DA ALTERAÇÃO */
+    --hover-color: #3b5269;
+    --header-bg-color: #3b5269; /* FIM DA ALTERAÇÃO */
 }
 
 
@@ -116,7 +123,7 @@ a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
 /* Estilos do Dashboard (App) */
-#app-container { display: none; }
+#app-container { max-width: 1024px; display: none; } /* Alterado para max-width */
 #app-container header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #bdc3c7;
@@ -125,7 +132,7 @@ a:hover { text-decoration: underline; }
 #app-container header h1 { margin-bottom: 0; }
 #logout-button { background-color: var(--error-color); padding: 0.5rem 1rem; font-size: 0.9rem; }
 #logout-button:hover { background-color: #c0392b; }
-#app-content section { margin-bottom: 2rem; }
+#app-content > section { margin-bottom: 1rem; } /* Espaçamento entre seções */
 
 /* Estilos da Seção de Resumo Financeiro */
 #summary-section { display: flex; flex-direction: column; gap: 1rem; }
@@ -138,8 +145,33 @@ a:hover { text-decoration: underline; }
 body.dark-mode .summary-card.balance { color: #2c3e50; }
 .summary-card.balance h3 { color: #bdc3c7; }
 
+/* INÍCIO DA ALTERAÇÃO - Estilos para Lista de Contas no Dashboard */
+#accounts-summary-list {
+    list-style-type: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+.account-summary-item {
+    background-color: var(--container-bg-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    text-align: left;
+}
+.account-summary-item .account-name {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.account-summary-item .account-balance {
+    font-size: 1.2rem;
+    font-family: monospace;
+}
+/* FIM DA ALTERAÇÃO */
+
 /* Estilos da Seção de Gráfico */
-#chart-section, #trends-chart-section { margin-bottom: 2rem; }
 .chart-container {
     background-color: var(--container-bg-color);
     padding: 1rem;
@@ -159,8 +191,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     flex-direction: column;
     gap: 0.5rem;
 }
-.filter-controls { display: flex; gap: 1rem; }
-.filter-controls .form-control { flex: 1; }
+.filter-controls { display: flex; flex-wrap: wrap; gap: 1rem; } /* Permite quebra de linha */
+.filter-controls .form-control { flex: 1 1 180px; } /* Ajusta o tamanho e permite quebra */
 .filter-controls .form-control label { font-size: 0.9rem; }
 
 /* Estilos da Lista de Histórico de Transações */
@@ -168,10 +200,13 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 #transactions-list li {
     background-color: var(--container-bg-color); padding: 1rem; margin-bottom: 0.5rem; border-radius: 5px;
     display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    border-right: 5px solid;
+    border-left: 5px solid;
 }
-#transactions-list li.revenue { border-right-color: var(--revenue-color); }
-#transactions-list li.expense { border-right-color: var(--expense-color); }
+#transactions-list li.revenue { border-left-color: var(--revenue-color); }
+#transactions-list li.expense { border-left-color: var(--expense-color); }
+/* INÍCIO DA ALTERAÇÃO - Estilo para transferências */
+#transactions-list li.transfer { border-left-color: var(--secondary-color); }
+/* FIM DA ALTERAÇÃO */
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
@@ -257,9 +292,22 @@ input:checked + .slider:before { transform: translateX(26px); }
 .tab-content.active { display: block; animation: fadeIn 0.5s; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* INÍCIO DA ALTERAÇÃO - Estilos para as abas dos formulários de transação/transferência */
+.form-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+.form-tabs .tab-link {
+    font-size: 1rem;
+    color: var(--text-color);
+    flex: 1;
+}
+/* FIM DA ALTERAÇÃO */
+
+
 /* Estilos Específicos do Modal de Cartões e Listas de Admin */
-#card-list-section { margin-bottom: 2rem; }
-#user-list, #recurring-list, #budget-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
+#user-list, #recurring-list, #budget-list, #account-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
 #credit-card-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
 #credit-card-list li {
     background-color: var(--background-color); padding: 0.8rem; margin-bottom: 0.5rem;
@@ -268,7 +316,6 @@ input:checked + .slider:before { transform: translateX(26px); }
 #credit-card-list li .card-info { flex-grow: 1; cursor: pointer; transition: color 0.2s ease; }
 #credit-card-list li .card-info:hover { color: var(--secondary-color); }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para Gerenciamento de Categorias com Subcategorias */
 .category-management-container {
     display: flex;
     flex-direction: column;
@@ -312,7 +359,6 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .add-subcategory-form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .add-subcategory-form input { flex-grow: 1; padding: 0.5rem; }
 .add-subcategory-form button { padding: 0.5rem 0.8rem; font-size: 0.9rem; }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos da Visão de Detalhes da Fatura */
 #invoice-details-view h3 { margin-bottom: 0.5rem; }
@@ -337,7 +383,6 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 }
 
 /* Estilos para a Seção de Progresso de Orçamento */
-#budget-progress-section { margin-bottom: 2rem; }
 #budget-progress-list { list-style-type: none; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
 .budget-item {
     background-color: var(--container-bg-color); padding: 1rem;
@@ -363,32 +408,76 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 /* ============================================= */
 @media (min-width: 768px) {
     body { align-items: center; }
-    main, #app-container { max-width: 1024px; }
+    main { max-width: 600px; }
+    #app-container { max-width: 1200px; }
     #app-content {
         display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        gap: 2rem;
-        grid-template-areas: 
-            "summary history"
-            "chart history"
-            "trends history"
-            "budget history"
-            "form history";
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
-    #summary-section { grid-area: summary; flex-direction: row; }
-    #chart-section { grid-area: chart; }
-    #trends-chart-section { grid-area: trends; }
-    #budget-progress-section { grid-area: budget; }
-    #transaction-form-section { grid-area: form; margin-bottom: 0; }
-    #transactions-list-section { grid-area: history; margin-bottom: 0; }
-
+    #summary-section { grid-area: unset; flex-direction: row; }
     #transactions-list { max-height: 80vh; overflow-y: auto; padding-right: 0.5rem; }
     
     .summary-card { flex: 1; }
     .chart-container { height: auto; min-height: 280px; }
     .modal-content { max-width: 600px; }
-    /* INÍCIO DA ALTERAÇÃO - Layout de colunas para gerenciamento de categorias em telas maiores */
     .category-management-container { flex-direction: row; }
-    /* FIM DA ALTERAÇÃO */
 }
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para Seções Recolhíveis */
+.dashboard-section {
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    background-color: var(--container-bg-color);
+}
+
+.dashboard-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.8rem 1rem;
+    background-color: var(--header-bg-color);
+    border-radius: var(--border-radius);
+    transition: background-color 0.2s ease-in-out, border-radius 0.3s ease;
+}
+
+.dashboard-section .section-header:hover {
+    background-color: var(--hover-color);
+}
+
+.dashboard-section .section-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.dashboard-section .section-header .toggle-icon {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-section .section-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    padding: 0 1rem;
+}
+
+.dashboard-section.expanded .section-content {
+    max-height: 4000px; /* Um valor alto para permitir expansão de qualquer conteúdo */
+    padding: 1.5rem 1rem;
+    transition: max-height 0.5s ease-in, padding 0.5s ease-in;
+}
+
+.dashboard-section.expanded .section-header .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.dashboard-section.expanded .section-header {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+/* FIM DA ALTERAÇÃO */
