@@ -77,7 +77,6 @@
             </div>
         </header>
         <main id="app-content">
-            <!-- INÍCIO DA ALTERAÇÃO - Seção de Resumo de Contas -->
             <section id="summary-section">
                 <div class="summary-card balance">
                     <h3>Saldo Total em Contas</h3>
@@ -99,7 +98,6 @@
                     <li>Carregando contas...</li>
                 </ul>
             </section>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <section id="chart-section">
                 <h2>Análise de Despesas por Categoria</h2>
@@ -166,14 +164,12 @@
                             <option value="credit_card">Cartão de Crédito</option>
                         </select>
                     </div>
-                    <!-- INÍCIO DA ALTERAÇÃO - Novo campo de seleção de conta -->
                     <div id="transaction-account-wrapper" class="form-control">
                         <label for="transaction-account">Conta</label>
                         <select id="transaction-account" required>
                             <option>Nenhuma conta cadastrada</option>
                         </select>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                     <div id="credit-card-wrapper" class="form-control" style="display: none;">
                         <label for="credit-card-select">Cartão</label>
                         <select id="credit-card-select">
@@ -241,15 +237,25 @@
                                 <option value="all">Todas</option>
                             </select>
                         </div>
+                        <!-- INÍCIO DA ALTERAÇÃO - Adição dos novos campos de filtro e ordenação -->
                         <div class="form-control">
-                            <label for="filter-payment-method">Método de Pagamento</label>
-                            <select id="filter-payment-method">
+                            <label for="filter-type">Tipo</label>
+                            <select id="filter-type">
                                 <option value="all">Todos</option>
-                                <option value="pix">PIX</option>
-                                <option value="debit">Débito</option>
-                                <option value="cash">Dinheiro</option>
+                                <option value="expense">Despesas</option>
+                                <option value="revenue">Receitas</option>
                             </select>
                         </div>
+                        <div class="form-control">
+                            <label for="filter-sort">Ordenar por</label>
+                            <select id="filter-sort">
+                                <option value="date_desc">Data (Mais Recente)</option>
+                                <option value="date_asc">Data (Mais Antiga)</option>
+                                <option value="amount_desc">Valor (Maior)</option>
+                                <option value="amount_asc">Valor (Menor)</option>
+                            </select>
+                        </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                 </div>
 
@@ -298,7 +304,6 @@
                     <label for="edit-transaction-category">Categoria</label>
                     <select id="edit-transaction-category" required></select>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO - Novo campo de conta no modal de edição -->
                 <div class="form-control">
                     <label for="edit-payment-method">Método de Pagamento</label>
                     <select id="edit-payment-method" required>
@@ -312,7 +317,6 @@
                     <label for="edit-transaction-account">Conta</label>
                     <select id="edit-transaction-account" required></select>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div id="edit-credit-card-wrapper" class="form-control" style="display: none;">
                     <label for="edit-credit-card-select">Cartão</label>
                     <select id="edit-credit-card-select"></select>
@@ -397,7 +401,6 @@
                 </div>
             </section>
 
-            <!-- INÍCIO DA ALTERAÇÃO - Nova aba "Minhas Contas" -->
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="account-management-tab">Minhas Contas</button>
                 <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
@@ -405,10 +408,8 @@
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
-            <!-- FIM DA ALTERAÇÃO -->
 
             <div id="settings-content">
-                <!-- INÍCIO DA ALTERAÇÃO - Novo conteúdo da aba de gerenciamento de contas -->
                 <div id="account-management-tab" class="tab-content active">
                     <section>
                         <h3>Gerenciar Contas</h3>
@@ -429,9 +430,7 @@
                         <ul id="account-list"></ul>
                     </section>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
 
-                <!-- Conteúdo da Aba: Gerenciar Categorias -->
                 <div id="category-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Categorias</h3>
@@ -465,7 +464,6 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba: Gerenciar Orçamentos -->
                 <div id="budget-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Orçamentos Mensais</h3>
@@ -487,7 +485,6 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba: Gerenciar Recorrências -->
                 <div id="recurring-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Transações Recorrentes</h3>
@@ -526,7 +523,6 @@
                     </section>
                 </div>
 
-                <!-- Conteúdo da Aba: Gerenciar Usuários (para Admin) -->
                 <div id="user-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Usuários</h3>
