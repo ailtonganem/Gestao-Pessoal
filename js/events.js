@@ -42,9 +42,7 @@ const themeToggle = document.getElementById('theme-toggle');
 const addAccountForm = document.getElementById('add-account-form');
 const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
-// INÍCIO DA ALTERAÇÃO
 const advancePaymentForm = document.getElementById('advance-payment-form');
-// FIM DA ALTERAÇÃO
 
 let debounceTimer;
 
@@ -291,7 +289,19 @@ export function initializeEventListeners() {
         const transaction = state.allTransactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
-        if (transaction.type === 'transfer') return;
+        // INÍCIO DA ALTERAÇÃO - Lógica para gerenciar cliques em transferências
+        if (transaction.type === 'transfer') {
+            if (target.matches('.edit-btn')) {
+                // handleOpenEditTransferModal(transaction); // Será criado no futuro
+                showNotification("A edição de transferências será implementada em breve.", "error");
+            }
+            if (target.matches('.delete-btn')) {
+                // handleDeleteTransfer(transaction); // Será criado no futuro
+                showNotification("A exclusão de transferências será implementada em breve.", "error");
+            }
+            return; // Impede que o código abaixo seja executado para transferências
+        }
+        // FIM DA ALTERAÇÃO
 
         if (target.matches('.edit-btn')) {
             modals.openEditModal(transaction);
@@ -331,11 +341,9 @@ export function initializeEventListeners() {
     payInvoiceForm.addEventListener('submit', handleConfirmInvoicePayment);
     document.querySelector('.close-pay-invoice-modal-button').addEventListener('click', modals.closePayInvoiceModal);
 
-    // INÍCIO DA ALTERAÇÃO - Listeners para o fluxo de pagamento antecipado
     document.getElementById('advance-payment-button').addEventListener('click', modals.openAdvancePaymentModal);
     advancePaymentForm.addEventListener('submit', handleConfirmAdvancePayment);
     document.querySelector('.close-advance-payment-modal-button').addEventListener('click', modals.closeAdvancePaymentModal);
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
@@ -502,7 +510,6 @@ async function handleConfirmInvoicePayment(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO: Nova função para confirmar o pagamento antecipado
 async function handleConfirmAdvancePayment(e) {
     e.preventDefault();
     const form = e.target;
@@ -533,7 +540,6 @@ async function handleConfirmAdvancePayment(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleAddTransfer(e) {
     e.preventDefault();
