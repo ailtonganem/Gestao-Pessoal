@@ -19,8 +19,8 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
-// INÍCIO DA ALTERAÇÃO - Importação das constantes centralizadas
-import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { PAGINATION, STORAGE_KEYS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 
 
@@ -31,9 +31,7 @@ import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
  * e começa a monitorar o estado de autenticação do usuário.
  */
 function initializeApp() {
-    // INÍCIO DA ALTERAÇÃO
     const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
-    // FIM DA ALTERAÇÃO
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
@@ -131,7 +129,6 @@ export async function loadUserDashboard() {
     };
 
     try {
-        // INÍCIO DA ALTERAÇÃO
         const { transactions: userTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
@@ -141,7 +138,6 @@ export async function loadUserDashboard() {
         state.setAllTransactions(userTransactions);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(userTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
-        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
     } catch (error) {
@@ -168,7 +164,6 @@ export async function loadMoreTransactions() {
     };
 
     try {
-        // INÍCIO DA ALTERAÇÃO
         const { transactions: newTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
@@ -180,7 +175,6 @@ export async function loadMoreTransactions() {
         state.setAllTransactions([...state.allTransactions, ...newTransactions]);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(newTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
-        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
 
@@ -299,15 +293,11 @@ export function toggleTheme(isDarkMode) {
     const themeToggle = document.getElementById('theme-toggle');
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
-        // INÍCIO DA ALTERAÇÃO
         localStorage.setItem(STORAGE_KEYS.THEME, 'dark');
-        // FIM DA ALTERAÇÃO
         themeToggle.checked = true;
     } else {
         document.body.classList.remove('dark-mode');
-        // INÍCIO DA ALTERAÇÃO
         localStorage.setItem(STORAGE_KEYS.THEME, 'light');
-        // FIM DA ALTERAÇÃO
         themeToggle.checked = false;
     }
 
@@ -321,9 +311,7 @@ export function toggleTheme(isDarkMode) {
 
 function getCollapsibleState() {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const savedState = localStorage.getItem(STORAGE_KEYS.COLLAPSIBLE_STATE);
-        // FIM DA ALTERAÇÃO
         return savedState ? JSON.parse(savedState) : {};
     } catch (e) {
         return {};
@@ -331,9 +319,7 @@ function getCollapsibleState() {
 }
 
 function saveCollapsibleState(state) {
-    // INÍCIO DA ALTERAÇÃO
     localStorage.setItem(STORAGE_KEYS.COLLAPSIBLE_STATE, JSON.stringify(state));
-    // FIM DA ALTERAÇÃO
 }
 
 export function toggleSection(sectionHeader) {
@@ -380,9 +366,7 @@ function initializeCollapsibleSections() {
  * @param {string[]} order - Array com os IDs das seções na nova ordem.
  */
 export function saveDashboardOrder(order) {
-    // INÍCIO DA ALTERAÇÃO
     localStorage.setItem(STORAGE_KEYS.DASHBOARD_ORDER, JSON.stringify(order));
-    // FIM DA ALTERAÇÃO
 }
 
 /**
@@ -391,9 +375,7 @@ export function saveDashboardOrder(order) {
  */
 function getDashboardOrder() {
     try {
-        // INÍCIO DA ALTERAÇÃO
         const savedOrder = localStorage.getItem(STORAGE_KEYS.DASHBOARD_ORDER);
-        // FIM DA ALTERAÇÃO
         return savedOrder ? JSON.parse(savedOrder) : null;
     } catch (e) {
         return null;
