@@ -40,7 +40,7 @@ const editRecurringForm = document.getElementById('edit-recurring-form');
 const editInvoiceTransactionForm = document.getElementById('edit-invoice-transaction-form');
 const themeToggle = document.getElementById('theme-toggle');
 const addAccountForm = document.getElementById('add-account-form');
-const appContent = document.getElementById('app-content'); // INÍCIO DA ALTERAÇÃO
+const appContent = document.getElementById('app-content');
 
 let debounceTimer;
 
@@ -90,13 +90,68 @@ export function initializeEventListeners() {
         }
     });
 
-    // --- INÍCIO DA ALTERAÇÃO - Delegação de eventos para seções recolhíveis
+    // --- Lógica de UI do Dashboard ---
     appContent.addEventListener('click', (e) => {
         const sectionHeader = e.target.closest('.section-header');
         if (sectionHeader) {
+            // Garante que o drag não acione o toggle
+            if (sectionHeader.parentElement.classList.contains('dragging')) return;
             app.toggleSection(sectionHeader);
         }
     });
+    
+    // --- INÍCIO DA ALTERAÇÃO - Lógica de Drag-and-Drop ---
+    let draggingElement = null;
+
+    appContent.addEventListener('dragstart', (e) => {
+        const target = e.target.closest('.dashboard-section');
+        // Só permite arrastar pelo cabeçalho
+        if (target && e.target.closest('.section-header')) {
+            draggingElement = target;
+            setTimeout(() => {
+                target.classList.add('dragging');
+            }, 0);
+        } else {
+            e.preventDefault();
+        }
+    });
+
+    appContent.addEventListener('dragend', () => {
+        if (draggingElement) {
+            draggingElement.classList.remove('dragging');
+            draggingElement = null;
+            
+            const sections = appContent.querySelectorAll('.dashboard-section');
+            const newOrder = Array.from(sections).map(section => section.dataset.sectionId);
+            app.saveDashboardOrder(newOrder);
+        }
+    });
+
+    appContent.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggingElement) return;
+
+        const afterElement = getDragAfterElement(appContent, e.clientY);
+        if (afterElement == null) {
+            appContent.appendChild(draggingElement);
+        } else {
+            appContent.insertBefore(draggingElement, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.dashboard-section:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
     // FIM DA ALTERAÇÃO
 
     document.querySelector('.form-tabs').addEventListener('click', (e) => {
@@ -400,6 +455,7 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+// ... (O restante do arquivo permanece inalterado)
 
 async function handleAddTransfer(e) {
     e.preventDefault();
