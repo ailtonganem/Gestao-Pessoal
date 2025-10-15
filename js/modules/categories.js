@@ -1,5 +1,8 @@
+// js/modules/categories.js
+
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
+import { COLLECTIONS } from '../config/constants.js';
 import {
     collection,
     query,
@@ -10,16 +13,11 @@ import {
     deleteDoc,
     writeBatch,
     orderBy,
-    // INÍCIO DA ALTERAÇÃO
     updateDoc,
     arrayUnion,
     arrayRemove
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-const CATEGORIES_COLLECTION = 'categories';
-
-// INÍCIO DA ALTERAÇÃO - Atualiza as categorias padrão para incluir subcategorias
 const defaultCategories = {
     revenue: [
         { name: 'Salário', subcategories: [] },
@@ -40,7 +38,6 @@ const defaultCategories = {
         { name: 'Fatura de Cartão', subcategories: [] }
     ]
 };
-// FIM DA ALTERAÇÃO
 
 /**
  * Cria as categorias padrão para um novo usuário no Firestore.
@@ -49,9 +46,8 @@ const defaultCategories = {
  */
 async function createDefaultCategoriesForUser(userId) {
     const batch = writeBatch(db);
-    const categoriesRef = collection(db, CATEGORIES_COLLECTION);
+    const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
 
-    // INÍCIO DA ALTERAÇÃO - Lógica atualizada para o novo formato de objeto
     defaultCategories.revenue.forEach(category => {
         const newCategoryRef = doc(categoriesRef);
         batch.set(newCategoryRef, {
@@ -71,7 +67,6 @@ async function createDefaultCategoriesForUser(userId) {
             type: 'expense'
         });
     });
-    // FIM DA ALTERAÇÃO
 
     try {
         await batch.commit();
@@ -88,7 +83,7 @@ async function createDefaultCategoriesForUser(userId) {
  */
 async function getCategories(userId) {
     try {
-        const categoriesRef = collection(db, CATEGORIES_COLLECTION);
+        const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
         const q = query(
             categoriesRef,
             where("userId", "==", userId),
@@ -116,14 +111,12 @@ async function getCategories(userId) {
  */
 async function addCategory(categoryData) {
     try {
-        const categoriesRef = collection(db, CATEGORIES_COLLECTION);
-        // INÍCIO DA ALTERAÇÃO - Adiciona o campo de subcategorias vazio
+        const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
         const dataToSave = {
             ...categoryData,
             subcategories: []
         };
         const docRef = await addDoc(categoriesRef, dataToSave);
-        // FIM DA ALTERAÇÃO
         return docRef;
     } catch (error) {
         console.error("Erro ao adicionar categoria:", error);
@@ -138,15 +131,13 @@ async function addCategory(categoryData) {
  */
 async function deleteCategory(categoryId) {
     try {
-        const categoryDocRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+        const categoryDocRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
         await deleteDoc(categoryDocRef);
-    } catch (error) {
+    } catch (error) { // INÍCIO DA CORREÇÃO - Adicionada a chave de abertura '{'
         console.error("Erro ao excluir categoria:", error);
         throw new Error("Não foi possível excluir a categoria.");
-    }
+    } // FIM DA CORREÇÃO
 }
-
-// INÍCIO DA ALTERAÇÃO - Novas funções para gerenciar subcategorias
 
 /**
  * Adiciona uma nova subcategoria a uma categoria existente.
@@ -159,7 +150,7 @@ async function addSubcategory(categoryId, subcategoryName) {
     if (!trimmedName) return;
 
     try {
-        const categoryDocRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+        const categoryDocRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
         await updateDoc(categoryDocRef, {
             subcategories: arrayUnion(trimmedName)
         });
@@ -177,7 +168,7 @@ async function addSubcategory(categoryId, subcategoryName) {
  */
 async function deleteSubcategory(categoryId, subcategoryName) {
     try {
-        const categoryDocRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+        const categoryDocRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
         await updateDoc(categoryDocRef, {
             subcategories: arrayRemove(subcategoryName)
         });
@@ -186,7 +177,5 @@ async function deleteSubcategory(categoryId, subcategoryName) {
         throw new Error("Não foi possível excluir a subcategoria.");
     }
 }
-// FIM DA ALTERAÇÃO
-
 
 export { getCategories, addCategory, deleteCategory, createDefaultCategoriesForUser, addSubcategory, deleteSubcategory };
