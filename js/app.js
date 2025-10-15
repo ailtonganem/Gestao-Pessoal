@@ -17,7 +17,7 @@ import * as invoices from './modules/invoices.js';
 import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
-import * as accounts from './modules/accounts.js'; // INÍCIO DA ALTERAÇÃO - Importa o novo módulo
+import * as accounts from './modules/accounts.js';
 
 // --- Ponto de Entrada da Aplicação ---
 
@@ -67,7 +67,7 @@ async function handleAuthStateChange(user) {
         state.setUserCreditCards([]);
         state.setUserBudgets([]);
         state.setUserRecurringTransactions([]);
-        state.setUserAccounts([]); // INÍCIO DA ALTERAÇÃO - Limpa o estado das contas no logout
+        state.setUserAccounts([]);
         views.showAuthForms();
     }
 }
@@ -91,7 +91,7 @@ async function loadInitialData(userId) {
     await Promise.all([
         loadUserCategories(),
         loadUserCreditCards(),
-        loadUserAccounts(), // INÍCIO DA ALTERAÇÃO - Carrega as contas do usuário
+        loadUserAccounts(),
         loadUserBudgets(),
         loadUserDashboard(),
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
@@ -99,18 +99,21 @@ async function loadInitialData(userId) {
 }
 
 
-// --- Funções "Controladoras" / Orquestradoras ---
+// --- Funções "Controladoras" / Orquestradadoras ---
 
 /** Busca as transações, armazena no estado e atualiza o dashboard. */
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
+    // INÍCIO DA ALTERAÇÃO - Coleta o novo filtro de tipo
     const filters = {
         month: document.getElementById('filter-month').value,
         year: document.getElementById('filter-year').value,
         startDate: document.getElementById('filter-start-date').value,
-        endDate: document.getElementById('filter-end-date').value
+        endDate: document.getElementById('filter-end-date').value,
+        type: document.getElementById('filter-type').value
     };
+    // FIM DA ALTERAÇÃO
 
     try {
         const userTransactions = await transactions.getTransactions(state.currentUser.uid, filters);
@@ -154,7 +157,6 @@ export async function loadUserCreditCards() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Nova função para carregar as contas do usuário
 /** Busca as contas, armazena no estado e atualiza a UI. */
 export async function loadUserAccounts() {
     if (!state.currentUser) return;
@@ -163,12 +165,11 @@ export async function loadUserAccounts() {
         state.setUserAccounts(userAccounts);
         render.populateAccountSelects();
         render.renderAccountList();
-        render.updateDashboard(); // Chama para atualizar os saldos
+        render.updateDashboard(); 
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 /** Busca os orçamentos, armazena no estado e atualiza a UI. */
 export async function loadUserBudgets() {
@@ -184,19 +185,44 @@ export async function loadUserBudgets() {
 }
 
 /**
- * Aplica os filtros da UI sobre a lista de transações e chama a renderização.
+ * Aplica os filtros e a ordenação da UI sobre a lista de transações e chama a renderização.
  */
 export function applyFiltersAndUpdateDashboard() {
+    // INÍCIO DA ALTERAÇÃO - Coleta de todos os filtros, incluindo os novos
     const descriptionFilter = document.getElementById('filter-description').value.toLowerCase();
     const categoryFilter = document.getElementById('filter-category').value;
-    const paymentMethodFilter = document.getElementById('filter-payment-method').value;
+    const typeFilter = document.getElementById('filter-type').value; 
+    const sortFilter = document.getElementById('filter-sort').value; 
+    // FIM DA ALTERAÇÃO
 
-    const filtered = state.allTransactions.filter(transaction => {
+    // Aplica filtros
+    let filtered = state.allTransactions.filter(transaction => {
         const descriptionMatch = transaction.description.toLowerCase().includes(descriptionFilter);
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
-        const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
-        return descriptionMatch && categoryMatch && paymentMethodMatch;
+        const typeMatch = (typeFilter === 'all') || (transaction.type === typeFilter);
+        // O filtro de `paymentMethod` foi removido daqui para simplificar, pois
+        // a consulta principal ao Firestore já separa transações de cartão e de conta.
+        // Se precisarmos dele de volta, podemos adicioná-lo.
+        return descriptionMatch && categoryMatch && typeMatch;
     });
+
+    // INÍCIO DA ALTERAÇÃO - Lógica de Ordenação
+    switch (sortFilter) {
+        case 'date_asc':
+            filtered.sort((a, b) => a.date - b.date);
+            break;
+        case 'amount_desc':
+            filtered.sort((a, b) => b.amount - a.amount);
+            break;
+        case 'amount_asc':
+            filtered.sort((a, b) => a.amount - b.amount);
+            break;
+        case 'date_desc':
+        default:
+            filtered.sort((a, b) => b.date - a.date);
+            break;
+    }
+    // FIM DA ALTERAÇÃO
 
     state.setFilteredTransactions(filtered);
     render.updateDashboard();
