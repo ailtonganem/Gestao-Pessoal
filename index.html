@@ -438,12 +438,10 @@
                 </div>
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
-                <!-- INÍCIO DA ALTERAÇÃO: Agrupamento dos botões de ação -->
                 <div class="invoice-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button id="advance-payment-button" class="button-secondary" style="flex: 1;">Antecipar Pagamento</button>
                     <button id="pay-invoice-button" disabled style="flex: 1;">Pagar Fatura</button>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
             </div>
         </div>
     </div>
@@ -672,7 +670,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL PARA PAGAMENTO ANTECIPADO -->
     <div id="advance-payment-modal" class="modal">
         <div class="modal-content">
             <span class="close-advance-payment-modal-button">&times;</span>
@@ -693,6 +690,38 @@
                     <input type="date" id="advance-payment-date" required>
                 </div>
                 <button type="submit">Confirmar Antecipação</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL PARA EDIÇÃO DE TRANSFERÊNCIA -->
+    <div id="edit-transfer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-transfer-modal-button">&times;</span>
+            <h2>Editar Transferência</h2>
+            <form id="edit-transfer-form">
+                <input type="hidden" id="edit-transfer-id">
+                <div class="form-control">
+                    <label for="edit-transfer-description">Descrição (opcional)</label>
+                    <input type="text" id="edit-transfer-description" placeholder="Ex: Dinheiro para a carteira">
+                </div>
+                <div class="form-control">
+                    <label for="edit-transfer-amount">Valor (R$)</label>
+                    <input type="number" id="edit-transfer-amount" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transfer-date">Data</label>
+                    <input type="date" id="edit-transfer-date" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transfer-from-account">Conta de Origem</label>
+                    <select id="edit-transfer-from-account" required></select>
+                </div>
+                <div class="form-control">
+                    <label for="edit-transfer-to-account">Conta de Destino</label>
+                    <select id="edit-transfer-to-account" required></select>
+                </div>
+                <button type="submit">Salvar Alterações</button>
             </form>
         </div>
     </div>
