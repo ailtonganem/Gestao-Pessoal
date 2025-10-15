@@ -6,7 +6,6 @@ import { findOrCreateInvoice } from './invoices.js';
 import { saveUniqueDescription } from './autocomplete.js';
 // Importa a função para salvar subcategorias
 import { addSubcategory } from './categories.js';
-// INÍCIO DA ALTERAÇÃO - Importa a lógica de atualização de saldo de conta
 import { updateBalanceInBatch } from './accounts.js';
 
 // Importa as funções do Firestore necessárias.
@@ -24,7 +23,7 @@ import {
     writeBatch,
     increment,
     Timestamp,
-    getDoc // Adicionado para a lógica de atualização
+    getDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -51,7 +50,6 @@ async function addTransaction(transactionData, cardData = null) {
     }
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
-        // Lógica de cartão de crédito permanece a mesma, pois não afeta o saldo da conta diretamente.
         const batch = writeBatch(db);
 
         if (transactionData.isInstallment && transactionData.installments > 1) {
@@ -105,7 +103,6 @@ async function addTransaction(transactionData, cardData = null) {
         }
 
     } else {
-        // INÍCIO DA ALTERAÇÃO - Lógica para transações que afetam o saldo da conta
         const batch = writeBatch(db);
         try {
             const transactionsCollectionRef = collection(db, 'transactions');
@@ -120,7 +117,7 @@ async function addTransaction(transactionData, cardData = null) {
                 subcategory: transactionData.subcategory || null,
                 paymentMethod: transactionData.paymentMethod,
                 userId: transactionData.userId,
-                accountId: transactionData.accountId, // Adiciona o ID da conta
+                accountId: transactionData.accountId, 
                 createdAt: serverTimestamp()
             };
             
@@ -134,25 +131,31 @@ async function addTransaction(transactionData, cardData = null) {
             console.error("Erro ao adicionar transação:", error);
             throw new Error("Não foi possível salvar a transação.");
         }
-        // FIM DA ALTERAÇÃO
     }
 }
 
 /**
  * Busca as transações de fluxo de caixa de um usuário com filtros.
  * @param {string} userId - O ID do usuário.
- * @param {object} filters - Objeto com os filtros (month, year, startDate, endDate).
+ * @param {object} filters - Objeto com os filtros (month, year, startDate, endDate, type).
  * @returns {Promise<Array>} Uma lista de objetos de transação.
  */
 async function getTransactions(userId, filters = {}) {
-    const { month, year, startDate, endDate } = filters;
+    // INÍCIO DA ALTERAÇÃO - Extrai o novo filtro 'type'
+    const { month, year, startDate, endDate, type } = filters;
+    // FIM DA ALTERAÇÃO
     try {
         const transactionsCollectionRef = collection(db, 'transactions');
         
         let queryConstraints = [
             where("userId", "==", userId)
-            // Removido o filtro de paymentMethod para incluir pagamentos de fatura no futuro
         ];
+
+        // INÍCIO DA ALTERAÇÃO - Adiciona o filtro por tipo à consulta do Firestore
+        if (type && type !== 'all') {
+            queryConstraints.push(where("type", "==", type));
+        }
+        // FIM DA ALTERAÇÃO
 
         if (startDate && endDate) {
             const start = new Date(startDate + 'T00:00:00');
@@ -171,6 +174,7 @@ async function getTransactions(userId, filters = {}) {
             queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfYear)));
         }
         
+        // A ordenação por data permanece como padrão. A ordenação final será feita no cliente.
         queryConstraints.push(orderBy("date", "desc"));
 
         const q = query(transactionsCollectionRef, ...queryConstraints);
@@ -198,13 +202,11 @@ async function getTransactions(userId, filters = {}) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Função modificada para reverter o saldo
 /**
  * Exclui uma transação e reverte o seu impacto no saldo da conta.
  * @param {object} transaction - O objeto completo da transação a ser excluída.
  */
 async function deleteTransaction(transaction) {
-    // Não processa se for transação de cartão de crédito (lógica a ser implementada futuramente)
     if (!transaction.accountId) {
         throw new Error("Não é possível excluir transações sem conta associada.");
     }
@@ -214,7 +216,6 @@ async function deleteTransaction(transaction) {
         const transactionDocRef = doc(db, 'transactions', transaction.id);
         batch.delete(transactionDocRef);
 
-        // Define o tipo reverso para a atualização do saldo
         const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
         updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
 
@@ -224,9 +225,7 @@ async function deleteTransaction(transaction) {
         throw new Error("Não foi possível excluir a transação.");
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Função modificada para atualizar o saldo
 /**
  * Atualiza uma transação e ajusta os saldos das contas envolvidas.
  * @param {string} transactionId - O ID da transação a ser atualizada.
@@ -237,28 +236,23 @@ async function updateTransaction(transactionId, updatedData) {
     const transactionDocRef = doc(db, 'transactions', transactionId);
 
     try {
-        // 1. Pega os dados originais da transação
         const originalTxSnap = await getDoc(transactionDocRef);
         if (!originalTxSnap.exists()) {
             throw new Error("Transação não encontrada para atualização.");
         }
         const originalTxData = originalTxSnap.data();
 
-        // 2. Reverte o impacto da transação original no saldo da conta original
         const reverseType = originalTxData.type === 'expense' ? 'revenue' : 'expense';
         updateBalanceInBatch(batch, originalTxData.accountId, originalTxData.amount, reverseType);
 
-        // 3. Aplica o impacto da transação atualizada no saldo da nova conta
         updateBalanceInBatch(batch, updatedData.accountId, updatedData.amount, updatedData.type);
 
-        // 4. Prepara os dados para atualização do documento da transação
         const dataToUpdate = { ...updatedData };
         if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
             dataToUpdate.date = Timestamp.fromDate(parseDateString(dataToUpdate.date));
         }
         batch.update(transactionDocRef, dataToUpdate);
         
-        // 5. Executa todas as operações atomicamente
         await batch.commit();
 
     } catch (error) {
@@ -266,6 +260,5 @@ async function updateTransaction(transactionId, updatedData) {
         throw new Error("Não foi possível salvar as alterações.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 export { addTransaction, getTransactions, deleteTransaction, updateTransaction };
