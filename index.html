@@ -121,7 +121,14 @@
                 </ul>
             </section>
 
-            <section id="transaction-form-section">
+            <!-- INÍCIO DA ALTERAÇÃO - Adição de abas para os formulários -->
+            <div class="form-tabs">
+                <button class="tab-link active" data-form="transaction-form-section">Transação</button>
+                <button class="tab-link" data-form="transfer-form-section">Transferência</button>
+            </div>
+            <!-- FIM DA ALTERAÇÃO -->
+
+            <section id="transaction-form-section" class="form-section active">
                 <h2>Adicionar Transação</h2>
                 <form id="add-transaction-form">
                     <div class="form-control">
@@ -189,6 +196,35 @@
                     <button type="submit">Adicionar</button>
                 </form>
             </section>
+
+            <!-- INÍCIO DA ALTERAÇÃO - Nova seção para o formulário de transferência -->
+            <section id="transfer-form-section" class="form-section" style="display: none;">
+                <h2>Realizar Transferência</h2>
+                <form id="add-transfer-form">
+                    <div class="form-control">
+                        <label for="transfer-description">Descrição (opcional)</label>
+                        <input type="text" id="transfer-description" placeholder="Ex: Dinheiro para a carteira">
+                    </div>
+                    <div class="form-control">
+                        <label for="transfer-amount">Valor (R$)</label>
+                        <input type="number" id="transfer-amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="transfer-date">Data</label>
+                        <input type="date" id="transfer-date" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="transfer-from-account">Conta de Origem</label>
+                        <select id="transfer-from-account" required></select>
+                    </div>
+                    <div class="form-control">
+                        <label for="transfer-to-account">Conta de Destino</label>
+                        <select id="transfer-to-account" required></select>
+                    </div>
+                    <button type="submit">Transferir</button>
+                </form>
+            </section>
+            <!-- FIM DA ALTERAÇÃO -->
             
             <section id="transactions-list-section">
                 <h2>Histórico</h2>
@@ -237,7 +273,6 @@
                                 <option value="all">Todas</option>
                             </select>
                         </div>
-                        <!-- INÍCIO DA ALTERAÇÃO - Filtro de "Método de Pagamento" restaurado -->
                         <div class="form-control">
                             <label for="filter-payment-method">Método de Pagamento</label>
                             <select id="filter-payment-method">
@@ -247,7 +282,6 @@
                                 <option value="cash">Dinheiro</option>
                             </select>
                         </div>
-                        <!-- FIM DA ALTERAÇÃO -->
                         <div class="form-control">
                             <label for="filter-type">Tipo</label>
                             <select id="filter-type">
@@ -284,8 +318,7 @@
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
-    <!-- Modais (todos os modais existentes permanecem aqui, sem alterações) ... -->
-    <!-- Modal para Edição de Transação -->
+    <!-- Modais ... -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -339,21 +372,16 @@
         </div>
     </div>
 
-    <!-- Modal para Gerenciamento de Cartões de Crédito -->
     <div id="credit-card-modal" class="modal">
         <div class="modal-content">
             <span class="close-card-modal-button">&times;</span>
             <h2>Meus Cartões</h2>
-            
             <div id="card-management-view">
                 <section id="card-list-section">
                     <h3>Cartões Cadastrados</h3>
                     <p class="subtitle">Clique em um cartão para ver as faturas.</p>
-                    <ul id="credit-card-list">
-                        <li>Nenhum cartão cadastrado.</li>
-                    </ul>
+                    <ul id="credit-card-list"></ul>
                 </section>
-                
                 <section id="add-card-form-section">
                     <h3>Adicionar Novo Cartão</h3>
                     <form id="add-credit-card-form">
@@ -373,36 +401,29 @@
                     </form>
                 </section>
             </div>
-
             <div id="invoice-details-view" style="display: none;">
                 <h3 id="invoice-card-name">Faturas - [Nome do Cartão]</h3>
                 <button id="back-to-cards-button" class="button-secondary">&larr; Voltar</button>
-
                 <div class="form-control">
                     <label for="invoice-period-select">Selecionar Fatura</label>
                     <select id="invoice-period-select"></select>
                 </div>
-
                 <div id="invoice-summary" class="summary-card">
                     <p>Total: <strong id="invoice-total-amount">R$ 0,00</strong></p>
                     <p>Vencimento: <span id="invoice-due-date">--/--/----</span></p>
                     <p>Status: <span id="invoice-status" class="status-badge">--</span></p>
                 </div>
-                
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
-
                 <button id="pay-invoice-button" disabled>Pagar Fatura</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Configurações -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações</h2>
-            
             <section id="theme-settings-section">
                 <h4>Aparência</h4>
                 <div class="form-control theme-switcher">
@@ -413,7 +434,6 @@
                     </label>
                 </div>
             </section>
-
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="account-management-tab">Minhas Contas</button>
                 <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
@@ -421,7 +441,6 @@
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
-
             <div id="settings-content">
                 <div id="account-management-tab" class="tab-content active">
                     <section>
@@ -443,7 +462,6 @@
                         <ul id="account-list"></ul>
                     </section>
                 </div>
-
                 <div id="category-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Categorias</h3>
@@ -476,7 +494,6 @@
                         </div>
                     </section>
                 </div>
-
                 <div id="budget-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Orçamentos Mensais</h3>
@@ -497,7 +514,6 @@
                         <ul id="budget-list"></ul>
                     </section>
                 </div>
-
                 <div id="recurring-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Transações Recorrentes</h3>
@@ -535,21 +551,17 @@
                         <ul id="recurring-list"></ul>
                     </section>
                 </div>
-
                 <div id="user-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Usuários</h3>
                         <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
-                        <ul id="user-list">
-                            <li>Carregando usuários...</li>
-                        </ul>
+                        <ul id="user-list"></ul>
                     </section>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Edição de Recorrência -->
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-recurring-modal-button">&times;</span>
@@ -586,7 +598,6 @@
         </div>
     </div>
 
-    <!-- Modal de Edição de Lançamento de Fatura -->
     <div id="edit-invoice-transaction-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-invoice-tx-modal-button">&times;</span>
