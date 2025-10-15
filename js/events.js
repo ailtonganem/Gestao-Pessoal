@@ -41,6 +41,9 @@ const editInvoiceTransactionForm = document.getElementById('edit-invoice-transac
 const themeToggle = document.getElementById('theme-toggle');
 const addAccountForm = document.getElementById('add-account-form');
 const appContent = document.getElementById('app-content');
+// INÍCIO DA ALTERAÇÃO
+const payInvoiceForm = document.getElementById('pay-invoice-form');
+// FIM DA ALTERAÇÃO
 
 let debounceTimer;
 
@@ -100,12 +103,10 @@ export function initializeEventListeners() {
         }
     });
     
-    // --- INÍCIO DA ALTERAÇÃO - Lógica de Drag-and-Drop ---
     let draggingElement = null;
 
     appContent.addEventListener('dragstart', (e) => {
         const target = e.target.closest('.dashboard-section');
-        // Só permite arrastar pelo cabeçalho
         if (target && e.target.closest('.section-header')) {
             draggingElement = target;
             setTimeout(() => {
@@ -152,7 +153,6 @@ export function initializeEventListeners() {
             }
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
-    // FIM DA ALTERAÇÃO
 
     document.querySelector('.form-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.tab-link')) {
@@ -326,7 +326,11 @@ export function initializeEventListeners() {
         if (selectedInvoice) await modals.displayInvoiceDetails(selectedInvoice);
     });
 
-    document.getElementById('pay-invoice-button').addEventListener('click', handlePayInvoice);
+    // INÍCIO DA ALTERAÇÃO - Botão agora abre o modal de pagamento
+    document.getElementById('pay-invoice-button').addEventListener('click', modals.openPayInvoiceModal);
+    payInvoiceForm.addEventListener('submit', handleConfirmInvoicePayment);
+    document.querySelector('.close-pay-invoice-modal-button').addEventListener('click', modals.closePayInvoiceModal);
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
@@ -455,7 +459,45 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
-// ... (O restante do arquivo permanece inalterado)
+
+// INÍCIO DA ALTERAÇÃO: Nova função para confirmar o pagamento da fatura
+async function handleConfirmInvoicePayment(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+        const invoiceId = form['pay-invoice-id'].value;
+        const accountId = form['pay-invoice-account-select'].value;
+        const paymentDate = form['pay-invoice-date'].value;
+
+        if (!accountId) {
+            throw new Error("Por favor, selecione uma conta para o pagamento.");
+        }
+
+        const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === invoiceId);
+        if (!selectedInvoice || !state.selectedCardForInvoiceView) {
+            throw new Error("Fatura ou cartão não encontrado. Tente novamente.");
+        }
+
+        const paymentDetails = { accountId, paymentDate };
+
+        await invoices.payInvoice(selectedInvoice, state.selectedCardForInvoiceView, paymentDetails);
+        showNotification("Fatura paga com sucesso!");
+        
+        modals.closePayInvoiceModal();
+        await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleAddTransfer(e) {
     e.preventDefault();
@@ -742,6 +784,8 @@ async function handleDeleteCreditCard(cardId) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO - Função removida pois sua lógica foi movida para handleConfirmInvoicePayment
+/*
 async function handlePayInvoice() {
     const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === document.getElementById('invoice-period-select').value);
     if (selectedInvoice && state.selectedCardForInvoiceView) {
@@ -757,6 +801,8 @@ async function handlePayInvoice() {
         }
     }
 }
+*/
+// FIM DA ALTERAÇÃO
 
 async function handleAddCategory(e) {
     e.preventDefault();
