@@ -19,9 +19,8 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 
-// INÍCIO DA ALTERAÇÃO - Adiciona constante para o limite de transações por página
 const TRANSACTIONS_PER_PAGE = 25;
-// FIM DA ALTERAÇÃO
+const COLLAPSIBLE_STATE_KEY = 'dashboardCollapsibleState'; // INÍCIO DA ALTERAÇÃO
 
 // --- Ponto de Entrada da Aplicação ---
 
@@ -34,6 +33,7 @@ function initializeApp() {
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
+    initializeCollapsibleSections(); // INÍCIO DA ALTERAÇÃO
 
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
@@ -72,10 +72,8 @@ async function handleAuthStateChange(user) {
         state.setUserBudgets([]);
         state.setUserRecurringTransactions([]);
         state.setUserAccounts([]);
-        // INÍCIO DA ALTERAÇÃO - Reseta o estado da paginação no logout
         state.setLastTransactionDoc(null);
         state.setHasMoreTransactions(true);
-        // FIM DA ALTERAÇÃO
         views.showAuthForms();
     }
 }
@@ -86,7 +84,10 @@ async function handleAuthStateChange(user) {
  */
 async function loadInitialData(userId) {
     const transactionDateInput = document.getElementById('transaction-date');
-    transactionDateInput.value = new Date().toISOString().split('T')[0];
+    if(transactionDateInput) transactionDateInput.value = new Date().toISOString().split('T')[0];
+
+    const transferDateInput = document.getElementById('transfer-date');
+    if(transferDateInput) transferDateInput.value = new Date().toISOString().split('T')[0];
 
     const recurringCount = await recurring.processRecurringTransactions(userId);
     if (recurringCount > 0) {
@@ -101,7 +102,7 @@ async function loadInitialData(userId) {
         loadUserCreditCards(),
         loadUserAccounts(),
         loadUserBudgets(),
-        loadUserDashboard(), // Esta chamada já carrega a primeira página de transações
+        loadUserDashboard(),
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
@@ -109,12 +110,10 @@ async function loadInitialData(userId) {
 
 // --- Funções "Controladoras" / Orquestradadoras ---
 
-// INÍCIO DA ALTERAÇÃO - Função modificada para buscar a primeira página
 /** Busca a primeira página de transações, reseta o estado e atualiza o dashboard. */
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
-    // Reseta o estado da paginação para uma nova busca
     state.setLastTransactionDoc(null);
     state.setHasMoreTransactions(true);
 
@@ -130,10 +129,10 @@ export async function loadUserDashboard() {
         const { transactions: userTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
             limitNum: TRANSACTIONS_PER_PAGE,
-            lastDoc: null // Inicia do começo
+            lastDoc: null
         });
 
-        state.setAllTransactions(userTransactions); // Seta a primeira página de transações
+        state.setAllTransactions(userTransactions);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(userTransactions.length === TRANSACTIONS_PER_PAGE);
 
@@ -142,9 +141,7 @@ export async function loadUserDashboard() {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
-// INÍCIO DA ALTERAÇÃO - Nova função para carregar mais transações
 /**
  * Busca a próxima página de transações e as anexa à lista existente no estado.
  */
@@ -167,15 +164,17 @@ export async function loadMoreTransactions() {
         const { transactions: newTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
             filters,
             limitNum: TRANSACTIONS_PER_PAGE,
-            lastDoc: state.lastTransactionDoc // Continua da última busca
+            lastDoc: state.lastTransactionDoc
         });
-
-        // Anexa as novas transações à lista existente no estado
-        state.setAllTransactions([...state.allTransactions, ...newTransactions]);
+        
+        const currentTransactions = state.allTransactions;
+        render.renderTransactionList(newTransactions, true); // Renderiza apenas os novos, anexando
+        
+        state.setAllTransactions([...currentTransactions, ...newTransactions]);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(newTransactions.length === TRANSACTIONS_PER_PAGE);
 
-        applyFiltersAndUpdateDashboard(); // Re-aplica filtros e ordenação na lista completa
+        applyFiltersAndUpdateDashboard();
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -184,7 +183,6 @@ export async function loadMoreTransactions() {
         loadMoreButton.textContent = 'Carregar Mais';
     }
 }
-// FIM DA ALTERAÇÃO
 
 /** Busca as categorias, armazena no estado e atualiza os componentes da UI. */
 export async function loadUserCategories() {
@@ -281,6 +279,7 @@ export function applyFiltersAndUpdateDashboard() {
     }
 
     state.setFilteredTransactions(filtered);
+    render.renderTransactionList(filtered); // Renderiza a lista filtrada e ordenada
     render.updateDashboard();
 }
 
@@ -305,6 +304,76 @@ export function toggleTheme(isDarkMode) {
         analytics.getMonthlySummary(state.currentUser.uid).then(charts.renderTrendsChart);
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Lógica para seções recolhíveis
+
+/**
+ * Lê o estado salvo no localStorage.
+ * @returns {object} O estado das seções.
+ */
+function getCollapsibleState() {
+    try {
+        const savedState = localStorage.getItem(COLLAPSIBLE_STATE_KEY);
+        return savedState ? JSON.parse(savedState) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+/**
+ * Salva o estado atual das seções no localStorage.
+ * @param {object} state - O estado a ser salvo.
+ */
+function saveCollapsibleState(state) {
+    localStorage.setItem(COLLAPSIBLE_STATE_KEY, JSON.stringify(state));
+}
+
+/**
+ * Alterna a visibilidade de uma seção e salva o estado.
+ * @param {HTMLElement} sectionHeader - O elemento do cabeçalho da seção que foi clicado.
+ */
+export function toggleSection(sectionHeader) {
+    const section = sectionHeader.closest('.dashboard-section');
+    const sectionId = section.dataset.sectionId;
+    const icon = sectionHeader.querySelector('.toggle-icon');
+    
+    const isExpanded = section.classList.toggle('expanded');
+    
+    if (isExpanded) {
+        icon.innerHTML = '&#9660;'; // Seta para baixo
+    } else {
+        icon.innerHTML = '&#9658;'; // Seta para direita
+    }
+
+    const currentState = getCollapsibleState();
+    currentState[sectionId] = isExpanded;
+    saveCollapsibleState(currentState);
+}
+
+/**
+ * Inicializa as seções com base no estado salvo no localStorage.
+ */
+function initializeCollapsibleSections() {
+    const savedState = getCollapsibleState();
+    const sections = document.querySelectorAll('.dashboard-section');
+
+    sections.forEach(section => {
+        const sectionId = section.dataset.sectionId;
+        const header = section.querySelector('.section-header');
+        const icon = header.querySelector('.toggle-icon');
+
+        // Por padrão, todas começam recolhidas
+        section.classList.remove('expanded');
+        icon.innerHTML = '&#9658;';
+
+        // Se o estado salvo for 'expanded', expande a seção
+        if (savedState[sectionId] === true) {
+            section.classList.add('expanded');
+            icon.innerHTML = '&#9660;';
+        }
+    });
+}
+// FIM DA ALTERAÇÃO
 
 
 // --- Inicia a aplicação ---
