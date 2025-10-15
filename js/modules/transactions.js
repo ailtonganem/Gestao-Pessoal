@@ -2,8 +2,8 @@
 
 // Importa a instância do Firestore.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
-import { COLLECTIONS } from '../config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Alteração para caminho absoluto
+import { COLLECTIONS } from '/js/config/constants.js';
 // FIM DA ALTERAÇÃO
 // Importa a lógica de faturas.
 import { findOrCreateInvoice } from './invoices.js';
@@ -67,10 +67,8 @@ async function addTransaction(transactionData, cardData = null) {
                 const currentInstallmentDate = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + i, transactionDate.getDate());
                 
                 const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, currentInstallmentDate);
-                // INÍCIO DA ALTERAÇÃO
                 const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
                 const invoiceTransactionsRef = collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS);
-                // FIM DA ALTERAÇÃO
                 
                 const newTransactionInInvoice = {
                     description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
@@ -87,10 +85,8 @@ async function addTransaction(transactionData, cardData = null) {
             }
         } else {
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
-            // INÍCIO DA ALTERAÇÃO
             const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS);
-            // FIM DA ALTERAÇÃO
             
             const newTransactionInInvoice = {
                 description: transactionData.description,
@@ -116,9 +112,7 @@ async function addTransaction(transactionData, cardData = null) {
     } else {
         const batch = writeBatch(db);
         try {
-            // INÍCIO DA ALTERAÇÃO
             const transactionsCollectionRef = collection(db, COLLECTIONS.TRANSACTIONS);
-            // FIM DA ALTERAÇÃO
             const newTransactionRef = doc(transactionsCollectionRef);
 
             const dataToSave = {
@@ -161,9 +155,7 @@ async function getTransactions(userId, options = {}) {
     const { month, year, startDate, endDate, type } = filters;
 
     try {
-        // INÍCIO DA ALTERAÇÃO
         const transactionsCollectionRef = collection(db, COLLECTIONS.TRANSACTIONS);
-        // FIM DA ALTERAÇÃO
         
         let queryConstraints = [where("userId", "==", userId)];
 
@@ -232,9 +224,7 @@ async function deleteTransaction(transaction) {
     
     const batch = writeBatch(db);
     try {
-        // INÍCIO DA ALTERAÇÃO
         const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transaction.id);
-        // FIM DA ALTERAÇÃO
         batch.delete(transactionDocRef);
 
         const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
@@ -254,9 +244,7 @@ async function deleteTransaction(transaction) {
  */
 async function updateTransaction(transactionId, updatedData) {
     const batch = writeBatch(db);
-    // INÍCIO DA ALTERAÇÃO
     const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
-    // FIM DA ALTERAÇÃO
 
     try {
         const originalTxSnap = await getDoc(transactionDocRef);
