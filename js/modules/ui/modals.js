@@ -21,6 +21,9 @@ const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
 const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
+// INÍCIO DA ALTERAÇÃO
+const payInvoiceModal = document.getElementById('pay-invoice-modal');
+// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
@@ -58,6 +61,11 @@ const payInvoiceButton = document.getElementById('pay-invoice-button');
 
 // Elementos do Modal de Configurações
 const adminTabButton = document.getElementById('admin-tab-button');
+
+// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Pagamento de Fatura
+const payInvoiceIdInput = document.getElementById('pay-invoice-id');
+const payInvoiceDateInput = document.getElementById('pay-invoice-date');
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento do Modal de Edição de Transação ---
@@ -167,11 +175,10 @@ export function showCardManagementView() {
     invoiceDetailsView.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO - Passa o userId para a função getInvoices
 export async function loadAndDisplayInvoices(card) {
     invoicePeriodSelect.innerHTML = '<option>Carregando faturas...</option>';
     try {
-        const invoices = await getInvoices(card.id, state.currentUser.uid); // Adiciona o userId
+        const invoices = await getInvoices(card.id, state.currentUser.uid);
         state.setCurrentCardInvoices(invoices);
 
         if (invoices.length === 0) {
@@ -185,7 +192,6 @@ export async function loadAndDisplayInvoices(card) {
         invoicePeriodSelect.innerHTML = '<option>Erro ao carregar faturas</option>';
     }
 }
-// FIM DA ALTERAÇÃO
 
 export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceSummary(invoice);
@@ -249,3 +255,38 @@ export function switchSettingsTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
 }
+
+// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de pagamento de fatura
+
+/**
+ * Abre o modal para pagamento de fatura, preenchendo os dados necessários.
+ */
+export function openPayInvoiceModal() {
+    const selectedInvoiceId = invoicePeriodSelect.value;
+    const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === selectedInvoiceId);
+
+    if (!selectedInvoice) {
+        showNotification("Nenhuma fatura selecionada para pagamento.", "error");
+        return;
+    }
+
+    payInvoiceIdInput.value = selectedInvoice.id;
+    payInvoiceDateInput.value = formatDateToInput(new Date());
+
+    // As contas já devem estar populadas nos selects pela função render.populateAccountSelects
+    // que é chamada quando os dados do usuário são carregados.
+    
+    payInvoiceModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de pagamento de fatura e reseta o formulário.
+ */
+export function closePayInvoiceModal() {
+    const form = document.getElementById('pay-invoice-form');
+    if (form) {
+        form.reset();
+    }
+    payInvoiceModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
