@@ -199,9 +199,7 @@ export function initializeEventListeners() {
     document.getElementById('settings-button').addEventListener('click', modals.openSettingsModal);
     document.getElementById('manage-cards-button').addEventListener('click', modals.openCardModal);
     
-    // INÍCIO DA ALTERAÇÃO - Adiciona o listener para o botão "Carregar Mais"
     document.getElementById('load-more-button').addEventListener('click', app.loadMoreTransactions);
-    // FIM DA ALTERAÇÃO
 
     // --- Delegação de Eventos para a Lista de Transações ---
     document.getElementById('transactions-list').addEventListener('click', (e) => {
@@ -209,7 +207,7 @@ export function initializeEventListeners() {
         const transactionLi = target.closest('li');
         if (!transactionLi || !transactionLi.dataset.id) return;
         const transactionId = transactionLi.dataset.id;
-        const transaction = state.allTransactions.find(t => t.id === transactionId); // Procura na lista completa
+        const transaction = state.allTransactions.find(t => t.id === transactionId);
         if (!transaction) return;
 
         if (target.matches('.edit-btn')) {
@@ -461,8 +459,8 @@ async function handleAddTransaction(e) {
         document.getElementById('transaction-amount-label').textContent = 'Valor (R$)';
         document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
         
-        await app.loadUserDashboard(); // Reseta e carrega a primeira página
-        await app.loadUserAccounts(); // Atualiza saldos das contas
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
         
         if (subcategoryName) {
             app.loadUserCategories();
@@ -479,8 +477,8 @@ async function handleDeleteTransaction(transaction) {
         try {
             await transactions.deleteTransaction(transaction);
             showNotification('Transação excluída com sucesso!');
-            await app.loadUserDashboard(); // Reseta e carrega a primeira página
-            await app.loadUserAccounts(); // Atualiza saldos
+            await app.loadUserDashboard();
+            await app.loadUserAccounts();
         } catch (error) {
             showNotification(error.message, 'error');
         }
@@ -516,8 +514,8 @@ async function handleUpdateTransaction(e) {
         await transactions.updateTransaction(transactionId, updatedData);
         showNotification('Transação atualizada com sucesso!');
         modals.closeEditModal();
-        await app.loadUserDashboard(); // Reseta e carrega a primeira página
-        await app.loadUserAccounts(); // Atualiza saldos
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
     } catch (error) {
         showNotification(error.message, 'error');
     }
