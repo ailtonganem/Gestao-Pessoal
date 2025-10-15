@@ -2,6 +2,9 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
+// INÍCIO DA ALTERAÇÃO - Importa as constantes de coleções
+import { COLLECTIONS } from '../config/constants.js';
+// FIM DA ALTERAÇÃO
 import {
     collection,
     addDoc,
@@ -17,8 +20,6 @@ import {
     increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-const ACCOUNTS_COLLECTION = 'accounts';
-
 /**
  * Adiciona uma nova conta para o usuário.
  * @param {object} accountData - Dados da nova conta.
@@ -30,7 +31,9 @@ const ACCOUNTS_COLLECTION = 'accounts';
  */
 async function addAccount(accountData) {
     try {
-        const accountsRef = collection(db, ACCOUNTS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+        // FIM DA ALTERAÇÃO
         const dataToSave = {
             ...accountData,
             currentBalance: accountData.initialBalance, // Saldo atual começa com o saldo inicial
@@ -50,7 +53,9 @@ async function addAccount(accountData) {
  */
 async function getAccounts(userId) {
     try {
-        const accountsRef = collection(db, ACCOUNTS_COLLECTION);
+        // INÍCIO DA ALTERAÇÃO
+        const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+        // FIM DA ALTERAÇÃO
         const q = query(
             accountsRef,
             where("userId", "==", userId),
@@ -79,7 +84,9 @@ async function getAccounts(userId) {
  */
 async function updateAccount(accountId, updatedData) {
     try {
-        const accountDocRef = doc(db, ACCOUNTS_COLLECTION, accountId);
+        // INÍCIO DA ALTERAÇÃO
+        const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+        // FIM DA ALTERAÇÃO
         await updateDoc(accountDocRef, updatedData);
     } catch (error) {
         console.error("Erro ao atualizar conta:", error);
@@ -98,7 +105,9 @@ async function deleteAccount(accountId) {
     try {
         // Futuramente, podemos adicionar uma verificação se a conta possui transações
         // e impedir a exclusão ou pedir confirmação extra.
-        const accountDocRef = doc(db, ACCOUNTS_COLLECTION, accountId);
+        // INÍCIO DA ALTERAÇÃO
+        const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+        // FIM DA ALTERAÇÃO
         await deleteDoc(accountDocRef);
     } catch (error) {
         console.error("Erro ao excluir conta:", error);
@@ -114,7 +123,9 @@ async function deleteAccount(accountId) {
  * @param {string} transactionType - 'revenue' ou 'expense'.
  */
 function updateBalanceInBatch(batch, accountId, amount, transactionType) {
-    const accountRef = doc(db, ACCOUNTS_COLLECTION, accountId);
+    // INÍCIO DA ALTERAÇÃO
+    const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+    // FIM DA ALTERAÇÃO
     const amountToUpdate = transactionType === 'revenue' ? amount : -amount;
     batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
 }
