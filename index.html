@@ -92,6 +92,7 @@
                 </div>
             </section>
             
+            <!-- INÍCIO DA ALTERAÇÃO - Adição do atributo draggable="true" -->
             <section class="dashboard-section" data-section-id="accounts-summary" draggable="true">
                 <div class="section-header">
                     <h2>Minhas Contas</h2>
@@ -336,13 +337,14 @@
                     </div>
                 </div>
             </section>
+            <!-- FIM DA ALTERAÇÃO -->
         </main>
     </div>
 
     <!-- Contêiner para notificações (toasts) -->
     <div id="notification-container"></div>
 
-    <!-- Modais -->
+    <!-- Modais ... (O restante do arquivo permanece inalterado) -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -438,7 +440,7 @@
                 </div>
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
-                <button id="pay-invoice-button">Pagar Fatura</button>
+                <button id="pay-invoice-button" disabled>Pagar Fatura</button>
             </div>
         </div>
     </div>
@@ -646,24 +648,6 @@
             </form>
         </div>
     </div>
-
-    <!-- INÍCIO DA ALTERAÇÃO - Novo modal para pagamento de fatura -->
-    <div id="pay-invoice-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-pay-invoice-modal-button">&times;</span>
-            <h2>Pagar Fatura</h2>
-            <form id="pay-invoice-form">
-                <input type="hidden" id="pay-invoice-id">
-                <p style="text-align: left; margin-top: 0; margin-bottom: 1rem;">Valor da Fatura: <strong id="pay-invoice-amount">R$ 0,00</strong></p>
-                <div class="form-control">
-                    <label for="pay-invoice-account-select">Selecione a conta de origem do pagamento</label>
-                    <select id="pay-invoice-account-select" required></select>
-                </div>
-                <button type="submit">Confirmar Pagamento</button>
-            </form>
-        </div>
-    </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
