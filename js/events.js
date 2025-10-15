@@ -41,8 +41,9 @@ const editInvoiceTransactionForm = document.getElementById('edit-invoice-transac
 const themeToggle = document.getElementById('theme-toggle');
 const addAccountForm = document.getElementById('add-account-form');
 const appContent = document.getElementById('app-content');
-// INÍCIO DA ALTERAÇÃO
 const payInvoiceForm = document.getElementById('pay-invoice-form');
+// INÍCIO DA ALTERAÇÃO
+const advancePaymentForm = document.getElementById('advance-payment-form');
 // FIM DA ALTERAÇÃO
 
 let debounceTimer;
@@ -326,10 +327,14 @@ export function initializeEventListeners() {
         if (selectedInvoice) await modals.displayInvoiceDetails(selectedInvoice);
     });
 
-    // INÍCIO DA ALTERAÇÃO - Botão agora abre o modal de pagamento
     document.getElementById('pay-invoice-button').addEventListener('click', modals.openPayInvoiceModal);
     payInvoiceForm.addEventListener('submit', handleConfirmInvoicePayment);
     document.querySelector('.close-pay-invoice-modal-button').addEventListener('click', modals.closePayInvoiceModal);
+
+    // INÍCIO DA ALTERAÇÃO - Listeners para o fluxo de pagamento antecipado
+    document.getElementById('advance-payment-button').addEventListener('click', modals.openAdvancePaymentModal);
+    advancePaymentForm.addEventListener('submit', handleConfirmAdvancePayment);
+    document.querySelector('.close-advance-payment-modal-button').addEventListener('click', modals.closeAdvancePaymentModal);
     // FIM DA ALTERAÇÃO
 
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
@@ -460,7 +465,6 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO: Nova função para confirmar o pagamento da fatura
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
     const form = e.target;
@@ -491,6 +495,38 @@ async function handleConfirmInvoicePayment(e) {
         await app.loadUserDashboard();
         await app.loadUserAccounts();
 
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO: Nova função para confirmar o pagamento antecipado
+async function handleConfirmAdvancePayment(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+        const invoiceId = form['advance-payment-invoice-id'].value;
+        const accountId = form['advance-payment-account-select'].value;
+        const amount = parseFloat(form['advance-payment-amount'].value);
+        const date = form['advance-payment-date'].value;
+
+        if (!accountId || !amount || amount <= 0 || !date) {
+            throw new Error("Todos os campos são obrigatórios.");
+        }
+        
+        await invoices.makeAdvancePayment(invoiceId, amount, accountId, date);
+        showNotification("Pagamento antecipado realizado com sucesso!");
+
+        modals.closeAdvancePaymentModal();
+        await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
+        await app.loadUserDashboard();
+        await app.loadUserAccounts();
+        
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
@@ -783,26 +819,6 @@ async function handleDeleteCreditCard(cardId) {
         }
     }
 }
-
-// INÍCIO DA ALTERAÇÃO - Função removida pois sua lógica foi movida para handleConfirmInvoicePayment
-/*
-async function handlePayInvoice() {
-    const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === document.getElementById('invoice-period-select').value);
-    if (selectedInvoice && state.selectedCardForInvoiceView) {
-        if (confirm(`Confirma o pagamento da fatura de ${formatCurrency(selectedInvoice.totalAmount)}?`)) {
-            try {
-                await invoices.payInvoice(selectedInvoice, state.selectedCardForInvoiceView);
-                showNotification("Fatura paga com sucesso!");
-                await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
-                app.loadUserDashboard();
-            } catch (error) {
-                showNotification(error.message, 'error');
-            }
-        }
-    }
-}
-*/
-// FIM DA ALTERAÇÃO
 
 async function handleAddCategory(e) {
     e.preventDefault();
