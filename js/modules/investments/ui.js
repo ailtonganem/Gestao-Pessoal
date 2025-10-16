@@ -9,7 +9,11 @@ import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
 import { showNotification } from '../ui/notifications.js';
-import { formatCurrency } from '../ui/utils.js';
+import { formatCurrency, formatDateToInput } from '../ui/utils.js';
+import { populateAccountSelects } from '../ui/render.js';
+
+// --- Variáveis de Estado do Módulo ---
+let _currentPortfolioAssets = [];
 
 // --- Seleção de Elementos do DOM ---
 const portfoliosView = document.getElementById('portfolios-view');
@@ -17,6 +21,14 @@ const assetsView = document.getElementById('assets-view');
 const portfoliosListEl = document.getElementById('portfolios-list');
 const assetsPortfolioNameEl = document.getElementById('assets-portfolio-name');
 const assetListEl = document.getElementById('asset-list');
+
+// INÍCIO DA ALTERAÇÃO - Seletores para o modal de movimento
+const movementModal = document.getElementById('asset-movement-modal');
+const movementModalTitle = document.getElementById('asset-movement-modal-title');
+const movementAssetIdInput = document.getElementById('movement-asset-id');
+const movementDateInput = document.getElementById('movement-date');
+const movementAccountSelect = document.getElementById('movement-account');
+// FIM DA ALTERAÇÃO
 
 
 /**
@@ -69,7 +81,6 @@ function renderPortfolios(portfoliosToRender) {
 
     portfoliosToRender.forEach(portfolio => {
         const li = document.createElement('li');
-        // INÍCIO DA ALTERAÇÃO - Uso de classes CSS em vez de estilos inline
         li.className = 'portfolio-item';
         
         const totalValue = portfolio.currentValue || 0;
@@ -87,13 +98,9 @@ function renderPortfolios(portfoliosToRender) {
                 </div>
             </div>
         `;
-        // FIM DA ALTERAÇÃO
         portfoliosListEl.appendChild(li);
     });
 }
-
-
-// Novas funções para carregar e renderizar ativos
 
 /**
  * Busca os dados dos ativos de uma carteira e chama a função para renderizá-los.
@@ -103,7 +110,7 @@ export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
         const userAssets = await assets.getAssets(portfolioId);
-        // Futuramente, salvar no estado: state.setCurrentPortfolioAssets(userAssets);
+        _currentPortfolioAssets = userAssets; // Armazena os ativos carregados
         renderAssets(userAssets);
     } catch (error) {
         showNotification(error.message, 'error');
@@ -124,26 +131,56 @@ function renderAssets(assetsToRender) {
 
     assetsToRender.forEach(asset => {
         const li = document.createElement('li');
-        // INÍCIO DA ALTERAÇÃO - Uso de classes CSS em vez de estilos inline
         li.className = 'asset-item';
 
         li.innerHTML = `
             <div class="asset-info">
                 <span class="asset-ticker">${asset.ticker}</span>
                 <span class="asset-name">${asset.name}</span>
-                <small class="asset-type">${asset.type} - ${asset.broker}</small>
+                <small class="asset-type">${asset.type} - ${asset.broker || 'N/A'}</small>
             </div>
             <div class="asset-summary">
                 <span class="asset-value">${formatCurrency(asset.currentValue)}</span>
                 <small class="asset-quantity">${asset.quantity} Cotas</small>
             </div>
             <div class="asset-actions">
-                <button class="action-btn" data-asset-id="${asset.id}" title="Adicionar Movimento (Compra/Venda)">➕</button>
+                <button class="action-btn add-movement-btn" data-asset-id="${asset.id}" title="Adicionar Movimento (Compra/Venda)">➕</button>
                 <button class="action-btn edit-btn" data-asset-id="${asset.id}" title="Editar Ativo">&#9998;</button>
                 <button class="action-btn delete-btn" data-asset-id="${asset.id}" title="Excluir Ativo">&times;</button>
             </div>
         `;
-        // FIM DA ALTERAÇÃO
         assetListEl.appendChild(li);
     });
 }
+
+// INÍCIO DA ALTERAÇÃO - Funções para gerenciar o modal de movimento
+
+/**
+ * Abre o modal para registrar uma nova operação (movimento) para um ativo.
+ * @param {string} assetId - O ID do ativo para o qual o movimento será registrado.
+ */
+export function openMovementModal(assetId) {
+    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
+    if (!asset) {
+        showNotification("Ativo não encontrado.", "error");
+        return;
+    }
+
+    movementModalTitle.textContent = `Registrar Operação para ${asset.ticker}`;
+    movementAssetIdInput.value = assetId;
+    movementDateInput.value = formatDateToInput(new Date());
+
+    // Popula o select de contas
+    populateAccountSelects(movementAccountSelect);
+    
+    movementModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de registro de movimento.
+ */
+export function closeMovementModal() {
+    document.getElementById('add-movement-form').reset();
+    movementModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
