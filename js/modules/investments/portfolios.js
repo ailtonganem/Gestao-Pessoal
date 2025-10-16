@@ -16,7 +16,10 @@ import {
     Timestamp,
     orderBy,
     doc,
-    deleteDoc
+    deleteDoc,
+    // INÍCIO DA ALTERAÇÃO
+    updateDoc
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { getAssets } from './assets.js';
 
@@ -84,6 +87,27 @@ export async function getPortfolios(userId) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Atualiza os dados de uma carteira de investimentos.
+ * @param {string} portfolioId - O ID da carteira a ser atualizada.
+ * @param {object} updatedData - Os novos dados (ex: { name, description }).
+ * @returns {Promise<void>}
+ */
+export async function updatePortfolio(portfolioId, updatedData) {
+    if (!portfolioId) {
+        throw new Error("ID da carteira é obrigatório para atualização.");
+    }
+    try {
+        const portfolioDocRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
+        await updateDoc(portfolioDocRef, updatedData);
+    } catch (error) {
+        console.error("Erro ao atualizar carteira:", error);
+        throw new Error("Não foi possível salvar as alterações da carteira.");
+    }
+}
+// FIM DA ALTERAÇÃO
+
 /**
  * Exclui uma carteira de investimentos do Firestore.
  * @param {string} portfolioId - O ID do documento da carteira a ser excluída.
@@ -101,7 +125,6 @@ export async function deletePortfolio(portfolioId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Busca todos os ativos de todas as carteiras de um usuário.
  * @param {string} userId - O ID do usuário.
@@ -133,4 +156,3 @@ export async function getAllUserAssets(userId) {
         throw new Error("Não foi possível carregar a visão consolidada dos ativos.");
     }
 }
-// FIM DA ALTERAÇÃO
