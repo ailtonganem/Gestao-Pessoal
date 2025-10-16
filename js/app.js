@@ -86,7 +86,6 @@ async function handleAuthStateChange(user) {
  * Carrega todos os dados iniciais necessários para o dashboard do usuário.
  * @param {string} userId - O ID do usuário logado.
  */
-// --- INÍCIO DA ALTERAÇÃO ---
 async function loadInitialData(userId) {
     const transactionDateInput = document.getElementById('transaction-date');
     if(transactionDateInput) transactionDateInput.value = new Date().toISOString().split('T')[0];
@@ -113,7 +112,6 @@ async function loadInitialData(userId) {
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções "Controladoras" / Orquestradadoras ---
@@ -254,9 +252,11 @@ export async function loadUserBudgets() {
 /**
  * Aplica os filtros e a ordenação da UI sobre a lista de transações e chama a renderização.
  */
+// --- INÍCIO DA ALTERAÇÃO ---
 export function applyFiltersAndUpdateDashboard() {
     const descriptionFilter = document.getElementById('filter-description').value.toLowerCase();
     const categoryFilter = document.getElementById('filter-category').value;
+    const tagFilter = document.getElementById('filter-tag').value.toLowerCase().trim();
     const typeFilter = document.getElementById('filter-type').value; 
     const sortFilter = document.getElementById('filter-sort').value;
     const paymentMethodFilter = document.getElementById('filter-payment-method').value;
@@ -266,8 +266,12 @@ export function applyFiltersAndUpdateDashboard() {
         const categoryMatch = (categoryFilter === 'all') || (transaction.category === categoryFilter);
         const typeMatch = (typeFilter === 'all') || (transaction.type === typeFilter);
         const paymentMethodMatch = (paymentMethodFilter === 'all') || (transaction.paymentMethod === paymentMethodFilter);
-        return descriptionMatch && categoryMatch && typeMatch && paymentMethodMatch;
+        
+        const tagMatch = !tagFilter || (transaction.tags && transaction.tags.some(tag => tag.includes(tagFilter)));
+
+        return descriptionMatch && categoryMatch && typeMatch && paymentMethodMatch && tagMatch;
     });
+// --- FIM DA ALTERAÇÃO ---
 
     switch (sortFilter) {
         case 'date_asc':
