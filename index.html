@@ -381,7 +381,6 @@
                 <div id="investment-dashboard-view">
                     <div class="investment-dashboard-header">
                         <h2>Visão Geral</h2>
-                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <div class="header-controls">
                             <div class="form-control">
                                 <label for="portfolio-filter-select">Carteira</label>
@@ -392,7 +391,6 @@
                             </div>
                             <button id="go-to-portfolios-management-btn" class="button-secondary">Gerenciar</button>
                         </div>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     
                     <div class="investment-grid">
@@ -1055,6 +1053,39 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <div id="provento-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-provento-modal-button">&times;</span>
+            <h2 id="provento-modal-title">Registrar Provento</h2>
+            <form id="add-provento-form">
+                <input type="hidden" id="provento-asset-id">
+                <div class="form-control">
+                    <label for="provento-type">Tipo de Provento</label>
+                    <select id="provento-type" required>
+                        <option value="Dividendo">Dividendo</option>
+                        <option value="JCP">Juros Sobre Capital Próprio (JCP)</option>
+                        <option value="Rendimento">Rendimento (FIIs)</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label for="provento-payment-date">Data do Pagamento</label>
+                    <input type="date" id="provento-payment-date" required>
+                </div>
+                <div class="form-control">
+                    <label for="provento-total-amount">Valor Total Recebido (R$)</label>
+                    <input type="number" id="provento-total-amount" placeholder="150.00" step="any" required>
+                </div>
+                <div class="form-control">
+                    <label for="provento-account">Conta de Destino</label>
+                    <select id="provento-account" required></select>
+                </div>
+                <button type="submit">Registrar Provento</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
