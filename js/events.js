@@ -372,7 +372,6 @@ export function initializeEventListeners() {
     advancePaymentForm.addEventListener('submit', handleConfirmAdvancePayment);
     document.querySelector('.close-advance-payment-modal-button').addEventListener('click', modals.closeAdvancePaymentModal);
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
         if (!eventTarget) return;
@@ -389,7 +388,6 @@ export function initializeEventListeners() {
             }
         }
     });
-    // --- FIM DA ALTERAÇÃO ---
 
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
@@ -866,7 +864,6 @@ async function handleUpdateInvoiceTransaction(e) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 async function handleDeleteInvoiceTransaction(invoiceId, transactionId) {
     if (confirm('Tem certeza que deseja excluir este lançamento?')) {
         try {
@@ -881,8 +878,8 @@ async function handleDeleteInvoiceTransaction(invoiceId, transactionId) {
         }
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
+// --- INÍCIO DA ALTERAÇÃO ---
 async function handleAddCreditCard(e) {
     e.preventDefault();
     const form = e.target;
@@ -890,6 +887,7 @@ async function handleAddCreditCard(e) {
         name: form['card-name'].value,
         closingDay: parseInt(form['card-closing-day'].value),
         dueDay: parseInt(form['card-due-day'].value),
+        limit: parseFloat(form['card-limit'].value),
         userId: state.currentUser.uid
     };
     try {
@@ -901,6 +899,7 @@ async function handleAddCreditCard(e) {
         showNotification(error.message, 'error');
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 async function handleDeleteCreditCard(cardId) {
     const card = state.userCreditCards.find(c => c.id === cardId);
