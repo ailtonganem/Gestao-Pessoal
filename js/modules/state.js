@@ -26,8 +26,11 @@ export let selectedCardForInvoiceView = null; // Armazena o objeto do cartão se
 export let currentCardInvoices = []; // Armazena as faturas do cartão que está sendo visualizado
 export let expensesChart = null; // Instância do gráfico de despesas (tipo pizza)
 export let trendsChart = null; // Instância do gráfico de tendências (tipo barras)
-// INÍCIO DA ALTERAÇÃO
 export let invoiceSpendingChart = null; // Instância do gráfico de gastos da fatura
+// INÍCIO DA ALTERAÇÃO
+export let rentabilidadeChart = null; // Instância do gráfico de rentabilidade dos investimentos
+export let composicaoChart = null; // Instância do gráfico de composição da carteira
+export let patrimonioChart = null; // Instância do gráfico de evolução do patrimônio
 // FIM DA ALTERAÇÃO
 export let lastTransactionDoc = null; // Armazena o último documento da página de transações
 export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
@@ -108,8 +111,20 @@ export function setTrendsChart(chartInstance) {
     trendsChart = chartInstance;
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function setInvoiceSpendingChart(chartInstance) {
     invoiceSpendingChart = chartInstance;
+}
+
+// INÍCIO DA ALTERAÇÃO
+export function setRentabilidadeChart(chartInstance) {
+    rentabilidadeChart = chartInstance;
+}
+
+export function setComposicaoChart(chartInstance) {
+    composicaoChart = chartInstance;
+}
+
+export function setPatrimonioChart(chartInstance) {
+    patrimonioChart = chartInstance;
 }
 // FIM DA ALTERAÇÃO
