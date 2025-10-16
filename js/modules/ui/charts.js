@@ -5,6 +5,9 @@
  */
 
 import * as state from '../state.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import { unpackSplitTransactions } from '../analytics.js';
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const chartCanvas = document.getElementById('expenses-chart');
@@ -15,7 +18,12 @@ const trendsChartCanvas = document.getElementById('trends-chart');
  * @param {Array<object>} transactions - A lista de transações a ser analisada.
  */
 export function renderExpensesChart(transactions) {
-    const expenses = transactions.filter(t => t.type === 'expense');
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Desdobra as transações divididas para garantir que os cálculos sejam feitos nas categorias corretas.
+    const unpackedTransactions = unpackSplitTransactions(transactions);
+
+    const expenses = unpackedTransactions.filter(t => t.type === 'expense');
+    // --- FIM DA ALTERAÇÃO ---
 
     const spendingByCategory = expenses.reduce((acc, transaction) => {
         const { category, amount } = transaction;
