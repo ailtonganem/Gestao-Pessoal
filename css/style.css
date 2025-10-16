@@ -285,7 +285,91 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
-/* Estilos para as listas de Investimentos */
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* --- Estilos do Dashboard de Investimentos --- */
+
+.investment-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.investment-dashboard-header h2 {
+    border: none;
+    margin: 0;
+}
+.investment-dashboard-header .form-control {
+    min-width: 200px;
+}
+.investment-dashboard-header .form-control label {
+    display: none; /* Opcional: esconde o label se o design for limpo */
+}
+
+.investment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(200px, auto);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.investment-card {
+    background-color: var(--container-bg-color);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+}
+.investment-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--background-color);
+    padding-bottom: 0.5rem;
+}
+.investment-card .chart-container {
+    padding: 0;
+    box-shadow: none;
+    flex-grow: 1; /* Faz o gráfico ocupar o espaço disponível */
+}
+
+/* Tamanhos e posicionamento no Grid */
+.investment-card.large {
+    grid-column: span 2;
+}
+.investment-card.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Ajustes de responsividade para o grid de investimentos */
+@media (max-width: 1024px) {
+    .investment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .investment-card.large {
+        grid-column: span 2;
+    }
+}
+@media (max-width: 768px) {
+    .investment-grid {
+        grid-template-columns: 1fr;
+    }
+    .investment-card.large,
+    .investment-card.full-width {
+        grid-column: span 1;
+    }
+    .investment-dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* --- FIM DA ALTERAÇÃO --- */
+
+
+/* Estilos para as listas de Investimentos (Gerenciamento) */
 #portfolios-list, #asset-list {
     list-style: none;
     padding: 0;
@@ -537,7 +621,6 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 #invoice-summary { text-align: left; margin: 1rem 0; }
 #invoice-summary p { margin: 0.5rem 0; font-size: 1rem; }
 
-/* INÍCIO DA ALTERAÇÃO */
 #invoice-analysis-section {
     margin: 1.5rem 0;
     padding-top: 1rem;
@@ -546,7 +629,6 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 #invoice-analysis-section .chart-container {
     height: 250px;
 }
-/* FIM DA ALTERAÇÃO */
 
 .status-badge {
     padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
