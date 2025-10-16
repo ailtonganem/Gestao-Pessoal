@@ -47,9 +47,18 @@ const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
+// INÍCIO DA ALTERAÇÃO
+const splitTransactionButton = document.getElementById('split-transaction-button');
+const addSplitForm = document.getElementById('add-split-form');
+const splitList = document.getElementById('split-list');
+const confirmSplitButton = document.getElementById('confirm-split-button');
+// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
+// INÍCIO DA ALTERAÇÃO
+let isTransactionSplit = false;
+// FIM DA ALTERAÇÃO
 
 /**
  * Função principal que inicializa todos os event listeners da aplicação.
@@ -201,12 +210,27 @@ export function initializeEventListeners() {
     // --- Listeners do Formulário Principal de Transações ---
     addTransactionForm.addEventListener('submit', handleAddTransaction);
     addTransferForm.addEventListener('submit', handleAddTransfer);
+    
+    // INÍCIO DA ALTERAÇÃO
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            render.populateCategorySelects(e.target.value, document.getElementById('transaction-category'));
+            const type = e.target.value;
+            render.populateCategorySelects(type, document.getElementById('transaction-category'));
             document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
+
+            // Mostra o botão de dividir apenas para despesas
+            if (type === 'expense') {
+                splitTransactionButton.style.display = 'inline';
+            } else {
+                splitTransactionButton.style.display = 'none';
+                // Reseta a divisão se o usuário mudar para receita
+                if (isTransactionSplit) {
+                    resetSplitState();
+                }
+            }
         });
     });
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('transaction-description').addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
@@ -399,6 +423,25 @@ export function initializeEventListeners() {
 
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
+    
+    // INÍCIO DA ALTERAÇÃO
+    // Listeners do Modal de Divisão
+    splitTransactionButton.addEventListener('click', () => {
+        const totalAmount = parseFloat(document.getElementById('transaction-amount').value);
+        const type = document.querySelector('input[name="transaction-type"]:checked').value;
+        modals.openSplitModal(totalAmount, type);
+    });
+    document.querySelector('.close-split-modal-button').addEventListener('click', modals.closeSplitModal);
+    document.getElementById('cancel-split-button').addEventListener('click', modals.closeSplitModal);
+    addSplitForm.addEventListener('submit', handleAddSplitItem);
+    splitList.addEventListener('click', (e) => {
+        if (e.target.matches('.delete-btn')) {
+            const index = e.target.dataset.index;
+            modals.removeSplitItem(parseInt(index));
+        }
+    });
+    confirmSplitButton.addEventListener('click', handleConfirmSplit);
+    // FIM DA ALTERAÇÃO
 
     document.querySelector('.close-settings-modal-button').addEventListener('click', modals.closeSettingsModal);
     themeToggle.addEventListener('change', () => app.toggleTheme(themeToggle.checked));
@@ -472,7 +515,6 @@ export function initializeEventListeners() {
         if (eventTarget.matches('.delete-btn') && recurringTx) handleDeleteRecurring(recurringTx);
     });
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('recurring-payment-method').addEventListener('change', (e) => {
         const accountWrapper = document.getElementById('recurring-account-wrapper');
         const cardWrapper = document.getElementById('recurring-card-wrapper');
@@ -496,7 +538,6 @@ export function initializeEventListeners() {
             cardWrapper.style.display = 'none';
         }
     });
-    // --- FIM DA ALTERAÇÃO ---
 
     document.getElementById('user-list').addEventListener('click', async (e) => {
         const approveButton = e.target.closest('.approve-user-btn[data-user-id]');
@@ -538,6 +579,45 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+
+// INÍCIO DA ALTERAÇÃO
+function handleAddSplitItem(e) {
+    e.preventDefault();
+    const form = e.target;
+    const category = form['split-category'].value;
+    const amount = parseFloat(form['split-amount'].value);
+
+    if (!category || isNaN(amount) || amount <= 0) {
+        showNotification('Por favor, selecione uma categoria e insira um valor válido.', 'error');
+        return;
+    }
+    
+    modals.addSplitItem({ category, amount });
+    form.reset();
+}
+
+function handleConfirmSplit() {
+    isTransactionSplit = true;
+    const categorySelect = document.getElementById('transaction-category');
+    const subcategoryWrapper = document.getElementById('transaction-subcategory-wrapper');
+    const categoryWrapper = document.getElementById('category-control-wrapper');
+    
+    categorySelect.disabled = true;
+    subcategoryWrapper.style.display = 'none';
+    categoryWrapper.querySelector('label').textContent = `Dividido em ${modals._currentSplits.length} categorias`;
+
+    modals.closeSplitModal();
+}
+
+function resetSplitState() {
+    isTransactionSplit = false;
+    modals._currentSplits = [];
+    const categorySelect = document.getElementById('transaction-category');
+    const categoryWrapper = document.getElementById('category-control-wrapper');
+    categorySelect.disabled = false;
+    categoryWrapper.querySelector('label').textContent = 'Categoria';
+}
+// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
@@ -691,37 +771,42 @@ async function handleDescriptionAutocomplete(searchTerm) {
     });
 }
 
+// INÍCIO DA ALTERAÇÃO
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
-    const categorySelect = form['transaction-category'];
-    const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
-    const categoryName = selectedCategoryOption.value;
-    const categoryId = selectedCategoryOption.dataset.categoryId;
-    const subcategoryName = form['transaction-subcategory'].value.trim();
     const paymentMethod = form['payment-method'].value;
-
-    if (!categoryName) {
-        showNotification("Por favor, selecione uma categoria.", 'error');
-        submitButton.disabled = false;
-        return;
-    }
 
     const transactionData = {
         description: form['transaction-description'].value,
         amount: parseFloat(form['transaction-amount'].value),
         date: form['transaction-date'].value,
         type: form['transaction-type'].value,
-        category: categoryName,
-        categoryId: categoryId,
-        subcategory: subcategoryName,
         paymentMethod: paymentMethod,
         userId: state.currentUser.uid,
-        isInstallment: false
+        isInstallment: false,
+        isSplit: isTransactionSplit,
+        splits: isTransactionSplit ? modals._currentSplits : null
     };
+
+    if (!isTransactionSplit) {
+        const categorySelect = form['transaction-category'];
+        const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
+        transactionData.category = selectedCategoryOption.value;
+        transactionData.categoryId = selectedCategoryOption.dataset.categoryId;
+        transactionData.subcategory = form['transaction-subcategory'].value.trim();
+        if (!transactionData.category) {
+            showNotification("Por favor, selecione uma categoria.", 'error');
+            submitButton.disabled = false;
+            return;
+        }
+    } else {
+        // Para transações divididas, a categoria principal pode ser uma genérica
+        transactionData.category = "Dividido";
+    }
 
     let cardData = null;
     if (transactionData.paymentMethod === 'credit_card') {
@@ -757,6 +842,7 @@ async function handleAddTransaction(e) {
         await transactions.addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         form.reset();
+        resetSplitState(); // Reseta o estado da divisão
         document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('credit-card-wrapper').style.display = 'none';
         document.getElementById('installment-options-wrapper').style.display = 'none';
@@ -767,7 +853,7 @@ async function handleAddTransaction(e) {
         await app.loadUserDashboard();
         await app.loadUserAccounts();
         
-        if (subcategoryName) {
+        if (!isTransactionSplit && transactionData.subcategory) {
             app.loadUserCategories();
         }
     } catch (error) {
@@ -776,6 +862,7 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
+// FIM DA ALTERAÇÃO
 
 async function handleDeleteTransaction(transaction) {
     if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
@@ -1072,7 +1159,6 @@ async function handleDeleteBudget(budgetId) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 async function handleAddRecurring(e) {
     e.preventDefault();
     const form = e.target;
@@ -1148,7 +1234,6 @@ async function handleUpdateRecurring(e) {
         showNotification(error.message, 'error');
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 async function handleDeleteRecurring(recurringTx) {
     if (confirm(`Tem certeza que deseja excluir a recorrência "${recurringTx.description}"?`)) {
