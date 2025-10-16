@@ -38,6 +38,9 @@ const loadMoreButton = document.getElementById('load-more-button');
 const transferFromAccountSelect = document.getElementById('transfer-from-account');
 const transferToAccountSelect = document.getElementById('transfer-to-account');
 const periodBalanceEl = document.getElementById('period-balance');
+// INÍCIO DA ALTERAÇÃO
+const upcomingInvoicesListEl = document.getElementById('upcoming-invoices-list');
+// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -539,6 +542,40 @@ function renderAccountsSummaryList() {
         accountsSummaryListEl.appendChild(li);
     });
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Renderiza a lista de próximas faturas no dashboard.
+ * @param {Array<object>} invoices - Lista de faturas a serem exibidas.
+ */
+export function renderUpcomingInvoicesList(invoices) {
+    upcomingInvoicesListEl.innerHTML = '';
+
+    if (invoices.length === 0) {
+        upcomingInvoicesListEl.innerHTML = '<li>Nenhuma fatura em aberto ou fechada encontrada.</li>';
+        return;
+    }
+
+    invoices.forEach(invoice => {
+        const card = state.userCreditCards.find(c => c.id === invoice.cardId);
+        const cardName = card ? card.name : 'Cartão não encontrado';
+
+        const li = document.createElement('li');
+        li.className = 'upcoming-invoice-item';
+        li.innerHTML = `
+            <div>
+                <span class="invoice-card-name">${cardName}</span>
+                <small class="invoice-due-date">Vence em: ${invoice.dueDate.toLocaleDateString('pt-BR')}</small>
+            </div>
+            <div>
+                <span class="invoice-amount">${formatCurrency(invoice.totalAmount)}</span>
+                <span class="status-badge ${invoice.status}">${invoice.status}</span>
+            </div>
+        `;
+        upcomingInvoicesListEl.appendChild(li);
+    });
+}
+// --- FIM DA ALTERAÇÃO ---
 
 /** Renderiza as barras de progresso dos orçamentos no dashboard. */
 function renderBudgetProgress() {
