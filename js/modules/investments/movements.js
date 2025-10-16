@@ -15,11 +15,9 @@ import {
     getDoc,
     increment,
     serverTimestamp,
-    // INÍCIO DA ALTERAÇÃO
     getDocs,
     query,
     orderBy
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -127,7 +125,6 @@ export async function addMovement(portfolioId, assetId, movementData) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Busca todos os movimentos (operações) de um ativo específico.
  * @param {string} portfolioId - O ID da carteira.
@@ -155,6 +152,68 @@ export async function getMovements(portfolioId, assetId) {
     } catch (error) {
         console.error(`Erro ao buscar movimentos para o ativo ${assetId}:`, error);
         throw new Error("Não foi possível carregar o histórico de operações do ativo.");
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Adiciona um provento a um ativo e cria a transação de receita correspondente.
+ * @param {string} portfolioId - O ID da carteira.
+ * @param {string} assetId - O ID do ativo.
+ * @param {object} proventoData - Dados do provento.
+ * @returns {Promise<void>}
+ */
+export async function addProvento(portfolioId, assetId, proventoData) {
+    const batch = writeBatch(db);
+
+    try {
+        const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+        const movementsRef = collection(assetRef, 'movements');
+
+        const assetSnap = await getDoc(assetRef);
+        if (!assetSnap.exists()) {
+            throw new Error("Ativo não encontrado para registrar o provento.");
+        }
+        const currentAsset = assetSnap.data();
+
+        const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
+
+        // 1. Registra o provento como um tipo de 'movimento' para o histórico do ativo
+        const newMovementData = {
+            type: 'provento',
+            proventoType: proventoType,
+            totalAmount: totalAmount,
+            date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+            createdAt: serverTimestamp()
+        };
+        const newMovementRef = doc(movementsRef);
+        batch.set(newMovementRef, newMovementData);
+
+        // 2. Cria a transação de receita correspondente
+        const transactionData = {
+            description: `${proventoType} de ${currentAsset.ticker}`,
+            amount: totalAmount,
+            date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+            type: 'revenue',
+            category: 'Dividendos', // Categoria genérica para todos os proventos
+            paymentMethod: 'credit', // Representa uma entrada de dinheiro
+            userId: userId,
+            accountId: accountId,
+            createdAt: serverTimestamp()
+        };
+        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+        batch.set(newTransactionRef, transactionData);
+
+        // 3. Atualiza o saldo da conta de destino
+        const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+        batch.update(accountRef, { currentBalance: increment(totalAmount) });
+        
+        // 4. Executa todas as operações
+        await batch.commit();
+
+    } catch (error) {
+        console.error("Erro ao registrar provento:", error);
+        throw new Error("Não foi possível salvar o registro do provento.");
     }
 }
 // FIM DA ALTERAÇÃO
