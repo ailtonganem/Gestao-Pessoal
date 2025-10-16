@@ -36,9 +36,7 @@ const accountList = document.getElementById('account-list');
 const loadMoreButton = document.getElementById('load-more-button');
 const transferFromAccountSelect = document.getElementById('transfer-from-account');
 const transferToAccountSelect = document.getElementById('transfer-to-account');
-// INÍCIO DA ALTERAÇÃO
 const periodBalanceEl = document.getElementById('period-balance');
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -68,7 +66,6 @@ export function updateDashboard() {
     totalRevenueEl.textContent = formatCurrency(periodRevenue);
     totalExpensesEl.textContent = formatCurrency(periodExpenses);
 
-    // INÍCIO DA ALTERAÇÃO - Cálculo e renderização do balanço do período
     const balance = periodRevenue - periodExpenses;
     periodBalanceEl.textContent = formatCurrency(balance);
     if (balance > 0) {
@@ -78,7 +75,6 @@ export function updateDashboard() {
     } else {
         periodBalanceEl.style.color = 'var(--text-color)';
     }
-    // FIM DA ALTERAÇÃO
 
     renderAccountsSummaryList();
     renderTransactionList(state.filteredTransactions);
@@ -208,10 +204,8 @@ export function populateCreditCardSelects() {
 export function populateAccountSelects() {
     const advancePaymentAccountSelect = document.getElementById('advance-payment-account-select');
     const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
-    // INÍCIO DA ALTERAÇÃO - Adiciona os selects do modal de edição de transferência
     const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
     const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
-    // FIM DA ALTERAÇÃO
 
     transactionAccountSelect.innerHTML = '';
     editTransactionAccountSelect.innerHTML = '';
@@ -219,10 +213,8 @@ export function populateAccountSelects() {
     transferToAccountSelect.innerHTML = '';
     payInvoiceAccountSelect.innerHTML = '';
     advancePaymentAccountSelect.innerHTML = '';
-    // INÍCIO DA ALTERAÇÃO
     editTransferFromAccountSelect.innerHTML = '';
     editTransferToAccountSelect.innerHTML = '';
-    // FIM DA ALTERAÇÃO
 
 
     if (state.userAccounts.length === 0) {
@@ -233,10 +225,8 @@ export function populateAccountSelects() {
         transferToAccountSelect.innerHTML = option;
         payInvoiceAccountSelect.innerHTML = option;
         advancePaymentAccountSelect.innerHTML = option;
-        // INÍCIO DA ALTERAÇÃO
         editTransferFromAccountSelect.innerHTML = option;
         editTransferToAccountSelect.innerHTML = option;
-        // FIM DA ALTERAÇÃO
     } else {
         state.userAccounts.forEach(account => {
             const option = document.createElement('option');
@@ -248,10 +238,8 @@ export function populateAccountSelects() {
             transferToAccountSelect.appendChild(option.cloneNode(true));
             payInvoiceAccountSelect.appendChild(option.cloneNode(true));
             advancePaymentAccountSelect.appendChild(option.cloneNode(true));
-            // INÍCIO DA ALTERAÇÃO
             editTransferFromAccountSelect.appendChild(option.cloneNode(true));
             editTransferToAccountSelect.appendChild(option.cloneNode(true));
-            // FIM DA ALTERAÇÃO
         });
     }
 }
@@ -284,6 +272,7 @@ export function populateCategoryFilter() {
 // --- Funções de Renderização para Modais ---
 
 /** Renderiza a lista de cartões de crédito no modal. */
+// --- INÍCIO DA ALTERAÇÃO ---
 export function renderCreditCardList() {
     creditCardList.innerHTML = '';
     if (state.userCreditCards.length === 0) {
@@ -292,8 +281,14 @@ export function renderCreditCardList() {
         state.userCreditCards.forEach(card => {
             const li = document.createElement('li');
             li.innerHTML = `
-                <div class="card-info" data-card-id="${card.id}" style="flex-grow: 1; cursor: pointer;">
-                    ${card.name} (Fecha dia ${card.closingDay}, Vence dia ${card.dueDay})
+                <div class="card-info" data-card-id="${card.id}" style="flex-grow: 1; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start;">
+                    <span style="font-weight: bold;">${card.name}</span>
+                    <small style="font-size: 0.8rem; color: #7f8c8d;">
+                        Limite: ${formatCurrency(card.limit || 0)}
+                    </small>
+                    <small style="font-size: 0.8rem; color: #7f8c8d;">
+                        Fecha dia ${card.closingDay} | Vence dia ${card.dueDay}
+                    </small>
                 </div>
                 <button class="action-btn delete-btn" data-card-id="${card.id}" title="Excluir cartão">&times;</button>
             `;
@@ -301,6 +296,7 @@ export function renderCreditCardList() {
         });
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /** Renderiza o conteúdo da tela de faturas quando não há faturas. */
 export function renderEmptyInvoiceDetails() {
