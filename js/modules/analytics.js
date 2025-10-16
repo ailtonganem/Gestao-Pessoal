@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 import {
     collection,
     query,
@@ -13,6 +11,37 @@ import {
     Timestamp,
     orderBy
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+// --- INÍCIO DA ALTERAÇÃO ---
+
+/**
+ * Transforma uma lista de transações, desdobrando itens divididos em transações individuais.
+ * @param {Array<object>} transactions - A lista de transações original do Firestore.
+ * @returns {Array<object>} Uma nova lista "plana" de transações para cálculos.
+ */
+export function unpackSplitTransactions(transactions) {
+    const unpacked = [];
+    transactions.forEach(t => {
+        if (t.isSplit && t.splits && t.splits.length > 0) {
+            t.splits.forEach(split => {
+                // Cria uma transação "virtual" para cada item da divisão
+                unpacked.push({
+                    ...t, // Herda todas as propriedades da transação pai
+                    category: split.category, // Sobrescreve a categoria
+                    amount: split.amount, // Sobrescreve o valor
+                    isSplit: false, // Marca como não-dividida para evitar recursão
+                    splits: null,
+                    originalAmount: t.amount // Guarda o valor original para referência se necessário
+                });
+            });
+        } else {
+            // Se não for dividida, apenas adiciona a transação original
+            unpacked.push(t);
+        }
+    });
+    return unpacked;
+}
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Busca e agrega as transações dos últimos 'numberOfMonths' meses.
@@ -52,8 +81,17 @@ async function getMonthlySummary(userId, numberOfMonths = 6) {
     try {
         // 4. Executa a consulta e processa os resultados
         const querySnapshot = await getDocs(q);
+        const rawTransactions = [];
         querySnapshot.forEach((doc) => {
-            const transaction = doc.data();
+            rawTransactions.push(doc.data());
+        });
+
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Desdobra as transações divididas antes de agregar
+        const allTransactions = unpackSplitTransactions(rawTransactions);
+        // --- FIM DA ALTERAÇÃO ---
+        
+        allTransactions.forEach((transaction) => {
             const transactionDate = transaction.date.toDate();
             const monthYear = `${(transactionDate.getMonth() + 1).toString().padStart(2, '0')}/${transactionDate.getFullYear()}`;
 
