@@ -116,14 +116,13 @@ p { margin-top: 1.5rem; }
 a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para os contêineres de "página" */
+/* Estilos para os contêineres de "página" */
 #dashboard-container, #investments-container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: var(--header-height) 2rem 2rem 2rem; /* Espaçamento para o cabeçalho fixo */
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos para o cabeçalho fixo e global */
 #application-wrapper > header {
@@ -152,7 +151,6 @@ a:hover { text-decoration: underline; }
     align-items: center;
 }
 
-/* INÍCIO DA ALTERAÇÃO - Estilo para os novos botões de ícone */
 .header-icon-button {
     font-size: 1.5rem; /* Tamanho do emoji/ícone */
     padding: 0.5rem;
@@ -171,7 +169,6 @@ a:hover { text-decoration: underline; }
     background-color: var(--background-color);
     text-decoration: none;
 }
-/* FIM DA ALTERAÇÃO */
 
 #app-content > section {
     margin-bottom: 1rem;
@@ -256,7 +253,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     border-left: 5px solid;
 }
 #transactions-list li.revenue { border-left-color: var(--revenue-color); }
-#transactions-list li.expense { border-left-color: var(--expense-color); }
+#transactions-list li.expense { border-left-color: var(--error-color); }
 #transactions-list li.transfer { border-left-color: var(--secondary-color); }
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
@@ -267,6 +264,77 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .action-btn:hover { transform: scale(1.2); }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para as listas de Investimentos */
+#portfolios-list, #asset-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+.portfolio-item, .asset-item {
+    background-color: var(--container-bg-color);
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.portfolio-item:hover, .asset-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.portfolio-info, .asset-info {
+    flex-grow: 1;
+    cursor: pointer;
+    text-align: left;
+}
+
+.portfolio-name, .asset-ticker {
+    font-weight: bold;
+    display: block;
+    color: var(--primary-color);
+}
+
+.asset-name {
+    font-size: 0.9rem;
+    display: block;
+}
+
+.portfolio-description, .asset-type {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.portfolio-summary, .asset-summary {
+    text-align: right;
+    margin-left: 1rem;
+}
+
+.portfolio-value, .asset-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: block;
+    font-family: monospace;
+}
+
+.asset-quantity {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.portfolio-actions, .asset-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos de Notificações (Toasts) */
 #notification-container {
@@ -361,7 +429,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 /* Estilos Específicos do Modal de Cartões e Listas de Admin */
 #user-list, #recurring-list, #budget-list, #account-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
-#credit-card-list, #portfolios-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
+#credit-card-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
 #credit-card-list li {
     background-color: var(--background-color); padding: 0.8rem; margin-bottom: 0.5rem;
     border-radius: 5px; display: flex; justify-content: space-between; align-items: center; text-align: left;
