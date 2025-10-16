@@ -51,6 +51,10 @@ const splitTransactionButton = document.getElementById('split-transaction-button
 const addSplitForm = document.getElementById('add-split-form');
 const splitList = document.getElementById('split-list');
 const confirmSplitButton = document.getElementById('confirm-split-button');
+// INÍCIO DA ALTERAÇÃO
+const portfolioFilterSelect = document.getElementById('portfolio-filter-select');
+const backToInvestmentDashboardBtn = document.getElementById('back-to-investment-dashboard-btn');
+// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -107,11 +111,14 @@ export function initializeEventListeners() {
         views.showDashboardView();
     });
 
+    // INÍCIO DA ALTERAÇÃO
     document.getElementById('nav-investments-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showInvestmentsView();
-        await investmentsUI.loadAndRenderPortfolios();
+        // A função loadInvestmentDashboard será responsável por carregar todos os dados do novo dashboard
+        await investmentsUI.loadInvestmentDashboard();
     });
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('nav-cards-button').addEventListener('click', (e) => {
         e.preventDefault();
@@ -391,10 +398,8 @@ export function initializeEventListeners() {
         if (selectedInvoice) await modals.displayInvoiceDetails(selectedInvoice);
     });
 
-    // INÍCIO DA ALTERAÇÃO
     document.getElementById('prev-invoice-button').addEventListener('click', () => handleNavigateInvoice('prev'));
     document.getElementById('next-invoice-button').addEventListener('click', () => handleNavigateInvoice('next'));
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('pay-invoice-button').addEventListener('click', modals.openPayInvoiceModal);
     payInvoiceForm.addEventListener('submit', handleConfirmInvoicePayment);
@@ -573,12 +578,36 @@ export function initializeEventListeners() {
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
     });
+
+    // INÍCIO DA ALTERAÇÃO
+    // Listeners do Novo Dashboard de Investimentos
+    portfolioFilterSelect.addEventListener('change', handlePortfolioFilterChange);
+    backToInvestmentDashboardBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showInvestmentDashboardView();
+    });
+    // FIM DA ALTERAÇÃO
 }
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
 // INÍCIO DA ALTERAÇÃO
+/**
+ * Handler para a mudança do filtro de carteira no dashboard de investimentos.
+ */
+async function handlePortfolioFilterChange(e) {
+    const portfolioId = e.target.value;
+    try {
+        // Esta função irá recarregar e renderizar os componentes do dashboard de investimentos
+        // com base na carteira selecionada ('all' para consolidado).
+        await investmentsUI.updateInvestmentDashboard(portfolioId); 
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
+
 function handleNavigateInvoice(direction) {
     const select = document.getElementById('invoice-period-select');
     if (!select || select.options.length <= 1) return;
@@ -598,7 +627,6 @@ function handleNavigateInvoice(direction) {
         select.dispatchEvent(new Event('change'));
     }
 }
-// FIM DA ALTERAÇÃO
 
 function handleAddSplitItem(e) {
     e.preventDefault();
