@@ -11,9 +11,7 @@ import * as modals from './modals.js';
 import * as charts from './charts.js';
 import { formatCurrency } from './utils.js';
 import { showNotification } from './notifications.js';
-// INÍCIO DA ALTERAÇÃO
 import { unpackSplitTransactions } from '../analytics.js';
-// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const totalRevenueEl = document.getElementById('total-revenue');
@@ -52,7 +50,6 @@ const invoicePeriodSelect = document.getElementById('invoice-period-select');
 // --- Funções de Renderização do Dashboard Principal ---
 
 /** Renderiza o dashboard: calcula totais, exibe a lista, e atualiza gráficos e orçamentos. */
-// --- INÍCIO DA ALTERAÇÃO ---
 export function updateDashboard() {
     const totalBalance = state.userAccounts.reduce((sum, account) => sum + account.currentBalance, 0);
     totalBalanceAccountsEl.textContent = formatCurrency(totalBalance);
@@ -88,7 +85,6 @@ export function updateDashboard() {
     charts.renderExpensesChart(state.filteredTransactions.filter(t => t.type === 'expense'));
     renderBudgetProgress();
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza a lista de transações na tela, com opção de adicionar ao final da lista.
@@ -133,7 +129,6 @@ export function renderTransactionList(transactionsToRender, append = false) {
                 `;
             } else {
                 li.classList.add(transaction.type);
-                // --- INÍCIO DA ALTERAÇÃO ---
                 let categoryDisplay;
                 if (transaction.isSplit) {
                     categoryDisplay = transaction.splits.map(s => s.category).join(', ');
@@ -142,17 +137,25 @@ export function renderTransactionList(transactionsToRender, append = false) {
                         ? `${transaction.category} / ${transaction.subcategory}` 
                         : transaction.category;
                 }
+
+                // --- INÍCIO DA ALTERAÇÃO ---
+                const tagsHtml = (transaction.tags && transaction.tags.length > 0)
+                    ? `<div class="transaction-tags">
+                        ${transaction.tags.map(tag => `<span class="tag-badge">#${tag}</span>`).join('')}
+                       </div>`
+                    : '';
                 // --- FIM DA ALTERAÇÃO ---
 
                 const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
                 const accountName = account ? account.name : 'Conta não informada';
 
                 li.innerHTML = `
-                    <div style="text-align: left;">
+                    <div style="text-align: left; flex-grow: 1;">
                         <span class="transaction-description">${transaction.description}</span>
                         <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
                             ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
                         </span>
+                        ${tagsHtml}
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <span class="transaction-amount">${formatCurrency(transaction.amount)}</span>
@@ -540,7 +543,6 @@ function renderAccountsSummaryList() {
 }
 
 /** Renderiza as barras de progresso dos orçamentos no dashboard. */
-// --- INÍCIO DA ALTERAÇÃO ---
 function renderBudgetProgress() {
     budgetProgressList.innerHTML = '';
 
@@ -580,4 +582,3 @@ function renderBudgetProgress() {
         budgetProgressList.appendChild(li);
     });
 }
-// --- FIM DA ALTERAÇÃO ---
