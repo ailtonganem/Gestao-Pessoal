@@ -116,6 +116,20 @@
                     </div>
                 </section>
     
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <section class="dashboard-section" data-section-id="upcoming-invoices" draggable="true">
+                    <div class="section-header">
+                        <h2>Próximas Faturas</h2>
+                        <span class="toggle-icon">&#9658;</span>
+                    </div>
+                    <div class="section-content">
+                        <ul id="upcoming-invoices-list">
+                            <li>Carregando faturas...</li>
+                        </ul>
+                    </div>
+                </section>
+                <!-- FIM DA ALTERAÇÃO -->
+
                 <section class="dashboard-section" data-section-id="expenses-chart" draggable="true">
                     <div class="section-header">
                         <h2>Análise de Despesas por Categoria</h2>
@@ -201,13 +215,11 @@
                                     <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
                                     <datalist id="subcategory-suggestions"></datalist>
                                 </div>
-                                <!-- INÍCIO DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="transaction-tags">Tags (opcional)</label>
                                     <input type="text" id="transaction-tags" placeholder="Ex: viagem, reforma, projetoX">
                                     <p class="subtitle" style="text-align: left; font-size: 0.8rem; margin-top: 0.2rem;">Separe as tags por vírgula (,)</p>
                                 </div>
-                                <!-- FIM DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="payment-method">Método de Pagamento</label>
                                     <select id="payment-method" required>
@@ -321,12 +333,10 @@
                                         <option value="all">Todas</option>
                                     </select>
                                 </div>
-                                <!-- INÍCIO DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="filter-tag">Filtrar por Tag</label>
                                     <input type="text" id="filter-tag" placeholder="Ex: viagem">
                                 </div>
-                                <!-- FIM DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="filter-payment-method">Método de Pagamento</label>
                                     <select id="filter-payment-method">
@@ -483,12 +493,10 @@
                     <label for="edit-transaction-category">Categoria</label>
                     <select id="edit-transaction-category" required></select>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-transaction-tags">Tags (opcional)</label>
                     <input type="text" id="edit-transaction-tags" placeholder="Separe as tags por vírgula">
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-payment-method">Método de Pagamento</label>
                     <select id="edit-payment-method" required>
