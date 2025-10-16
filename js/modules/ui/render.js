@@ -138,13 +138,11 @@ export function renderTransactionList(transactionsToRender, append = false) {
                         : transaction.category;
                 }
 
-                // --- INÍCIO DA ALTERAÇÃO ---
                 const tagsHtml = (transaction.tags && transaction.tags.length > 0)
                     ? `<div class="transaction-tags">
                         ${transaction.tags.map(tag => `<span class="tag-badge">#${tag}</span>`).join('')}
                        </div>`
                     : '';
-                // --- FIM DA ALTERAÇÃO ---
 
                 const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
                 const accountName = account ? account.name : 'Conta não informada';
