@@ -23,8 +23,9 @@ const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
 const advancePaymentModal = document.getElementById('advance-payment-modal');
-// INÍCIO DA ALTERAÇÃO
 const editTransferModal = document.getElementById('edit-transfer-modal');
+// INÍCIO DA ALTERAÇÃO
+const editCardModal = document.getElementById('edit-card-modal');
 // FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
@@ -61,6 +62,15 @@ const invoiceCardName = document.getElementById('invoice-card-name');
 const invoicePeriodSelect = document.getElementById('invoice-period-select');
 const payInvoiceButton = document.getElementById('pay-invoice-button');
 
+// INÍCIO DA ALTERAÇÃO
+// Elementos do Modal de Edição de Cartão
+const editCardIdInput = document.getElementById('edit-card-id');
+const editCardNameInput = document.getElementById('edit-card-name');
+const editCardClosingDayInput = document.getElementById('edit-card-closing-day');
+const editCardDueDayInput = document.getElementById('edit-card-due-day');
+const editCardLimitInput = document.getElementById('edit-card-limit');
+// FIM DA ALTERAÇÃO
+
 // Elementos do Modal de Configurações
 const adminTabButton = document.getElementById('admin-tab-button');
 
@@ -73,14 +83,13 @@ const advancePaymentInvoiceIdInput = document.getElementById('advance-payment-in
 const advancePaymentDateInput = document.getElementById('advance-payment-date');
 const advancePaymentAmountInput = document.getElementById('advance-payment-amount');
 
-// INÍCIO DA ALTERAÇÃO - Elementos do Modal de Edição de Transferência
+// Elementos do Modal de Edição de Transferência
 const editTransferIdInput = document.getElementById('edit-transfer-id');
 const editTransferDescriptionInput = document.getElementById('edit-transfer-description');
 const editTransferAmountInput = document.getElementById('edit-transfer-amount');
 const editTransferDateInput = document.getElementById('edit-transfer-date');
 const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
 const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento do Modal de Edição de Transação ---
@@ -173,6 +182,24 @@ export function openCardModal() {
 export function closeCardModal() {
     creditCardModal.style.display = 'none';
 }
+
+// INÍCIO DA ALTERAÇÃO
+export function openEditCardModal(card) {
+    editCardIdInput.value = card.id;
+    editCardNameInput.value = card.name;
+    editCardClosingDayInput.value = card.closingDay;
+    editCardDueDayInput.value = card.dueDay;
+    editCardLimitInput.value = card.limit;
+    
+    editCardModal.style.display = 'flex';
+}
+
+export function closeEditCardModal() {
+    const form = document.getElementById('edit-credit-card-form');
+    if(form) form.reset();
+    editCardModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
 
 export function showInvoiceDetailsView(card) {
     state.setSelectedCardForInvoiceView(card);
@@ -344,8 +371,6 @@ export function closeAdvancePaymentModal() {
     advancePaymentModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para o modal de edição de transferência
-
 /**
  * Abre o modal para editar uma transferência, preenchendo os dados existentes.
  * @param {object} transfer - O objeto da transferência a ser editada.
@@ -375,4 +400,3 @@ export function closeEditTransferModal() {
     }
     editTransferModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
