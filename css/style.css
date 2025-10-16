@@ -109,6 +109,11 @@ button:hover { background-color: #2980b9; }
 button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
 .button-secondary { background-color: #7f8c8d; font-size: 0.9rem; padding: 0.5rem 1rem; }
 .button-secondary:hover { background-color: #6c7a7d; }
+.button-link {
+    background: none; border: none; color: var(--secondary-color); font-weight: bold;
+    cursor: pointer; padding: 0; text-decoration: underline;
+}
+
 
 /* Estilos para os links e subtítulos */
 p { margin-top: 1.5rem; }
@@ -258,6 +263,23 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
+/* INÍCIO DA ALTERAÇÃO */
+.transaction-tags {
+    margin-top: 0.25rem;
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+.tag-badge {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+/* FIM DA ALTERAÇÃO */
+
 /* Estilos dos Botões de Ação na Lista */
 .transaction-actions { display: flex; gap: 0.5rem; }
 .action-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.2rem; transition: transform 0.2s ease; }
@@ -265,7 +287,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para as listas de Investimentos */
+/* Estilos para as listas de Investimentos */
 #portfolios-list, #asset-list {
     list-style: none;
     padding: 0;
@@ -334,7 +356,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     gap: 0.5rem;
     justify-content: flex-end;
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos de Notificações (Toasts) */
 #notification-container {
@@ -364,7 +385,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button {
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -375,7 +396,10 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-edit-invoice-tx-modal-button:hover, .close-edit-invoice-tx-modal-button:focus,
 .close-pay-invoice-modal-button:hover, .close-pay-invoice-modal-button:focus,
 .close-advance-payment-modal-button:hover, .close-advance-payment-modal-button:focus,
-.close-edit-transfer-modal-button:hover, .close-edit-transfer-modal-button:focus {
+.close-edit-transfer-modal-button:hover, .close-edit-transfer-modal-button:focus,
+.close-edit-card-modal-button:hover, .close-edit-card-modal-button:focus,
+.close-split-modal-button:hover, .close-split-modal-button:focus,
+.close-asset-movement-modal-button:hover, .close-asset-movement-modal-button:focus {
     color: var(--text-color);
 }
 
