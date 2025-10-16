@@ -71,6 +71,9 @@
         <header>
             <h1>Dashboard</h1>
             <div class="header-buttons">
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <button id="investments-button" class="button-secondary">Meus Investimentos</button>
+                <!-- FIM DA ALTERAÇÃO -->
                 <button id="settings-button" class="button-secondary">Configurações</button>
                 <button id="manage-cards-button" class="button-secondary">Gerenciar Cartões</button>
                 <button id="logout-button">Sair</button>
@@ -82,6 +85,12 @@
                     <h3>Saldo Total em Contas</h3>
                     <p id="total-balance-accounts">R$ 0,00</p>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div class="summary-card">
+                    <h3>Patrimônio em Investimentos</h3>
+                    <p id="total-investments-balance">R$ 0,00</p>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div class="summary-card">
                     <h3>Receitas (no período)</h3>
                     <p id="total-revenue">R$ 0,00</p>
@@ -90,12 +99,10 @@
                     <h3>Despesas (no período)</h3>
                     <p id="total-expenses">R$ 0,00</p>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="summary-card">
                     <h3>Balanço (no período)</h3>
                     <p id="period-balance">R$ 0,00</p>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
             </section>
             
             <section class="dashboard-section" data-section-id="accounts-summary" draggable="true">
@@ -730,6 +737,51 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <!-- Modal de Investimentos -->
+    <div id="investments-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-investments-modal-button">&times;</span>
+            <h2>Meus Investimentos</h2>
+
+            <!-- Visualização das Carteiras (Padrão) -->
+            <div id="portfolios-view">
+                <section id="portfolio-list-section">
+                    <h3>Minhas Carteiras</h3>
+                    <p class="subtitle">Selecione uma carteira para ver os ativos.</p>
+                    <ul id="portfolios-list">
+                        <!-- Lista de carteiras será renderizada aqui via JS -->
+                    </ul>
+                </section>
+                <section id="add-portfolio-form-section">
+                    <h3>Criar Nova Carteira</h3>
+                    <form id="add-portfolio-form">
+                        <div class="form-control">
+                            <label for="portfolio-name">Nome da Carteira</label>
+                            <input type="text" id="portfolio-name" placeholder="Ex: Rumo à Aposentadoria" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="portfolio-description">Descrição (opcional)</label>
+                            <input type="text" id="portfolio-description" placeholder="Ex: Foco em dividendos e longo prazo">
+                        </div>
+                        <button type="submit">Criar Carteira</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- Visualização dos Ativos (Oculta por padrão) -->
+            <div id="assets-view" style="display: none;">
+                <h3 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h3>
+                <button id="back-to-portfolios-button" class="button-secondary">&larr; Voltar para Carteiras</button>
+                
+                <!-- Conteúdo futuro: lista de ativos, formulários, etc. -->
+                <p style="margin-top: 2rem;">A gestão de ativos será implementada aqui.</p>
+
+            </div>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
