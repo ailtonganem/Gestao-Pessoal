@@ -272,7 +272,6 @@ export function populateCategoryFilter() {
 // --- Funções de Renderização para Modais ---
 
 /** Renderiza a lista de cartões de crédito no modal. */
-// --- INÍCIO DA ALTERAÇÃO ---
 export function renderCreditCardList() {
     creditCardList.innerHTML = '';
     if (state.userCreditCards.length === 0) {
@@ -290,13 +289,17 @@ export function renderCreditCardList() {
                         Fecha dia ${card.closingDay} | Vence dia ${card.dueDay}
                     </small>
                 </div>
-                <button class="action-btn delete-btn" data-card-id="${card.id}" title="Excluir cartão">&times;</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div class="transaction-actions">
+                    <button class="action-btn edit-btn" data-card-id="${card.id}" title="Editar Cartão">&#9998;</button>
+                    <button class="action-btn delete-btn" data-card-id="${card.id}" title="Excluir cartão">&times;</button>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
             `;
             creditCardList.appendChild(li);
         });
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /** Renderiza o conteúdo da tela de faturas quando não há faturas. */
 export function renderEmptyInvoiceDetails() {
