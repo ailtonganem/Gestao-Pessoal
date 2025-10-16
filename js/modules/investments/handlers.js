@@ -21,8 +21,10 @@ const backToPortfoliosButton = document.getElementById('back-to-portfolios-butto
 const assetList = document.getElementById('asset-list');
 const closeMovementModalButton = document.querySelector('.close-asset-movement-modal-button');
 const addMovementForm = document.getElementById('add-movement-form');
-// INÍCIO DA ALTERAÇÃO
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
+// INÍCIO DA ALTERAÇÃO
+const closeProventoModalButton = document.querySelector('.close-provento-modal-button');
+const addProventoForm = document.getElementById('add-provento-form');
 // FIM DA ALTERAÇÃO
 
 
@@ -37,11 +39,13 @@ export function initializeInvestmentEventListeners() {
     assetList.addEventListener('click', handleAssetListActions);
     closeMovementModalButton.addEventListener('click', investmentsUI.closeMovementModal);
     addMovementForm.addEventListener('submit', handleAddMovement);
-    // INÍCIO DA ALTERAÇÃO
     goToPortfoliosManagementBtn.addEventListener('click', (e) => {
         e.preventDefault();
         investmentsUI.showPortfoliosManagementView();
     });
+    // INÍCIO DA ALTERAÇÃO
+    closeProventoModalButton.addEventListener('click', investmentsUI.closeProventoModal);
+    addProventoForm.addEventListener('submit', handleAddProvento);
     // FIM DA ALTERAÇÃO
 }
 
@@ -146,6 +150,9 @@ async function handleAddAsset(e) {
 async function handleAssetListActions(e) {
     const deleteButton = e.target.closest('.delete-btn[data-asset-id]');
     const addMovementButton = e.target.closest('.add-movement-btn[data-asset-id]');
+    // INÍCIO DA ALTERAÇÃO
+    const addProventoButton = e.target.closest('.add-provento-btn[data-asset-id]');
+    // FIM DA ALTERAÇÃO
     
     if (deleteButton) {
         e.stopPropagation();
@@ -170,7 +177,13 @@ async function handleAssetListActions(e) {
         e.stopPropagation();
         const assetId = addMovementButton.dataset.assetId;
         investmentsUI.openMovementModal(assetId);
+    // INÍCIO DA ALTERAÇÃO
+    } else if (addProventoButton) {
+        e.stopPropagation();
+        const assetId = addProventoButton.dataset.assetId;
+        investmentsUI.openProventoModal(assetId);
     }
+    // FIM DA ALTERAÇÃO
 }
 
 /**
@@ -216,3 +229,48 @@ async function handleAddMovement(e) {
         submitButton.disabled = false;
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Handler para o formulário de adicionar um novo provento.
+ */
+async function handleAddProvento(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const selectedPortfolio = state.selectedPortfolioForAssetsView;
+    const assetId = form['provento-asset-id'].value;
+
+    if (!selectedPortfolio || !assetId) {
+        showNotification("Erro: Carteira ou ativo não identificado para registrar o provento.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    const proventoData = {
+        proventoType: form['provento-type'].value,
+        paymentDate: form['provento-payment-date'].value,
+        totalAmount: parseFloat(form['provento-total-amount'].value),
+        accountId: form['provento-account'].value,
+        userId: state.currentUser.uid,
+    };
+
+    try {
+        await movements.addProvento(selectedPortfolio.id, assetId, proventoData);
+        showNotification("Provento registrado com sucesso!");
+        investmentsUI.closeProventoModal();
+        
+        // Atualiza as telas para refletir a nova receita
+        await investmentsUI.loadInvestmentDashboard(); // Atualiza o dashboard de investimentos
+        await loadUserDashboard(); // Atualiza o dashboard principal
+        await loadUserAccounts();  // Atualiza os saldos das contas
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
