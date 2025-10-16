@@ -355,7 +355,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     justify-content: flex-end;
 }
 
-/* INÍCIO DA ALTERAÇÃO */
 /* Estilos para a lista de Próximas Faturas */
 #upcoming-invoices-list {
     list-style-type: none;
@@ -383,7 +382,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     font-family: monospace;
     font-size: 1.1rem;
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos de Notificações (Toasts) */
 #notification-container {
@@ -538,6 +536,17 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 #back-to-cards-button { margin-bottom: 1.5rem; }
 #invoice-summary { text-align: left; margin: 1rem 0; }
 #invoice-summary p { margin: 0.5rem 0; font-size: 1rem; }
+
+/* INÍCIO DA ALTERAÇÃO */
+#invoice-analysis-section {
+    margin: 1.5rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+#invoice-analysis-section .chart-container {
+    height: 250px;
+}
+/* FIM DA ALTERAÇÃO */
 
 .status-badge {
     padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;
