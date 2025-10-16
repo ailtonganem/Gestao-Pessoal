@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 import {
     collection,
     addDoc,
@@ -16,12 +14,19 @@ import {
     orderBy,
     Timestamp,
     writeBatch,
-    updateDoc
+    updateDoc,
+    increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { findOrCreateInvoice } from './invoices.js';
+import { updateBalanceInBatch } from './accounts.js';
+
 
 /**
  * Adiciona uma nova configuração de transação recorrente no Firestore.
  * @param {object} recurringData - Dados da recorrência.
+ * @param {string} recurringData.paymentMethod - 'account_debit' ou 'credit_card'.
+ * @param {string|null} recurringData.accountId - ID da conta se o método for 'account_debit'.
+ * @param {string|null} recurringData.cardId - ID do cartão se o método for 'credit_card'.
  * @returns {Promise<DocumentReference>}
  */
 async function addRecurringTransaction(recurringData) {
@@ -97,54 +102,87 @@ async function deleteRecurringTransaction(recurringId) {
 /**
  * Verifica as recorrências de um usuário e cria as transações que venceram no mês atual.
  * @param {string} userId - O ID do usuário.
+ * @param {Array<object>} userCreditCards - Lista de cartões de crédito do usuário.
  * @returns {Promise<number>} O número de transações que foram criadas.
  */
-async function processRecurringTransactions(userId) {
+async function processRecurringTransactions(userId, userCreditCards) {
     const recurringTxs = await getRecurringTransactions(userId);
     if (recurringTxs.length === 0) {
         return 0;
     }
 
-    const batch = writeBatch(db);
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0-11
-    let transactionsCreated = 0;
-
-    recurringTxs.forEach(tx => {
+    
+    const transactionsToProcess = recurringTxs.filter(tx => {
         const lastProcessedDate = tx.lastProcessed ? tx.lastProcessed.toDate() : null;
         const hasBeenProcessedThisMonth = lastProcessedDate &&
                                          lastProcessedDate.getFullYear() === currentYear &&
                                          lastProcessedDate.getMonth() === currentMonth;
+        return !hasBeenProcessedThisMonth && tx.dayOfMonth <= now.getDate();
+    });
 
-        // Se já foi processada neste mês, ou o dia de lançamento ainda não chegou, pula.
-        if (hasBeenProcessedThisMonth || tx.dayOfMonth > now.getDate()) {
-            return;
-        }
+    if (transactionsToProcess.length === 0) {
+        return 0;
+    }
 
-        // Cria a nova transação
+    const batch = writeBatch(db);
+    let transactionsCreated = 0;
+
+    for (const tx of transactionsToProcess) {
         const transactionDate = new Date(currentYear, currentMonth, tx.dayOfMonth);
-        const newTransactionData = {
-            description: tx.description,
-            amount: tx.amount,
-            type: tx.type,
-            category: tx.category,
-            paymentMethod: 'debit', // Lançamentos automáticos são como débito em conta
-            date: Timestamp.fromDate(transactionDate),
-            createdAt: Timestamp.now(),
-            userId: userId,
-            isRecurring: true // Flag para identificar a origem
-        };
+
+        if (tx.paymentMethod === 'credit_card' && tx.cardId) {
+            const card = userCreditCards.find(c => c.id === tx.cardId);
+            if (!card) {
+                console.error(`Cartão ${tx.cardId} da recorrência "${tx.description}" não encontrado.`);
+                continue;
+            }
+
+            const invoiceId = await findOrCreateInvoice(card.id, card, userId, transactionDate);
+            const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+            const invoiceTransactionRef = doc(collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS));
+
+            const newInvoiceTxData = {
+                description: tx.description,
+                amount: tx.amount,
+                category: tx.category,
+                purchaseDate: Timestamp.fromDate(transactionDate),
+                createdAt: Timestamp.now(),
+                isRecurring: true
+            };
+            batch.set(invoiceTransactionRef, newInvoiceTxData);
+            batch.update(invoiceRef, { totalAmount: increment(tx.amount) });
         
-        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
-        batch.set(newTransactionRef, newTransactionData);
+        } else { // 'account_debit' or legacy
+            if (!tx.accountId) {
+                console.error(`Conta da recorrência "${tx.description}" não encontrada.`);
+                continue;
+            }
+            const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+            const newTransactionData = {
+                description: tx.description,
+                amount: tx.amount,
+                type: tx.type,
+                category: tx.category,
+                paymentMethod: 'debit',
+                date: Timestamp.fromDate(transactionDate),
+                createdAt: Timestamp.now(),
+                userId: userId,
+                accountId: tx.accountId,
+                isRecurring: true
+            };
+            batch.set(newTransactionRef, newTransactionData);
+            updateBalanceInBatch(batch, tx.accountId, tx.amount, tx.type);
+        }
 
         // Marca a recorrência como processada para o mês atual.
         const recurringDocRef = doc(db, COLLECTIONS.RECURRING_TRANSACTIONS, tx.id);
         batch.update(recurringDocRef, { lastProcessed: Timestamp.now() });
         
         transactionsCreated++;
-    });
+    }
 
     if (transactionsCreated > 0) {
         await batch.commit();
