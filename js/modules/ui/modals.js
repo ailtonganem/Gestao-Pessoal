@@ -6,7 +6,7 @@
 
 import * as state from '../state.js';
 import * as render from './render.js';
-import { formatDateToInput } from './utils.js';
+import { formatDateToInput, formatCurrency } from './utils.js';
 import { showNotification } from './notifications.js';
 import { getInvoices, getInvoiceTransactions } from '../invoices.js';
 import { getRecurringTransactions } from '../recurring.js';
@@ -14,6 +14,9 @@ import { getAllUsers } from '../admin.js';
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
+// INÍCIO DA ALTERAÇÃO
+export let _currentSplits = []; // Armazena os itens da divisão da transação
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM (Modais e seus conteúdos) ---
 const editModal = document.getElementById('edit-modal');
@@ -24,8 +27,9 @@ const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-mod
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
 const advancePaymentModal = document.getElementById('advance-payment-modal');
 const editTransferModal = document.getElementById('edit-transfer-modal');
-// INÍCIO DA ALTERAÇÃO
 const editCardModal = document.getElementById('edit-card-modal');
+// INÍCIO DA ALTERAÇÃO
+const splitTransactionModal = document.getElementById('split-transaction-modal');
 // FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
@@ -62,13 +66,21 @@ const invoiceCardName = document.getElementById('invoice-card-name');
 const invoicePeriodSelect = document.getElementById('invoice-period-select');
 const payInvoiceButton = document.getElementById('pay-invoice-button');
 
-// INÍCIO DA ALTERAÇÃO
 // Elementos do Modal de Edição de Cartão
 const editCardIdInput = document.getElementById('edit-card-id');
 const editCardNameInput = document.getElementById('edit-card-name');
 const editCardClosingDayInput = document.getElementById('edit-card-closing-day');
 const editCardDueDayInput = document.getElementById('edit-card-due-day');
 const editCardLimitInput = document.getElementById('edit-card-limit');
+
+// INÍCIO DA ALTERAÇÃO
+// Elementos do Modal de Divisão
+const splitTotalAmountEl = document.getElementById('split-total-amount');
+const splitRemainingAmountEl = document.getElementById('split-remaining-amount');
+const splitListEl = document.getElementById('split-list');
+const splitCategorySelect = document.getElementById('split-category');
+const confirmSplitButton = document.getElementById('confirm-split-button');
+let totalSplitAmount = 0;
 // FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Configurações
@@ -182,8 +194,6 @@ export function openCardModal() {
 export function closeCardModal() {
     creditCardModal.style.display = 'none';
 }
-
-// INÍCIO DA ALTERAÇÃO
 export function openEditCardModal(card) {
     editCardIdInput.value = card.id;
     editCardNameInput.value = card.name;
@@ -199,7 +209,72 @@ export function closeEditCardModal() {
     if(form) form.reset();
     editCardModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
+
+// --- INÍCIO DA ALTERAÇÃO: Funções de Gerenciamento do Modal de Divisão ---
+
+export function openSplitModal(totalAmount, type) {
+    if (isNaN(totalAmount) || totalAmount <= 0) {
+        showNotification('Por favor, insira um valor de transação válido antes de dividir.', 'error');
+        return;
+    }
+    totalSplitAmount = totalAmount;
+    _currentSplits = []; // Limpa divisões anteriores
+    
+    render.populateCategorySelects(type, splitCategorySelect);
+    updateSplitSummary();
+    renderSplits();
+
+    splitTransactionModal.style.display = 'flex';
+}
+
+export function closeSplitModal() {
+    splitTransactionModal.style.display = 'none';
+    _currentSplits = [];
+    totalSplitAmount = 0;
+}
+
+export function addSplitItem(split) {
+    _currentSplits.push(split);
+    updateSplitSummary();
+    renderSplits();
+}
+
+export function removeSplitItem(index) {
+    _currentSplits.splice(index, 1);
+    updateSplitSummary();
+    renderSplits();
+}
+
+function updateSplitSummary() {
+    const spentAmount = _currentSplits.reduce((sum, split) => sum + split.amount, 0);
+    const remainingAmount = totalSplitAmount - spentAmount;
+
+    splitTotalAmountEl.textContent = formatCurrency(totalSplitAmount);
+    splitRemainingAmountEl.textContent = formatCurrency(remainingAmount);
+    splitRemainingAmountEl.style.color = remainingAmount < 0 ? 'var(--error-color)' : 'var(--text-color)';
+
+    // Habilita o botão de confirmar apenas se a divisão estiver correta
+    confirmSplitButton.disabled = remainingAmount !== 0;
+}
+
+function renderSplits() {
+    splitListEl.innerHTML = '';
+    if (_currentSplits.length === 0) {
+        splitListEl.innerHTML = '<li style="text-align: center; color: #7f8c8d;">Nenhuma divisão adicionada.</li>';
+        return;
+    }
+
+    _currentSplits.forEach((split, index) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
+        li.innerHTML = `
+            <span>${split.category}: ${formatCurrency(split.amount)}</span>
+            <button class="action-btn delete-btn" data-index="${index}" title="Excluir Divisão">&times;</button>
+        `;
+        splitListEl.appendChild(li);
+    });
+}
+// --- FIM DA ALTERAÇÃO ---
 
 export function showInvoiceDetailsView(card) {
     state.setSelectedCardForInvoiceView(card);
