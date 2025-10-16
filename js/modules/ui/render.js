@@ -11,6 +11,9 @@ import * as modals from './modals.js';
 import * as charts from './charts.js';
 import { formatCurrency } from './utils.js';
 import { showNotification } from './notifications.js';
+// INÍCIO DA ALTERAÇÃO
+import { unpackSplitTransactions } from '../analytics.js';
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const totalRevenueEl = document.getElementById('total-revenue');
@@ -49,13 +52,17 @@ const invoicePeriodSelect = document.getElementById('invoice-period-select');
 // --- Funções de Renderização do Dashboard Principal ---
 
 /** Renderiza o dashboard: calcula totais, exibe a lista, e atualiza gráficos e orçamentos. */
+// --- INÍCIO DA ALTERAÇÃO ---
 export function updateDashboard() {
     const totalBalance = state.userAccounts.reduce((sum, account) => sum + account.currentBalance, 0);
     totalBalanceAccountsEl.textContent = formatCurrency(totalBalance);
 
+    // Desdobra as transações para garantir que os cálculos usem os dados corretos
+    const unpackedTransactions = unpackSplitTransactions(state.allTransactions);
+
     let periodRevenue = 0;
     let periodExpenses = 0;
-    state.allTransactions.forEach(t => {
+    unpackedTransactions.forEach(t => {
         if (t.type === 'revenue') {
             periodRevenue += t.amount;
         } else if (t.type === 'expense') {
@@ -77,10 +84,11 @@ export function updateDashboard() {
     }
 
     renderAccountsSummaryList();
-    renderTransactionList(state.filteredTransactions);
-    charts.renderExpensesChart(state.filteredTransactions.filter(t => t.type === 'expense')); // Garante que o gráfico só receba despesas
+    renderTransactionList(state.filteredTransactions); // A lista de exibição não precisa ser desdobrada
+    charts.renderExpensesChart(state.filteredTransactions.filter(t => t.type === 'expense'));
     renderBudgetProgress();
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza a lista de transações na tela, com opção de adicionar ao final da lista.
@@ -125,9 +133,16 @@ export function renderTransactionList(transactionsToRender, append = false) {
                 `;
             } else {
                 li.classList.add(transaction.type);
-                const categoryDisplay = transaction.subcategory 
-                    ? `${transaction.category} / ${transaction.subcategory}` 
-                    : transaction.category;
+                // --- INÍCIO DA ALTERAÇÃO ---
+                let categoryDisplay;
+                if (transaction.isSplit) {
+                    categoryDisplay = transaction.splits.map(s => s.category).join(', ');
+                } else {
+                    categoryDisplay = transaction.subcategory 
+                        ? `${transaction.category} / ${transaction.subcategory}` 
+                        : transaction.category;
+                }
+                // --- FIM DA ALTERAÇÃO ---
 
                 const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
                 const accountName = account ? account.name : 'Conta não informada';
@@ -181,7 +196,6 @@ export function populateCategorySelects(type, selectElement) {
 }
 
 /** Popula os <select> de cartão de crédito com os cartões do usuário. */
-// --- INÍCIO DA ALTERAÇÃO ---
 export function populateCreditCardSelects() {
     const recurringCardSelect = document.getElementById('recurring-card');
     const editRecurringCardSelect = document.getElementById('edit-recurring-card');
@@ -233,7 +247,6 @@ export function populateAccountSelects() {
         });
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
@@ -440,7 +453,6 @@ export function renderBudgetList() {
 }
 
 /** Renderiza a lista de transações recorrentes a partir dos dados do estado global. */
-// --- INÍCIO DA ALTERAÇÃO ---
 export function renderRecurringList() {
     const recurringTxs = state.userRecurringTransactions;
     recurringList.innerHTML = '';
@@ -477,7 +489,6 @@ export function renderRecurringList() {
         recurringList.appendChild(li);
     });
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza a lista de usuários para o admin.
@@ -529,6 +540,7 @@ function renderAccountsSummaryList() {
 }
 
 /** Renderiza as barras de progresso dos orçamentos no dashboard. */
+// --- INÍCIO DA ALTERAÇÃO ---
 function renderBudgetProgress() {
     budgetProgressList.innerHTML = '';
 
@@ -537,7 +549,9 @@ function renderBudgetProgress() {
         return;
     }
 
-    const currentMonthTransactions = state.allTransactions
+    const unpackedTransactions = unpackSplitTransactions(state.allTransactions);
+
+    const currentMonthTransactions = unpackedTransactions
         .filter(t => t.date.getMonth() === new Date().getMonth() && t.date.getFullYear() === new Date().getFullYear());
 
     state.userBudgets.forEach(budget => {
@@ -566,3 +580,4 @@ function renderBudgetProgress() {
         budgetProgressList.appendChild(li);
     });
 }
+// --- FIM DA ALTERAÇÃO ---
