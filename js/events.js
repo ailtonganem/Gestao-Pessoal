@@ -19,10 +19,9 @@ import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
 import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
-// INÍCIO DA ALTERAÇÃO - Importação dos futuros módulos de investimento
+// Importação dos módulos de investimento
 import * as portfolios from './modules/investments/portfolios.js';
 import * as investmentsUI from './modules/investments/ui.js';
-// FIM DA ALTERAÇÃO
 
 
 // --- Módulos de UI ---
@@ -49,9 +48,7 @@ const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
-// INÍCIO DA ALTERAÇÃO
 const addPortfolioForm = document.getElementById('add-portfolio-form');
-// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -474,12 +471,11 @@ export function initializeEventListeners() {
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
 
-    // INÍCIO DA ALTERAÇÃO - Listeners para o novo modal de investimentos
+    // Listeners para o novo modal de investimentos
     document.getElementById('investments-button').addEventListener('click', investmentsUI.openInvestmentsModal);
     document.querySelector('.close-investments-modal-button').addEventListener('click', investmentsUI.closeInvestmentsModal);
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
-    // FIM DA ALTERAÇÃO
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -489,7 +485,7 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO - Handler para adicionar uma carteira de investimentos
+// Handler para adicionar uma carteira de investimentos
 async function handleAddPortfolio(e) {
     e.preventDefault();
     const form = e.target;
@@ -506,15 +502,15 @@ async function handleAddPortfolio(e) {
         await portfolios.addPortfolio(portfolioData);
         showNotification("Carteira criada com sucesso!");
         form.reset();
-        // Futuramente, recarregar a lista de carteiras
-        // await investmentsUI.loadAndRenderPortfolios();
+        // INÍCIO DA ALTERAÇÃO
+        await investmentsUI.loadAndRenderPortfolios(); // Atualiza a lista após adicionar
+        // FIM DA ALTERAÇÃO
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
