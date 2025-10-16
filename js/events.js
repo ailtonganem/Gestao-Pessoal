@@ -49,6 +49,9 @@ const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
 const addPortfolioForm = document.getElementById('add-portfolio-form');
+// INÍCIO DA ALTERAÇÃO
+const portfoliosList = document.getElementById('portfolios-list');
+// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -98,7 +101,7 @@ export function initializeEventListeners() {
         }
     });
 
-    // INÍCIO DA ALTERAÇÃO - Listeners de Navegação Principal (Cabeçalho)
+    // Listeners de Navegação Principal (Cabeçalho)
     document.getElementById('nav-dashboard-button').addEventListener('click', (e) => {
         e.preventDefault();
         views.showDashboardView();
@@ -124,7 +127,6 @@ export function initializeEventListeners() {
         e.preventDefault();
         auth.logoutUser().catch(err => showNotification(err.message, 'error'));
     });
-    // FIM DA ALTERAÇÃO
 
 
     // --- Lógica de UI do Dashboard ---
@@ -499,6 +501,9 @@ export function initializeEventListeners() {
     // Listeners para o módulo de investimentos
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
+    // INÍCIO DA ALTERAÇÃO - Delegação de eventos para a lista de carteiras
+    portfoliosList.addEventListener('click', handleDeletePortfolio);
+    // FIM DA ALTERAÇÃO
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -532,6 +537,30 @@ async function handleAddPortfolio(e) {
         submitButton.disabled = false;
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Handler para ações na lista de carteiras (excluir/visualizar)
+async function handleDeletePortfolio(e) {
+    const deleteButton = e.target.closest('.delete-btn[data-portfolio-id]');
+    
+    if (deleteButton) {
+        e.stopPropagation(); // Evita que o clique no botão acione o clique na área da carteira
+        const portfolioId = deleteButton.dataset.portfolioId;
+        
+        // Futuramente, obter o nome da carteira para a mensagem de confirmação
+        if (confirm(`Tem certeza que deseja excluir esta carteira? Esta ação não pode ser desfeita.`)) {
+            try {
+                await portfolios.deletePortfolio(portfolioId);
+                showNotification('Carteira excluída com sucesso!');
+                await investmentsUI.loadAndRenderPortfolios(); // Recarrega a lista
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+    }
+    
+    // Adicionar lógica para visualizar ativos aqui
+}
+// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
