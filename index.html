@@ -552,10 +552,16 @@
             <div id="invoice-details-view" style="display: none;">
                 <h3 id="invoice-card-name">Faturas - [Nome do Cartão]</h3>
                 <button id="back-to-cards-button" class="button-secondary">&larr; Voltar</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="invoice-period-select">Selecionar Fatura</label>
-                    <select id="invoice-period-select"></select>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button id="prev-invoice-button" class="button-secondary" style="padding: 0.5rem;">&lt;</button>
+                        <select id="invoice-period-select" style="flex: 1;"></select>
+                        <button id="next-invoice-button" class="button-secondary" style="padding: 0.5rem;">&gt;</button>
+                    </div>
                 </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div id="invoice-summary" class="summary-card">
                     <p>Total: <strong id="invoice-total-amount">R$ 0,00</strong></p>
                     <p>Vencimento: <span id="invoice-due-date">--/--/----</span></p>
