@@ -375,84 +375,149 @@
             </main>
         </div>
 
-        <!-- Contêiner de Investimentos -->
+        <!-- INÍCIO DA ALTERAÇÃO -->
         <div id="investments-container" style="display: none;">
             <main>
-                <!-- Visualização das Carteiras (Padrão) -->
-                <div id="portfolios-view">
-                    <section id="portfolio-list-section">
-                        <h2>Minhas Carteiras</h2>
-                        <p class="subtitle">Selecione uma carteira para ver os ativos ou crie uma nova abaixo.</p>
-                        <ul id="portfolios-list">
-                            <!-- Lista de carteiras será renderizada aqui via JS -->
-                        </ul>
-                    </section>
-                    <section id="add-portfolio-form-section">
-                        <h3>Criar Nova Carteira</h3>
-                        <form id="add-portfolio-form">
-                            <div class="form-control">
-                                <label for="portfolio-name">Nome da Carteira</label>
-                                <input type="text" id="portfolio-name" placeholder="Ex: Rumo à Aposentadoria" required>
-                            </div>
-                            <div class="form-control">
-                                <label for="portfolio-description">Descrição (opcional)</label>
-                                <input type="text" id="portfolio-description" placeholder="Ex: Foco em dividendos e longo prazo">
-                            </div>
-                            <button type="submit">Criar Carteira</button>
-                        </form>
-                    </section>
-                </div>
-    
-                <!-- Visualização dos Ativos (Oculta por padrão) -->
-                <div id="assets-view" style="display: none;">
-                    <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
-                    <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
+                <!-- Nova Visão do Dashboard de Investimentos -->
+                <div id="investment-dashboard-view">
+                    <div class="investment-dashboard-header">
+                        <h2>Visão Geral</h2>
+                        <div class="form-control">
+                            <label for="portfolio-filter-select">Carteira</label>
+                            <select id="portfolio-filter-select">
+                                <option value="all">Consolidado</option>
+                                <!-- Outras carteiras serão adicionadas via JS -->
+                            </select>
+                        </div>
+                    </div>
                     
-                    <section id="asset-list-section">
-                        <p class="subtitle">Ativos presentes nesta carteira.</p>
-                        <ul id="asset-list">
-                            <!-- Lista de ativos será renderizada aqui via JS -->
-                        </ul>
-                    </section>
+                    <div class="investment-grid">
+                        <div class="investment-card large" id="rentabilidade-card">
+                            <h3>Rentabilidade (1 Ano)</h3>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="rentabilidade-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="investment-card" id="composicao-card">
+                            <h3>Composição</h3>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="composicao-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="investment-card large" id="calendario-card">
+                            <h3>Calendário de Proventos</h3>
+                            <div id="proventos-calendar">
+                                <!-- Conteúdo do calendário será gerado via JS -->
+                                <p>Carregando calendário...</p>
+                            </div>
+                        </div>
+                        <div class="investment-card" id="patrimonio-card">
+                            <h3>Patrimônio</h3>
+                            <div class="chart-container" style="height: 180px;">
+                                <canvas id="patrimonio-chart"></canvas>
+                            </div>
+                             <p id="patrimonio-total-valor" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
+                        </div>
+                        <div class="investment-card" id="proventos-card">
+                            <h3>Proventos</h3>
+                            <div id="proventos-summary">
+                                <!-- Conteúdo do resumo será gerado via JS -->
+                                <p>Carregando proventos...</p>
+                            </div>
+                        </div>
+                        <div class="investment-card" id="altas-baixas-card">
+                            <h3>Altas / Baixas (Mês)</h3>
+                            <div id="altas-baixas-list">
+                                <!-- Conteúdo da lista será gerado via JS -->
+                                <p>Carregando...</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <section id="add-asset-form-section">
-                        <h3>Adicionar Novo Ativo</h3>
-                        <form id="add-asset-form">
-                            <div class="form-control">
-                                <label for="asset-name">Nome do Ativo</label>
-                                <input type="text" id="asset-name" placeholder="Ex: Petrobras PN" required>
-                            </div>
-                            <div class="form-control">
-                                <label for="asset-ticker">Ticker (Código)</label>
-                                <input type="text" id="asset-ticker" placeholder="Ex: PETR4" required>
-                            </div>
-                            <div class="form-control">
-                                <label for="asset-type">Tipo</label>
-                                <select id="asset-type" required>
-                                    <option value="Ação">Ação</option>
-                                    <option value="FII">Fundo Imobiliário (FII)</option>
-                                    <option value="Tesouro Direto">Tesouro Direto</option>
-                                    <option value="Criptomoeda">Criptomoeda</option>
-                                    <option value="Outro">Outro</option>
-                                </select>
-                            </div>
-                            <div class="form-control">
-                                <label for="asset-class">Classe</label>
-                                <select id="asset-class" required>
-                                    <option value="Renda Variável">Renda Variável</option>
-                                    <option value="Renda Fixa">Renda Fixa</option>
-                                </select>
-                            </div>
-                             <div class="form-control">
-                                <label for="asset-broker">Corretora/Exchange</label>
-                                <input type="text" id="asset-broker" placeholder="Ex: XP, Binance">
-                            </div>
-                            <button type="submit">Adicionar Ativo</button>
-                        </form>
-                    </section>
+                    <div class="investment-card full-width" id="investment-history-card">
+                        <h3>Histórico de Operações</h3>
+                        <ul id="investment-history-list">
+                            <li>Carregando histórico...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Visão de Gerenciamento (Antiga 'portfolios-view') - pode ser acessada por um botão -->
+                <div id="portfolios-management-view" style="display: none;">
+                    <h2>Gerenciar Carteiras e Ativos</h2>
+                    <button id="back-to-investment-dashboard-btn" class="button-secondary">&larr; Voltar ao Dashboard</button>
+                    
+                    <div id="portfolios-view">
+                        <section id="portfolio-list-section">
+                            <h3>Minhas Carteiras</h3>
+                            <p class="subtitle">Selecione uma carteira para ver os ativos ou crie uma nova abaixo.</p>
+                            <ul id="portfolios-list"></ul>
+                        </section>
+                        <section id="add-portfolio-form-section">
+                            <h3>Criar Nova Carteira</h3>
+                            <form id="add-portfolio-form">
+                                <div class="form-control">
+                                    <label for="portfolio-name">Nome da Carteira</label>
+                                    <input type="text" id="portfolio-name" placeholder="Ex: Rumo à Aposentadoria" required>
+                                </div>
+                                <div class="form-control">
+                                    <label for="portfolio-description">Descrição (opcional)</label>
+                                    <input type="text" id="portfolio-description" placeholder="Ex: Foco em dividendos e longo prazo">
+                                </div>
+                                <button type="submit">Criar Carteira</button>
+                            </form>
+                        </section>
+                    </div>
+        
+                    <div id="assets-view" style="display: none;">
+                        <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
+                        <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
+                        
+                        <section id="asset-list-section">
+                            <p class="subtitle">Ativos presentes nesta carteira.</p>
+                            <ul id="asset-list"></ul>
+                        </section>
+
+                        <section id="add-asset-form-section">
+                            <h3>Adicionar Novo Ativo</h3>
+                            <form id="add-asset-form">
+                                <div class="form-control">
+                                    <label for="asset-name">Nome do Ativo</label>
+                                    <input type="text" id="asset-name" placeholder="Ex: Petrobras PN" required>
+                                </div>
+                                <div class="form-control">
+                                    <label for="asset-ticker">Ticker (Código)</label>
+                                    <input type="text" id="asset-ticker" placeholder="Ex: PETR4" required>
+                                </div>
+                                <div class="form-control">
+                                    <label for="asset-type">Tipo</label>
+                                    <select id="asset-type" required>
+                                        <option value="Ação">Ação</option>
+                                        <option value="FII">Fundo Imobiliário (FII)</option>
+                                        <option value="Tesouro Direto">Tesouro Direto</option>
+                                        <option value="Criptomoeda">Criptomoeda</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="form-control">
+                                    <label for="asset-class">Classe</label>
+                                    <select id="asset-class" required>
+                                        <option value="Renda Variável">Renda Variável</option>
+                                        <option value="Renda Fixa">Renda Fixa</option>
+                                    </select>
+                                </div>
+                                 <div class="form-control">
+                                    <label for="asset-broker">Corretora/Exchange</label>
+                                    <input type="text" id="asset-broker" placeholder="Ex: XP, Binance">
+                                </div>
+                                <button type="submit">Adicionar Ativo</button>
+                            </form>
+                        </section>
+                    </div>
                 </div>
             </main>
         </div>
+        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
@@ -565,14 +630,12 @@
                     <p>Vencimento: <span id="invoice-due-date">--/--/----</span></p>
                     <p>Status: <span id="invoice-status" class="status-badge">--</span></p>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <section id="invoice-analysis-section" style="margin: 1.5rem 0;">
                     <h4>Análise da Fatura</h4>
                     <div class="chart-container" style="height: 250px;">
                         <canvas id="invoice-spending-chart"></canvas>
                     </div>
                 </section>
-                <!-- FIM DA ALTERAÇÃO -->
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
                 <div class="invoice-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
