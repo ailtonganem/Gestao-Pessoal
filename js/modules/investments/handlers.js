@@ -8,14 +8,10 @@
 import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
-// INÍCIO DA ALTERAÇÃO
 import * as movements from './movements.js';
-// FIM DA ALTERAÇÃO
 import * as investmentsUI from './ui.js';
 import { showNotification } from '../ui/notifications.js';
-// INÍCIO DA ALTERAÇÃO - Importando funções globais necessárias
 import { loadUserDashboard, loadUserAccounts } from '../../app.js';
-// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const addPortfolioForm = document.getElementById('add-portfolio-form');
@@ -23,9 +19,10 @@ const portfoliosList = document.getElementById('portfolios-list');
 const addAssetForm = document.getElementById('add-asset-form');
 const backToPortfoliosButton = document.getElementById('back-to-portfolios-button');
 const assetList = document.getElementById('asset-list');
-// INÍCIO DA ALTERAÇÃO
 const closeMovementModalButton = document.querySelector('.close-asset-movement-modal-button');
 const addMovementForm = document.getElementById('add-movement-form');
+// INÍCIO DA ALTERAÇÃO
+const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
 // FIM DA ALTERAÇÃO
 
 
@@ -38,9 +35,13 @@ export function initializeInvestmentEventListeners() {
     addAssetForm.addEventListener('submit', handleAddAsset);
     backToPortfoliosButton.addEventListener('click', investmentsUI.showPortfoliosView);
     assetList.addEventListener('click', handleAssetListActions);
-    // INÍCIO DA ALTERAÇÃO
     closeMovementModalButton.addEventListener('click', investmentsUI.closeMovementModal);
     addMovementForm.addEventListener('submit', handleAddMovement);
+    // INÍCIO DA ALTERAÇÃO
+    goToPortfoliosManagementBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showPortfoliosManagementView();
+    });
     // FIM DA ALTERAÇÃO
 }
 
@@ -166,15 +167,12 @@ async function handleAssetListActions(e) {
             }
         }
     } else if (addMovementButton) {
-        // INÍCIO DA ALTERAÇÃO - Lógica para abrir o modal de movimento
         e.stopPropagation();
         const assetId = addMovementButton.dataset.assetId;
         investmentsUI.openMovementModal(assetId);
-        // FIM DA ALTERAÇÃO
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Handler para o formulário de adicionar movimento
 /**
  * Handler para o formulário de adicionar um novo movimento (compra/venda).
  */
@@ -218,4 +216,3 @@ async function handleAddMovement(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
