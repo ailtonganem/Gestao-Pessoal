@@ -86,7 +86,7 @@ async function deleteCreditCard(cardId) {
 }
 
 /**
- * (Função Placeholder para o Futuro) Atualiza um cartão de crédito.
+ * Atualiza um cartão de crédito.
  * @param {string} cardId - O ID do documento a ser atualizado.
  * @param {object} updatedData - Os novos dados para o cartão.
  * @returns {Promise<void>}
