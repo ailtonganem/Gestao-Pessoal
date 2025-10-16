@@ -375,20 +375,24 @@
             </main>
         </div>
 
-        <!-- INÍCIO DA ALTERAÇÃO -->
         <div id="investments-container" style="display: none;">
             <main>
                 <!-- Nova Visão do Dashboard de Investimentos -->
                 <div id="investment-dashboard-view">
                     <div class="investment-dashboard-header">
                         <h2>Visão Geral</h2>
-                        <div class="form-control">
-                            <label for="portfolio-filter-select">Carteira</label>
-                            <select id="portfolio-filter-select">
-                                <option value="all">Consolidado</option>
-                                <!-- Outras carteiras serão adicionadas via JS -->
-                            </select>
+                        <!-- INÍCIO DA ALTERAÇÃO -->
+                        <div class="header-controls">
+                            <div class="form-control">
+                                <label for="portfolio-filter-select">Carteira</label>
+                                <select id="portfolio-filter-select">
+                                    <option value="all">Consolidado</option>
+                                    <!-- Outras carteiras serão adicionadas via JS -->
+                                </select>
+                            </div>
+                            <button id="go-to-portfolios-management-btn" class="button-secondary">Gerenciar</button>
                         </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
                     
                     <div class="investment-grid">
@@ -517,7 +521,6 @@
                 </div>
             </main>
         </div>
-        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
