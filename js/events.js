@@ -49,9 +49,7 @@ const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
 const addPortfolioForm = document.getElementById('add-portfolio-form');
-// INÍCIO DA ALTERAÇÃO
 const portfoliosList = document.getElementById('portfolios-list');
-// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -501,9 +499,7 @@ export function initializeEventListeners() {
     // Listeners para o módulo de investimentos
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
-    // INÍCIO DA ALTERAÇÃO - Delegação de eventos para a lista de carteiras
-    portfoliosList.addEventListener('click', handleDeletePortfolio);
-    // FIM DA ALTERAÇÃO
+    portfoliosList.addEventListener('click', handlePortfolioListActions);
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -538,15 +534,15 @@ async function handleAddPortfolio(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Handler para ações na lista de carteiras (excluir/visualizar)
-async function handleDeletePortfolio(e) {
+// Handler para ações na lista de carteiras (excluir/visualizar)
+async function handlePortfolioListActions(e) {
     const deleteButton = e.target.closest('.delete-btn[data-portfolio-id]');
-    
+    const infoArea = e.target.closest('.portfolio-info[data-portfolio-id]');
+
     if (deleteButton) {
-        e.stopPropagation(); // Evita que o clique no botão acione o clique na área da carteira
+        e.stopPropagation(); // Evita que o clique no botão acione a navegação
         const portfolioId = deleteButton.dataset.portfolioId;
         
-        // Futuramente, obter o nome da carteira para a mensagem de confirmação
         if (confirm(`Tem certeza que deseja excluir esta carteira? Esta ação não pode ser desfeita.`)) {
             try {
                 await portfolios.deletePortfolio(portfolioId);
@@ -556,11 +552,16 @@ async function handleDeletePortfolio(e) {
                 showNotification(error.message, 'error');
             }
         }
+    } else if (infoArea) {
+        // INÍCIO DA ALTERAÇÃO - Lógica para navegar para a visão de ativos
+        const portfolioId = infoArea.dataset.portfolioId;
+        const selectedPortfolio = state.userPortfolios.find(p => p.id === portfolioId);
+        if (selectedPortfolio) {
+            investmentsUI.showAssetsView(selectedPortfolio);
+        }
+        // FIM DA ALTERAÇÃO
     }
-    
-    // Adicionar lógica para visualizar ativos aqui
 }
-// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
