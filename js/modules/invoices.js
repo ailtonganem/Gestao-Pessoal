@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 import {
     collection,
     query,
@@ -17,7 +15,8 @@ import {
     updateDoc,
     writeBatch,
     getDoc,
-    increment
+    increment,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 import { updateBalanceInBatch } from './accounts.js';
@@ -300,6 +299,43 @@ async function updateInvoiceTransaction(originalInvoiceId, transactionId, update
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
+
+/**
+ * Exclui um lançamento individual de uma fatura e ajusta o valor total da mesma.
+ * @param {string} invoiceId - O ID da fatura da qual o lançamento será removido.
+ * @param {string} transactionId - O ID do lançamento a ser excluído.
+ * @returns {Promise<void>}
+ */
+async function deleteInvoiceTransaction(invoiceId, transactionId) {
+    const batch = writeBatch(db);
+    const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+    const transactionRef = doc(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS, transactionId);
+
+    try {
+        // 1. Pega os dados do lançamento para saber o valor a ser abatido
+        const txSnap = await getDoc(transactionRef);
+        if (!txSnap.exists()) {
+            throw new Error("Lançamento a ser excluído não encontrado.");
+        }
+        const amountToDelete = txSnap.data().amount;
+
+        // 2. Adiciona a exclusão do lançamento ao batch
+        batch.delete(transactionRef);
+
+        // 3. Adiciona a atualização do valor total da fatura ao batch
+        batch.update(invoiceRef, { totalAmount: increment(-amountToDelete) });
+
+        // 4. Executa as operações atomicamente
+        await batch.commit();
+    } catch (error) {
+        console.error("Erro ao excluir lançamento da fatura:", error);
+        throw new Error("Não foi possível excluir o lançamento da fatura.");
+    }
+}
+
+// --- FIM DA ALTERAÇÃO ---
+
 /**
  * Verifica todas as faturas abertas de um usuário e fecha aquelas cuja data de vencimento já passou.
  * @param {string} userId - O ID do usuário.
@@ -335,4 +371,4 @@ async function closeOverdueInvoices(userId) {
     }
 }
 
-export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction, makeAdvancePayment };
+export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction, makeAdvancePayment, deleteInvoiceTransaction };
