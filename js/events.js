@@ -47,18 +47,14 @@ const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
-// INÍCIO DA ALTERAÇÃO
 const splitTransactionButton = document.getElementById('split-transaction-button');
 const addSplitForm = document.getElementById('add-split-form');
 const splitList = document.getElementById('split-list');
 const confirmSplitButton = document.getElementById('confirm-split-button');
-// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
-// INÍCIO DA ALTERAÇÃO
 let isTransactionSplit = false;
-// FIM DA ALTERAÇÃO
 
 /**
  * Função principal que inicializa todos os event listeners da aplicação.
@@ -211,7 +207,6 @@ export function initializeEventListeners() {
     addTransactionForm.addEventListener('submit', handleAddTransaction);
     addTransferForm.addEventListener('submit', handleAddTransfer);
     
-    // INÍCIO DA ALTERAÇÃO
     document.querySelectorAll('input[name="transaction-type"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             const type = e.target.value;
@@ -230,7 +225,6 @@ export function initializeEventListeners() {
             }
         });
     });
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('transaction-description').addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
@@ -326,6 +320,9 @@ export function initializeEventListeners() {
 
     document.getElementById('filter-description').addEventListener('input', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-category').addEventListener('change', app.applyFiltersAndUpdateDashboard);
+    // INÍCIO DA ALTERAÇÃO
+    document.getElementById('filter-tag').addEventListener('input', app.applyFiltersAndUpdateDashboard);
+    // FIM DA ALTERAÇÃO
     document.getElementById('filter-payment-method').addEventListener('change', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-type').addEventListener('change', app.loadUserDashboard);
     document.getElementById('filter-sort').addEventListener('change', app.applyFiltersAndUpdateDashboard);
@@ -424,7 +421,6 @@ export function initializeEventListeners() {
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
     
-    // INÍCIO DA ALTERAÇÃO
     // Listeners do Modal de Divisão
     splitTransactionButton.addEventListener('click', () => {
         const totalAmount = parseFloat(document.getElementById('transaction-amount').value);
@@ -441,7 +437,6 @@ export function initializeEventListeners() {
         }
     });
     confirmSplitButton.addEventListener('click', handleConfirmSplit);
-    // FIM DA ALTERAÇÃO
 
     document.querySelector('.close-settings-modal-button').addEventListener('click', modals.closeSettingsModal);
     themeToggle.addEventListener('change', () => app.toggleTheme(themeToggle.checked));
@@ -580,7 +575,6 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO
 function handleAddSplitItem(e) {
     e.preventDefault();
     const form = e.target;
@@ -617,7 +611,6 @@ function resetSplitState() {
     categorySelect.disabled = false;
     categoryWrapper.querySelector('label').textContent = 'Categoria';
 }
-// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
@@ -771,12 +764,16 @@ async function handleDescriptionAutocomplete(searchTerm) {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function handleAddTransaction(e) {
     e.preventDefault();
     const form = e.target;
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
+
+    // INÍCIO DA ALTERAÇÃO
+    const tagsString = form['transaction-tags'].value;
+    const tags = tagsString.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
+    // FIM DA ALTERAÇÃO
 
     const paymentMethod = form['payment-method'].value;
 
@@ -789,7 +786,8 @@ async function handleAddTransaction(e) {
         userId: state.currentUser.uid,
         isInstallment: false,
         isSplit: isTransactionSplit,
-        splits: isTransactionSplit ? modals._currentSplits : null
+        splits: isTransactionSplit ? modals._currentSplits : null,
+        tags: tags.length > 0 ? tags : [] // INÍCIO E FIM DA ALTERAÇÃO
     };
 
     if (!isTransactionSplit) {
@@ -862,7 +860,6 @@ async function handleAddTransaction(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleDeleteTransaction(transaction) {
     if (confirm(`Tem certeza que deseja excluir a transação "${transaction.description}"?`)) {
@@ -877,11 +874,15 @@ async function handleDeleteTransaction(transaction) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
 async function handleUpdateTransaction(e) {
     e.preventDefault();
     const form = e.target;
     const transactionId = form['edit-transaction-id'].value;
     const paymentMethod = form['edit-payment-method'].value;
+    
+    const tagsString = form['edit-transaction-tags'].value;
+    const tags = tagsString.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
 
     const updatedData = {
         description: form['edit-transaction-description'].value,
@@ -890,6 +891,7 @@ async function handleUpdateTransaction(e) {
         type: form['edit-transaction-type'].value,
         category: form['edit-transaction-category'].value,
         paymentMethod: paymentMethod,
+        tags: tags.length > 0 ? tags : []
     };
     
     if (paymentMethod === 'credit_card') {
@@ -912,6 +914,7 @@ async function handleUpdateTransaction(e) {
         showNotification(error.message, 'error');
     }
 }
+// FIM DA ALTERAÇÃO
 
 async function handleAddAccount(e) {
     e.preventDefault();
