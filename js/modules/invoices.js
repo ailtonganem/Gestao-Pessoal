@@ -112,6 +112,39 @@ async function getInvoices(cardId, userId) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Busca todas as faturas com status 'open' ou 'closed' para um usuário, ordenadas por vencimento.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Array<object>>} Uma lista de objetos de fatura.
+ */
+async function getUpcomingInvoices(userId) {
+    try {
+        const invoicesRef = collection(db, COLLECTIONS.INVOICES);
+        const q = query(
+            invoicesRef,
+            where("userId", "==", userId),
+            where("status", "in", ["open", "closed"]),
+            orderBy("dueDate", "asc")
+        );
+        const querySnapshot = await getDocs(q);
+        const invoices = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            invoices.push({ 
+                id: doc.id, 
+                ...data, 
+                dueDate: data.dueDate.toDate() 
+            });
+        });
+        return invoices;
+    } catch (error) {
+        console.error("Erro ao buscar próximas faturas:", error);
+        throw new Error("Não foi possível carregar as próximas faturas.");
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
 /**
  * Busca todos os lançamentos (transações) de uma fatura específica.
  * @param {string} invoiceId - O ID da fatura.
@@ -299,8 +332,6 @@ async function updateInvoiceTransaction(originalInvoiceId, transactionId, update
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
-
 /**
  * Exclui um lançamento individual de uma fatura e ajusta o valor total da mesma.
  * @param {string} invoiceId - O ID da fatura da qual o lançamento será removido.
@@ -333,8 +364,6 @@ async function deleteInvoiceTransaction(invoiceId, transactionId) {
         throw new Error("Não foi possível excluir o lançamento da fatura.");
     }
 }
-
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Verifica todas as faturas abertas de um usuário e fecha aquelas cuja data de vencimento já passou.
@@ -371,4 +400,4 @@ async function closeOverdueInvoices(userId) {
     }
 }
 
-export { findOrCreateInvoice, getInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction, makeAdvancePayment, deleteInvoiceTransaction };
+export { findOrCreateInvoice, getInvoices, getUpcomingInvoices, getInvoiceTransactions, payInvoice, closeOverdueInvoices, updateInvoiceTransaction, makeAdvancePayment, deleteInvoiceTransaction };
