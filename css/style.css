@@ -285,7 +285,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .edit-btn { color: var(--secondary-color); }
 .delete-btn { color: var(--error-color); }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* --- Estilos do Dashboard de Investimentos --- */
 
 .investment-dashboard-header {
@@ -300,12 +299,21 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     border: none;
     margin: 0;
 }
-.investment-dashboard-header .form-control {
+
+/* INÍCIO DA ALTERAÇÃO */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.header-controls .form-control {
     min-width: 200px;
+    margin-bottom: 0;
 }
-.investment-dashboard-header .form-control label {
-    display: none; /* Opcional: esconde o label se o design for limpo */
+.header-controls .form-control label {
+    display: none;
 }
+/* FIM DA ALTERAÇÃO */
 
 .investment-grid {
     display: grid;
@@ -365,8 +373,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
         align-items: stretch;
     }
 }
-
-/* --- FIM DA ALTERAÇÃO --- */
 
 
 /* Estilos para as listas de Investimentos (Gerenciamento) */
