@@ -355,6 +355,36 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     justify-content: flex-end;
 }
 
+/* INÍCIO DA ALTERAÇÃO */
+/* Estilos para a lista de Próximas Faturas */
+#upcoming-invoices-list {
+    list-style-type: none;
+    padding: 0;
+}
+.upcoming-invoice-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--background-color);
+}
+.upcoming-invoice-item:last-child {
+    border-bottom: none;
+}
+.invoice-card-name {
+    font-weight: bold;
+}
+.invoice-due-date {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+.invoice-amount {
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 1.1rem;
+}
+/* FIM DA ALTERAÇÃO */
+
 /* Estilos de Notificações (Toasts) */
 #notification-container {
     position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex;
