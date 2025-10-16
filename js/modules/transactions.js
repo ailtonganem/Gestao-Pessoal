@@ -44,10 +44,10 @@ function parseDateString(dateString) {
 /**
  * Adiciona um novo documento de transação.
  * @param {object} transactionData - Os dados da transação.
+ * @param {Array<string>} [transactionData.tags] - Um array de tags associadas.
  * @param {object|null} cardData - Dados do cartão de crédito, se aplicável.
  * @returns {Promise<void>}
  */
-// --- INÍCIO DA ALTERAÇÃO ---
 async function addTransaction(transactionData, cardData = null) {
     // Validação para impedir transações divididas e parceladas ao mesmo tempo.
     if (transactionData.isSplit && transactionData.isInstallment) {
@@ -84,7 +84,8 @@ async function addTransaction(transactionData, cardData = null) {
                     purchaseDate: Timestamp.fromDate(currentInstallmentDate),
                     createdAt: serverTimestamp(),
                     isSplit: false, // Parcelamentos não são divididos
-                    splits: null
+                    splits: null,
+                    tags: transactionData.tags // As tags se aplicam a todas as parcelas
                 };
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
@@ -104,7 +105,8 @@ async function addTransaction(transactionData, cardData = null) {
                 purchaseDate: Timestamp.fromDate(transactionDate),
                 createdAt: serverTimestamp(),
                 isSplit: transactionData.isSplit,
-                splits: transactionData.splits
+                splits: transactionData.splits,
+                tags: transactionData.tags
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
@@ -137,7 +139,8 @@ async function addTransaction(transactionData, cardData = null) {
                 accountId: transactionData.accountId, 
                 createdAt: serverTimestamp(),
                 isSplit: transactionData.isSplit,
-                splits: transactionData.splits
+                splits: transactionData.splits,
+                tags: transactionData.tags
             };
             
             batch.set(newTransactionRef, dataToSave);
@@ -152,7 +155,6 @@ async function addTransaction(transactionData, cardData = null) {
         }
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Busca uma página de transações de um usuário com filtros.
