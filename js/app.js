@@ -18,9 +18,7 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
-// INÍCIO DA ALTERAÇÃO - Importação do ponto de entrada do módulo de investimentos
 import { initializeInvestmentsModule } from './modules/investments/main.js';
-// FIM DA ALTERAÇÃO
 
 
 import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
@@ -37,9 +35,7 @@ function initializeApp() {
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
-    // INÍCIO DA ALTERAÇÃO - Inicializa o módulo de investimentos
     initializeInvestmentsModule();
-    // FIM DA ALTERAÇÃO
     initializeCollapsibleSections();
     applyDashboardOrder(); 
 
@@ -90,6 +86,7 @@ async function handleAuthStateChange(user) {
  * Carrega todos os dados iniciais necessários para o dashboard do usuário.
  * @param {string} userId - O ID do usuário logado.
  */
+// --- INÍCIO DA ALTERAÇÃO ---
 async function loadInitialData(userId) {
     const transactionDateInput = document.getElementById('transaction-date');
     if(transactionDateInput) transactionDateInput.value = new Date().toISOString().split('T')[0];
@@ -97,7 +94,10 @@ async function loadInitialData(userId) {
     const transferDateInput = document.getElementById('transfer-date');
     if(transferDateInput) transferDateInput.value = new Date().toISOString().split('T')[0];
 
-    const recurringCount = await recurring.processRecurringTransactions(userId);
+    // Carrega os cartões PRIMEIRO, pois são necessários para processar as recorrências
+    await loadUserCreditCards();
+    
+    const recurringCount = await recurring.processRecurringTransactions(userId, state.userCreditCards);
     if (recurringCount > 0) {
         showNotification(`${recurringCount} transação(ões) recorrente(s) foram lançadas.`);
     }
@@ -107,13 +107,13 @@ async function loadInitialData(userId) {
 
     await Promise.all([
         loadUserCategories(),
-        loadUserCreditCards(),
         loadUserAccounts(),
         loadUserBudgets(),
         loadUserDashboard(),
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções "Controladoras" / Orquestradadoras ---
