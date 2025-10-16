@@ -17,7 +17,10 @@ export const COLLECTIONS = {
     INVOICE_TRANSACTIONS: 'transactions', // Subcoleção dentro de invoices
     BUDGETS: 'budgets',
     RECURRING_TRANSACTIONS: 'recurringTransactions',
-    DESCRIPTIONS: 'descriptions' // Subcoleção dentro de users
+    DESCRIPTIONS: 'descriptions', // Subcoleção dentro de users
+    // INÍCIO DA ALTERAÇÃO
+    INVESTMENT_PORTFOLIOS: 'investment_portfolios'
+    // FIM DA ALTERAÇÃO
 };
 
 // Chaves usadas no Local Storage
