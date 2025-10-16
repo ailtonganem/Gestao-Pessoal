@@ -109,6 +109,9 @@ async function loadInitialData(userId) {
         loadUserAccounts(),
         loadUserBudgets(),
         loadUserDashboard(),
+        // INÍCIO DA ALTERAÇÃO
+        loadUpcomingInvoices(),
+        // FIM DA ALTERAÇÃO
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
@@ -249,10 +252,22 @@ export async function loadUserBudgets() {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
+/** Busca as faturas futuras e atualiza a UI. */
+export async function loadUpcomingInvoices() {
+    if (!state.currentUser) return;
+    try {
+        const upcomingInvoices = await invoices.getUpcomingInvoices(state.currentUser.uid);
+        render.renderUpcomingInvoicesList(upcomingInvoices);
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+// FIM DA ALTERAÇÃO
+
 /**
  * Aplica os filtros e a ordenação da UI sobre a lista de transações e chama a renderização.
  */
-// --- INÍCIO DA ALTERAÇÃO ---
 export function applyFiltersAndUpdateDashboard() {
     const descriptionFilter = document.getElementById('filter-description').value.toLowerCase();
     const categoryFilter = document.getElementById('filter-category').value;
@@ -271,7 +286,6 @@ export function applyFiltersAndUpdateDashboard() {
 
         return descriptionMatch && categoryMatch && typeMatch && paymentMethodMatch && tagMatch;
     });
-// --- FIM DA ALTERAÇÃO ---
 
     switch (sortFilter) {
         case 'date_asc':
