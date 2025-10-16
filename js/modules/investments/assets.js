@@ -13,7 +13,9 @@ import {
     query,
     getDocs,
     Timestamp,
-    orderBy
+    orderBy,
+    doc,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -83,3 +85,25 @@ export async function getAssets(portfolioId) {
         throw new Error("Não foi possível carregar os ativos da carteira.");
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+
+/**
+ * Exclui um ativo de uma carteira específica.
+ * @param {string} portfolioId - O ID da carteira pai.
+ * @param {string} assetId - O ID do ativo a ser excluído.
+ * @returns {Promise<void>}
+ */
+export async function deleteAsset(portfolioId, assetId) {
+    if (!portfolioId || !assetId) {
+        throw new Error("ID da carteira e do ativo são obrigatórios para a exclusão.");
+    }
+    try {
+        const assetDocRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+        await deleteDoc(assetDocRef);
+    } catch (error) {
+        console.error("Erro ao excluir ativo:", error);
+        throw new Error("Não foi possível excluir o ativo.");
+    }
+}
+// FIM DA ALTERAÇÃO
