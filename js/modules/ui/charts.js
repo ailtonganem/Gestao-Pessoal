@@ -10,8 +10,11 @@ import { unpackSplitTransactions } from '../analytics.js';
 // --- Seleção de Elementos do DOM ---
 const chartCanvas = document.getElementById('expenses-chart');
 const trendsChartCanvas = document.getElementById('trends-chart');
-// INÍCIO DA ALTERAÇÃO
 const invoiceSpendingChartCanvas = document.getElementById('invoice-spending-chart');
+// INÍCIO DA ALTERAÇÃO
+const rentabilidadeChartCanvas = document.getElementById('rentabilidade-chart');
+const composicaoChartCanvas = document.getElementById('composicao-chart');
+const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
 // FIM DA ALTERAÇÃO
 
 /**
@@ -149,7 +152,6 @@ export function renderTrendsChart(summaryData) {
     state.setTrendsChart(newChart);
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Renderiza o gráfico de gastos por categoria para uma fatura específica.
  * @param {Array<object>} invoiceTransactions - A lista de transações da fatura.
@@ -204,5 +206,133 @@ export function renderInvoiceSpendingChart(invoiceTransactions) {
     });
 
     state.setInvoiceSpendingChart(newChart);
+}
+
+
+// --- INÍCIO DA ALTERAÇÃO ---
+
+/**
+ * Renderiza o gráfico de rentabilidade da carteira (tipo 'line').
+ * @param {object} data - Dados de rentabilidade (placeholder).
+ */
+export function renderRentabilidadeChart(data) {
+    if (state.rentabilidadeChart) {
+        state.rentabilidadeChart.destroy();
+    }
+    
+    // Dados de exemplo para visualização
+    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Carteira',
+            data: [0, 2, 1, 3, 5, 6],
+            borderColor: 'rgb(52, 152, 219)',
+            tension: 0.1
+        },
+        {
+            label: 'IBOVESPA',
+            data: [1, 1.5, 2.5, 2, 4, 4.5],
+            borderColor: 'rgb(231, 76, 60)',
+            tension: 0.1
+        }]
+    };
+    
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
+    const newChart = new Chart(rentabilidadeChartCanvas, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                y: { ticks: { color: textColor }, grid: { color: 'rgba(127,127,127,0.2)' } },
+                x: { ticks: { color: textColor }, grid: { color: 'transparent' } }
+            }
+        }
+    });
+
+    state.setRentabilidadeChart(newChart);
+}
+
+/**
+ * Renderiza o gráfico de composição da carteira (tipo 'doughnut').
+ * @param {object} data - Dados de composição (placeholder).
+ */
+export function renderComposicaoChart(data) {
+    if (state.composicaoChart) {
+        state.composicaoChart.destroy();
+    }
+    
+    // Dados de exemplo
+    const chartData = {
+        labels: ['Ações', 'FIIs', 'Renda Fixa'],
+        datasets: [{
+            label: 'Composição',
+            data: [50, 30, 20],
+            backgroundColor: ['#3498db', '#2ecc71', '#95a5a6'],
+            hoverOffset: 4
+        }]
+    };
+
+    const newChart = new Chart(composicaoChartCanvas, {
+        type: 'doughnut',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e'
+                    }
+                }
+            }
+        }
+    });
+
+    state.setComposicaoChart(newChart);
+}
+
+/**
+ * Renderiza o gráfico de evolução do patrimônio (tipo 'bar').
+ * @param {object} data - Dados do patrimônio (placeholder).
+ */
+export function renderPatrimonioChart(data) {
+    if (state.patrimonioChart) {
+        state.patrimonioChart.destroy();
+    }
+    
+    // Dados de exemplo
+    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Patrimônio',
+            data: [1000, 1200, 1100, 1500, 1800, 2000],
+            backgroundColor: 'rgba(44, 62, 80, 0.7)',
+        }]
+    };
+    
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
+    const newChart = new Chart(patrimonioChartCanvas, {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }, // Oculta a legenda para um visual mais limpo
+            scales: {
+                y: { display: false }, // Oculta o eixo Y
+                x: { ticks: { color: textColor }, grid: { color: 'transparent' } }
+            }
+        }
+    });
+
+    state.setPatrimonioChart(newChart);
 }
 // FIM DA ALTERAÇÃO
