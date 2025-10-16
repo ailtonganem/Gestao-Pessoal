@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore que configuramos.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 
 // Importa as funções do Firestore necessárias para manipular os dados.
 import {
@@ -26,12 +24,14 @@ import {
  * @param {string} cardData.name - Nome do cartão.
  * @param {number} cardData.closingDay - Dia do fechamento.
  * @param {number} cardData.dueDay - Dia do vencimento.
+ * @param {number} cardData.limit - O limite de crédito do cartão.
  * @param {string} cardData.userId - ID do usuário.
  * @returns {Promise<DocumentReference>} A referência do documento criado.
  */
 async function addCreditCard(cardData) {
     try {
         const cardsCollectionRef = collection(db, COLLECTIONS.CREDIT_CARDS);
+        // A função addDoc salvará todos os campos do objeto cardData, incluindo o novo campo 'limit'.
         const docRef = await addDoc(cardsCollectionRef, cardData);
         console.log("Cartão de crédito adicionado com ID:", docRef.id);
         return docRef;
