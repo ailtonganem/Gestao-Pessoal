@@ -12,6 +12,9 @@ import { showNotification } from '../ui/notifications.js';
 import { formatCurrency, formatDateToInput } from '../ui/utils.js';
 import { populateAccountSelects } from '../ui/render.js';
 import * as charts from '../ui/charts.js';
+// INÍCIO DA ALTERAÇÃO
+import { getQuotes } from '../../services/brapi.js';
+// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado do Módulo ---
 let _currentPortfolioAssets = [];
@@ -116,6 +119,21 @@ export async function updateInvestmentDashboard(portfolioId) {
         } else {
             assetsToDisplay = await assets.getAssets(portfolioId);
         }
+
+        // INÍCIO DA ALTERAÇÃO
+        // Buscar cotações e atualizar o valor de mercado dos ativos
+        const tickers = assetsToDisplay.map(asset => asset.ticker);
+        const quotes = await getQuotes(tickers);
+
+        assetsToDisplay.forEach(asset => {
+            if (quotes[asset.ticker]) {
+                asset.currentValue = quotes[asset.ticker] * asset.quantity;
+            } else {
+                // Se a cotação não for encontrada, o valor de mercado é considerado o total investido
+                asset.currentValue = asset.totalInvested;
+            }
+        });
+        // FIM DA ALTERAÇÃO
 
         // --- Cálculos ---
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
@@ -286,6 +304,21 @@ export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
         const userAssets = await assets.getAssets(portfolioId);
+
+        // INÍCIO DA ALTERAÇÃO
+        // Buscar cotações e atualizar o valor de mercado dos ativos
+        const tickers = userAssets.map(asset => asset.ticker);
+        const quotes = await getQuotes(tickers);
+
+        userAssets.forEach(asset => {
+            if (quotes[asset.ticker]) {
+                asset.currentValue = quotes[asset.ticker] * asset.quantity;
+            } else {
+                asset.currentValue = asset.totalInvested;
+            }
+        });
+        // FIM DA ALTERAÇÃO
+
         _currentPortfolioAssets = userAssets; // Armazena os ativos carregados
         renderAssets(userAssets);
     } catch (error) {
