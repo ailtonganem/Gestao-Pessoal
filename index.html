@@ -552,7 +552,6 @@
             <div id="invoice-details-view" style="display: none;">
                 <h3 id="invoice-card-name">Faturas - [Nome do Cartão]</h3>
                 <button id="back-to-cards-button" class="button-secondary">&larr; Voltar</button>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="invoice-period-select">Selecionar Fatura</label>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -561,12 +560,19 @@
                         <button id="next-invoice-button" class="button-secondary" style="padding: 0.5rem;">&gt;</button>
                     </div>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div id="invoice-summary" class="summary-card">
                     <p>Total: <strong id="invoice-total-amount">R$ 0,00</strong></p>
                     <p>Vencimento: <span id="invoice-due-date">--/--/----</span></p>
                     <p>Status: <span id="invoice-status" class="status-badge">--</span></p>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <section id="invoice-analysis-section" style="margin: 1.5rem 0;">
+                    <h4>Análise da Fatura</h4>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="invoice-spending-chart"></canvas>
+                    </div>
+                </section>
+                <!-- FIM DA ALTERAÇÃO -->
                 <h4>Lançamentos da Fatura</h4>
                 <ul id="invoice-transactions-list"></ul>
                 <div class="invoice-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
