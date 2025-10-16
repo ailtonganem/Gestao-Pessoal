@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 // Importa a lógica de faturas.
 import { findOrCreateInvoice } from './invoices.js';
 // Importa a função de autocomplete.
@@ -49,16 +47,24 @@ function parseDateString(dateString) {
  * @param {object|null} cardData - Dados do cartão de crédito, se aplicável.
  * @returns {Promise<void>}
  */
+// --- INÍCIO DA ALTERAÇÃO ---
 async function addTransaction(transactionData, cardData = null) {
+    // Validação para impedir transações divididas e parceladas ao mesmo tempo.
+    if (transactionData.isSplit && transactionData.isInstallment) {
+        throw new Error("Transações divididas não podem ser parceladas. Por favor, escolha apenas uma opção.");
+    }
+
     const transactionDate = parseDateString(transactionData.date);
 
-    if (transactionData.subcategory && transactionData.categoryId) {
+    // Salva a subcategoria se for uma transação simples e houver subcategoria.
+    if (!transactionData.isSplit && transactionData.subcategory && transactionData.categoryId) {
         addSubcategory(transactionData.categoryId, transactionData.subcategory).catch(console.error);
     }
 
     if (transactionData.paymentMethod === 'credit_card' && cardData) {
         const batch = writeBatch(db);
 
+        // Lógica para compras parceladas (não divididas)
         if (transactionData.isInstallment && transactionData.installments > 1) {
             const totalAmount = transactionData.amount;
             const installmentAmount = parseFloat((totalAmount / transactionData.installments).toFixed(2));
@@ -76,14 +82,16 @@ async function addTransaction(transactionData, cardData = null) {
                     category: transactionData.category,
                     subcategory: transactionData.subcategory || null,
                     purchaseDate: Timestamp.fromDate(currentInstallmentDate),
-                    createdAt: serverTimestamp()
+                    createdAt: serverTimestamp(),
+                    isSplit: false, // Parcelamentos não são divididos
+                    splits: null
                 };
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
                 batch.set(newTransactionRef, newTransactionInInvoice);
                 batch.update(invoiceRef, { totalAmount: increment(installmentAmount) });
             }
-        } else {
+        } else { // Lógica para compra única (pode ser dividida)
             const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
             const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
             const invoiceTransactionsRef = collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS);
@@ -94,7 +102,9 @@ async function addTransaction(transactionData, cardData = null) {
                 category: transactionData.category,
                 subcategory: transactionData.subcategory || null,
                 purchaseDate: Timestamp.fromDate(transactionDate),
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                isSplit: transactionData.isSplit,
+                splits: transactionData.splits
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
@@ -109,7 +119,7 @@ async function addTransaction(transactionData, cardData = null) {
             throw new Error("Não foi possível salvar a transação no cartão.");
         }
 
-    } else {
+    } else { // Transações que não são de cartão de crédito (podem ser divididas)
         const batch = writeBatch(db);
         try {
             const transactionsCollectionRef = collection(db, COLLECTIONS.TRANSACTIONS);
@@ -125,7 +135,9 @@ async function addTransaction(transactionData, cardData = null) {
                 paymentMethod: transactionData.paymentMethod,
                 userId: transactionData.userId,
                 accountId: transactionData.accountId, 
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                isSplit: transactionData.isSplit,
+                splits: transactionData.splits
             };
             
             batch.set(newTransactionRef, dataToSave);
@@ -140,6 +152,7 @@ async function addTransaction(transactionData, cardData = null) {
         }
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Busca uma página de transações de um usuário com filtros.
