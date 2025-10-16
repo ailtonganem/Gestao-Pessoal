@@ -35,9 +35,7 @@ const addTransactionForm = document.getElementById('add-transaction-form');
 const addTransferForm = document.getElementById('add-transfer-form');
 const editTransactionForm = document.getElementById('edit-transaction-form');
 const addCreditCardForm = document.getElementById('add-credit-card-form');
-// INÍCIO DA ALTERAÇÃO
 const editCreditCardForm = document.getElementById('edit-credit-card-form');
-// FIM DA ALTERAÇÃO
 const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
@@ -349,7 +347,6 @@ export function initializeEventListeners() {
     document.getElementById('back-to-cards-button').addEventListener('click', modals.showCardManagementView);
     addCreditCardForm.addEventListener('submit', handleAddCreditCard);
     
-    // INÍCIO DA ALTERAÇÃO
     editCreditCardForm.addEventListener('submit', handleUpdateCreditCard);
     document.querySelector('.close-edit-card-modal-button').addEventListener('click', modals.closeEditCardModal);
 
@@ -369,7 +366,6 @@ export function initializeEventListeners() {
             modals.openEditCardModal(card);
         }
     });
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('invoice-period-select').addEventListener('change', async (e) => {
         const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === e.target.value);
@@ -475,6 +471,32 @@ export function initializeEventListeners() {
         if (eventTarget.matches('.edit-btn') && recurringTx) modals.openEditRecurringModal(recurringTx);
         if (eventTarget.matches('.delete-btn') && recurringTx) handleDeleteRecurring(recurringTx);
     });
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    document.getElementById('recurring-payment-method').addEventListener('change', (e) => {
+        const accountWrapper = document.getElementById('recurring-account-wrapper');
+        const cardWrapper = document.getElementById('recurring-card-wrapper');
+        if (e.target.value === 'credit_card') {
+            accountWrapper.style.display = 'none';
+            cardWrapper.style.display = 'block';
+        } else { // account_debit
+            accountWrapper.style.display = 'block';
+            cardWrapper.style.display = 'none';
+        }
+    });
+
+    document.getElementById('edit-recurring-payment-method').addEventListener('change', (e) => {
+        const accountWrapper = document.getElementById('edit-recurring-account-wrapper');
+        const cardWrapper = document.getElementById('edit-recurring-card-wrapper');
+        if (e.target.value === 'credit_card') {
+            accountWrapper.style.display = 'none';
+            cardWrapper.style.display = 'block';
+        } else { // account_debit
+            accountWrapper.style.display = 'block';
+            cardWrapper.style.display = 'none';
+        }
+    });
+    // --- FIM DA ALTERAÇÃO ---
 
     document.getElementById('user-list').addEventListener('click', async (e) => {
         const approveButton = e.target.closest('.approve-user-btn[data-user-id]');
@@ -911,7 +933,6 @@ async function handleAddCreditCard(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function handleUpdateCreditCard(e) {
     e.preventDefault();
     const form = e.target;
@@ -937,7 +958,6 @@ async function handleUpdateCreditCard(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleDeleteCreditCard(cardId) {
     const card = state.userCreditCards.find(c => c.id === cardId);
@@ -1052,6 +1072,7 @@ async function handleDeleteBudget(budgetId) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
 async function handleAddRecurring(e) {
     e.preventDefault();
     const form = e.target;
@@ -1064,13 +1085,26 @@ async function handleAddRecurring(e) {
         dayOfMonth: parseInt(form['recurring-day'].value),
         type: form['recurring-type'].value,
         category: form['recurring-category'].value,
+        paymentMethod: form['recurring-payment-method'].value,
         userId: state.currentUser.uid
     };
+
+    if (recurringData.paymentMethod === 'credit_card') {
+        recurringData.cardId = form['recurring-card'].value;
+        recurringData.accountId = null;
+    } else { // account_debit
+        recurringData.accountId = form['recurring-account'].value;
+        recurringData.cardId = null;
+    }
 
     try {
         await recurring.addRecurringTransaction(recurringData);
         showNotification("Recorrência adicionada com sucesso!");
         form.reset();
+        // Reset visual dos wrappers
+        document.getElementById('recurring-account-wrapper').style.display = 'block';
+        document.getElementById('recurring-card-wrapper').style.display = 'none';
+
         const recurringTxs = await recurring.getRecurringTransactions(state.currentUser.uid);
         state.setUserRecurringTransactions(recurringTxs);
         render.renderRecurringList();
@@ -1091,7 +1125,16 @@ async function handleUpdateRecurring(e) {
         dayOfMonth: parseInt(form['edit-recurring-day'].value),
         type: form['edit-recurring-type'].value,
         category: form['edit-recurring-category'].value,
+        paymentMethod: form['edit-recurring-payment-method'].value,
     };
+
+    if (updatedData.paymentMethod === 'credit_card') {
+        updatedData.cardId = form['edit-recurring-card'].value;
+        updatedData.accountId = null;
+    } else { // account_debit
+        updatedData.accountId = form['edit-recurring-account'].value;
+        updatedData.cardId = null;
+    }
 
     try {
         await recurring.updateRecurringTransaction(recurringId, updatedData);
@@ -1105,6 +1148,7 @@ async function handleUpdateRecurring(e) {
         showNotification(error.message, 'error');
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 async function handleDeleteRecurring(recurringTx) {
     if (confirm(`Tem certeza que deseja excluir a recorrência "${recurringTx.description}"?`)) {
