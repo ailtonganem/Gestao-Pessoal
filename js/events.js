@@ -51,9 +51,17 @@ const splitTransactionButton = document.getElementById('split-transaction-button
 const addSplitForm = document.getElementById('add-split-form');
 const splitList = document.getElementById('split-list');
 const confirmSplitButton = document.getElementById('confirm-split-button');
-// INÍCIO DA ALTERAÇÃO
 const portfolioFilterSelect = document.getElementById('portfolio-filter-select');
 const backToInvestmentDashboardBtn = document.getElementById('back-to-investment-dashboard-btn');
+// INÍCIO DA ALTERAÇÃO
+const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
+const backToAssetsButton = document.getElementById('back-to-assets-button');
+const movementsList = document.getElementById('movements-list');
+
+// Formulários de Edição de Investimentos
+const editPortfolioForm = document.getElementById('edit-portfolio-form');
+const editAssetForm = document.getElementById('edit-asset-form');
+const editMovementForm = document.getElementById('edit-movement-form');
 // FIM DA ALTERAÇÃO
 
 
@@ -111,14 +119,11 @@ export function initializeEventListeners() {
         views.showDashboardView();
     });
 
-    // INÍCIO DA ALTERAÇÃO
     document.getElementById('nav-investments-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showInvestmentsView();
-        // A função loadInvestmentDashboard será responsável por carregar todos os dados do novo dashboard
         await investmentsUI.loadInvestmentDashboard();
     });
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('nav-cards-button').addEventListener('click', (e) => {
         e.preventDefault();
@@ -140,7 +145,6 @@ export function initializeEventListeners() {
     appContent.addEventListener('click', (e) => {
         const sectionHeader = e.target.closest('.section-header');
         if (sectionHeader) {
-            // Garante que o drag não acione o toggle
             if (sectionHeader.parentElement.classList.contains('dragging')) return;
             app.toggleSection(sectionHeader);
         }
@@ -220,12 +224,10 @@ export function initializeEventListeners() {
             render.populateCategorySelects(type, document.getElementById('transaction-category'));
             document.getElementById('transaction-subcategory-wrapper').style.display = 'none';
 
-            // Mostra o botão de dividir apenas para despesas
             if (type === 'expense') {
                 splitTransactionButton.style.display = 'inline';
             } else {
                 splitTransactionButton.style.display = 'none';
-                // Reseta a divisão se o usuário mudar para receita
                 if (isTransactionSplit) {
                     resetSplitState();
                 }
@@ -579,31 +581,84 @@ export function initializeEventListeners() {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
     });
 
-    // INÍCIO DA ALTERAÇÃO
     // Listeners do Novo Dashboard de Investimentos
     portfolioFilterSelect.addEventListener('change', handlePortfolioFilterChange);
     backToInvestmentDashboardBtn.addEventListener('click', (e) => {
         e.preventDefault();
         investmentsUI.showInvestmentDashboardView();
     });
+
+    // INÍCIO DA ALTERAÇÃO
+    // Listeners para o CRUD de Investimentos
+    goToPortfoliosManagementBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showPortfoliosManagementView();
+    });
+    backToAssetsButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
+    });
+
+    document.querySelector('.close-edit-portfolio-modal-button').addEventListener('click', investmentsUI.closeEditPortfolioModal);
+    document.querySelector('.close-edit-asset-modal-button').addEventListener('click', investmentsUI.closeEditAssetModal);
+    document.querySelector('.close-edit-movement-modal-button').addEventListener('click', investmentsUI.closeEditMovementModal);
+
+    editPortfolioForm.addEventListener('submit', handleUpdatePortfolio);
+    editAssetForm.addEventListener('submit', handleUpdateAsset);
+    editMovementForm.addEventListener('submit', handleUpdateMovement);
+
+    movementsList.addEventListener('click', handleMovementsListActions);
     // FIM DA ALTERAÇÃO
 }
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// INÍCIO DA ALTERAÇÃO
-/**
- * Handler para a mudança do filtro de carteira no dashboard de investimentos.
- */
 async function handlePortfolioFilterChange(e) {
     const portfolioId = e.target.value;
     try {
-        // Esta função irá recarregar e renderizar os componentes do dashboard de investimentos
-        // com base na carteira selecionada ('all' para consolidado).
         await investmentsUI.updateInvestmentDashboard(portfolioId); 
     } catch (error) {
         showNotification(error.message, 'error');
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO
+// --- Handlers do CRUD de Investimentos ---
+
+function handleUpdatePortfolio(e) {
+    e.preventDefault();
+    // Lógica para salvar a edição da carteira será implementada aqui.
+    showNotification("Lógica de salvar edição de carteira pendente.", "info");
+}
+
+function handleUpdateAsset(e) {
+    e.preventDefault();
+    // Lógica para salvar a edição do ativo será implementada aqui.
+    showNotification("Lógica de salvar edição de ativo pendente.", "info");
+}
+
+function handleUpdateMovement(e) {
+    e.preventDefault();
+    // Lógica para salvar a edição do movimento será implementada aqui.
+    showNotification("Lógica de salvar edição de movimento pendente.", "info");
+}
+
+function handleMovementsListActions(e) {
+    const editButton = e.target.closest('.edit-btn[data-movement-id]');
+    const deleteButton = e.target.closest('.delete-btn[data-movement-id]');
+
+    if (editButton) {
+        const movementId = editButton.dataset.movementId;
+        investmentsUI.openEditMovementModal(movementId);
+    }
+
+    if (deleteButton) {
+        const movementId = deleteButton.dataset.movementId;
+        if (confirm("Tem certeza que deseja excluir esta operação? Esta ação é irreversível.")) {
+            // Lógica para excluir o movimento será implementada aqui.
+            showNotification(`Lógica para excluir movimento ${movementId} pendente.`, "info");
+        }
     }
 }
 // FIM DA ALTERAÇÃO
@@ -623,7 +678,6 @@ function handleNavigateInvoice(direction) {
 
     if (newIndex !== currentIndex) {
         select.selectedIndex = newIndex;
-        // Dispara manualmente o evento 'change' para acionar a atualização da fatura
         select.dispatchEvent(new Event('change'));
     }
 }
@@ -853,7 +907,6 @@ async function handleAddTransaction(e) {
             return;
         }
     } else {
-        // Para transações divididas, a categoria principal pode ser uma genérica
         transactionData.category = "Dividido";
     }
 
@@ -891,7 +944,7 @@ async function handleAddTransaction(e) {
         await transactions.addTransaction(transactionData, cardData);
         showNotification("Transação adicionada com sucesso!");
         form.reset();
-        resetSplitState(); // Reseta o estado da divisão
+        resetSplitState();
         document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('credit-card-wrapper').style.display = 'none';
         document.getElementById('installment-options-wrapper').style.display = 'none';
@@ -1042,7 +1095,6 @@ async function handleDeleteInvoiceTransaction(invoiceId, transactionId) {
         try {
             await invoices.deleteInvoiceTransaction(invoiceId, transactionId);
             showNotification('Lançamento excluído com sucesso!');
-            // Recarrega os detalhes da fatura para refletir a exclusão
             if (state.selectedCardForInvoiceView) {
                 await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
             }
@@ -1090,7 +1142,7 @@ async function handleUpdateCreditCard(e) {
         await creditCard.updateCreditCard(cardId, updatedData);
         showNotification('Cartão atualizado com sucesso!');
         modals.closeEditCardModal();
-        await app.loadUserCreditCards(); // Recarrega a lista de cartões para mostrar a alteração
+        await app.loadUserCreditCards();
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
@@ -1239,7 +1291,6 @@ async function handleAddRecurring(e) {
         await recurring.addRecurringTransaction(recurringData);
         showNotification("Recorrência adicionada com sucesso!");
         form.reset();
-        // Reset visual dos wrappers
         document.getElementById('recurring-account-wrapper').style.display = 'block';
         document.getElementById('recurring-card-wrapper').style.display = 'none';
 
