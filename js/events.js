@@ -19,10 +19,9 @@ import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
 import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
-// Importação dos módulos de investimento
-import * as portfolios from './modules/investments/portfolios.js';
-import * as assets from './modules/investments/assets.js';
+// INÍCIO DA ALTERAÇÃO - Importações de investimento removidas
 import * as investmentsUI from './modules/investments/ui.js';
+// FIM DA ALTERAÇÃO
 
 
 // --- Módulos de UI ---
@@ -49,9 +48,8 @@ const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
-const addPortfolioForm = document.getElementById('add-portfolio-form');
-const portfoliosList = document.getElementById('portfolios-list');
-const addAssetForm = document.getElementById('add-asset-form');
+// INÍCIO DA ALTERAÇÃO - Seletores de investimento removidos
+// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -497,12 +495,6 @@ export function initializeEventListeners() {
     
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
-
-    // Listeners para o módulo de investimentos
-    document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
-    addPortfolioForm.addEventListener('submit', handleAddPortfolio);
-    portfoliosList.addEventListener('click', handlePortfolioListActions);
-    addAssetForm.addEventListener('submit', handleAddAsset);
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -511,94 +503,6 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
-
-// Handler para adicionar uma carteira de investimentos
-async function handleAddPortfolio(e) {
-    e.preventDefault();
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-
-    const portfolioData = {
-        name: form['portfolio-name'].value,
-        description: form['portfolio-description'].value,
-        userId: state.currentUser.uid,
-    };
-    
-    try {
-        await portfolios.addPortfolio(portfolioData);
-        showNotification("Carteira criada com sucesso!");
-        form.reset();
-        await investmentsUI.loadAndRenderPortfolios(); // Atualiza a lista após adicionar
-    } catch (error) {
-        showNotification(error.message, 'error');
-    } finally {
-        submitButton.disabled = false;
-    }
-}
-
-// Handler para ações na lista de carteiras (excluir/visualizar)
-async function handlePortfolioListActions(e) {
-    const deleteButton = e.target.closest('.delete-btn[data-portfolio-id]');
-    const infoArea = e.target.closest('.portfolio-info[data-portfolio-id]');
-
-    if (deleteButton) {
-        e.stopPropagation(); // Evita que o clique no botão acione a navegação
-        const portfolioId = deleteButton.dataset.portfolioId;
-        
-        if (confirm(`Tem certeza que deseja excluir esta carteira? Esta ação não pode ser desfeita.`)) {
-            try {
-                await portfolios.deletePortfolio(portfolioId);
-                showNotification('Carteira excluída com sucesso!');
-                await investmentsUI.loadAndRenderPortfolios(); // Recarrega a lista
-            } catch (error) {
-                showNotification(error.message, 'error');
-            }
-        }
-    } else if (infoArea) {
-        const portfolioId = infoArea.dataset.portfolioId;
-        const selectedPortfolio = state.userPortfolios.find(p => p.id === portfolioId);
-        if (selectedPortfolio) {
-            investmentsUI.showAssetsView(selectedPortfolio);
-        }
-    }
-}
-
-// Handler para adicionar um novo ativo
-async function handleAddAsset(e) {
-    e.preventDefault();
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-
-    const selectedPortfolio = state.selectedPortfolioForAssetsView;
-    if (!selectedPortfolio) {
-        showNotification("Nenhuma carteira selecionada. Volte e selecione uma.", "error");
-        submitButton.disabled = false;
-        return;
-    }
-
-    const assetData = {
-        name: form['asset-name'].value,
-        ticker: form['asset-ticker'].value.toUpperCase(),
-        type: form['asset-type'].value,
-        assetClass: form['asset-class'].value,
-        broker: form['asset-broker'].value,
-    };
-
-    try {
-        await assets.addAsset(selectedPortfolio.id, assetData);
-        showNotification("Ativo adicionado com sucesso!");
-        form.reset();
-        // INÍCIO DA ALTERAÇÃO
-        await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
-        // FIM DA ALTERAÇÃO
-    } catch (error) {
-        showNotification(error.message, 'error');
-    } finally {
-        submitButton.disabled = false;
-    }
-}
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
