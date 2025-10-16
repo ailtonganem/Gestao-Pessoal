@@ -21,6 +21,9 @@ import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 // Importação dos módulos de investimento
 import * as portfolios from './modules/investments/portfolios.js';
+// INÍCIO DA ALTERAÇÃO
+import * as assets from './modules/investments/assets.js';
+// FIM DA ALTERAÇÃO
 import * as investmentsUI from './modules/investments/ui.js';
 
 
@@ -50,6 +53,9 @@ const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
 const addPortfolioForm = document.getElementById('add-portfolio-form');
 const portfoliosList = document.getElementById('portfolios-list');
+// INÍCIO DA ALTERAÇÃO
+const addAssetForm = document.getElementById('add-asset-form');
+// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -500,6 +506,9 @@ export function initializeEventListeners() {
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
     portfoliosList.addEventListener('click', handlePortfolioListActions);
+    // INÍCIO DA ALTERAÇÃO
+    addAssetForm.addEventListener('submit', handleAddAsset);
+    // FIM DA ALTERAÇÃO
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -553,15 +562,49 @@ async function handlePortfolioListActions(e) {
             }
         }
     } else if (infoArea) {
-        // INÍCIO DA ALTERAÇÃO - Lógica para navegar para a visão de ativos
         const portfolioId = infoArea.dataset.portfolioId;
         const selectedPortfolio = state.userPortfolios.find(p => p.id === portfolioId);
         if (selectedPortfolio) {
             investmentsUI.showAssetsView(selectedPortfolio);
         }
-        // FIM DA ALTERAÇÃO
     }
 }
+
+// INÍCIO DA ALTERAÇÃO - Handler para adicionar um novo ativo
+async function handleAddAsset(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const selectedPortfolio = state.selectedPortfolioForAssetsView;
+    if (!selectedPortfolio) {
+        showNotification("Nenhuma carteira selecionada. Volte e selecione uma.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    const assetData = {
+        name: form['asset-name'].value,
+        ticker: form['asset-ticker'].value.toUpperCase(),
+        type: form['asset-type'].value,
+        assetClass: form['asset-class'].value,
+        broker: form['asset-broker'].value,
+    };
+
+    try {
+        await assets.addAsset(selectedPortfolio.id, assetData);
+        showNotification("Ativo adicionado com sucesso!");
+        form.reset();
+        // Futuramente, chamar a função para recarregar a lista de ativos
+        // await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
