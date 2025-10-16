@@ -57,7 +57,9 @@ export function showAssetsView(portfolio) {
 /**
  * Busca os dados das carteiras do Firestore e chama a função para renderizá-los.
  */
-async function loadAndRenderPortfolios() {
+// INÍCIO DA ALTERAÇÃO
+export async function loadAndRenderPortfolios() {
+// FIM DA ALTERAÇÃO
     portfoliosListEl.innerHTML = '<li>Carregando carteiras...</li>';
     try {
         const userPortfolios = await portfolios.getPortfolios(state.currentUser.uid);
