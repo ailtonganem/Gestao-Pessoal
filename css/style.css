@@ -16,6 +16,9 @@
     --border-color: #e0e0e0;
     --hover-color: #f9f9f9;
     --header-bg-color: var(--container-bg-color);
+    /* INÍCIO DA ALTERAÇÃO - Altura do cabeçalho para cálculo do espaçamento */
+    --header-height: 70px;
+    /* FIM DA ALTERAÇÃO */
 }
 
 /* Variáveis do Tema Escuro */
@@ -43,11 +46,7 @@ html, body {
     font-family: var(--font-family);
     background-color: var(--background-color);
     color: var(--text-color);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
     text-align: center;
-    overflow-y: auto;
     transition: background-color 0.3s, color 0.3s;
 }
 
@@ -123,20 +122,80 @@ a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
 /* Estilos do Dashboard (App) */
-#app-container { max-width: 1024px; display: none; }
-#app-container header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #bdc3c7;
+#app-container {
+    max-width: 1024px;
+    display: none;
+    /* INÍCIO DA ALTERAÇÃO - Adiciona espaçamento no topo para o cabeçalho fixo */
+    padding-top: var(--header-height);
+    margin-top: 0;
+    /* FIM DA ALTERAÇÃO */
 }
-.header-buttons { display: flex; gap: 0.5rem; }
-#app-container header h1 { margin-bottom: 0; }
-#logout-button { background-color: var(--error-color); padding: 0.5rem 1rem; font-size: 0.9rem; }
-#logout-button:hover { background-color: #c0392b; }
-#app-content > section { margin-bottom: 1rem; }
+
+/* INÍCIO DA ALTERAÇÃO - Estilos para o novo cabeçalho fixo */
+#app-container header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+    height: var(--header-height);
+    background-color: var(--header-bg-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-bottom: none; /* Remove a borda inferior antiga */
+    margin-bottom: 0; /* Remove a margem antiga */
+}
+
+#app-container header h1 {
+    margin-bottom: 0;
+    font-size: 1.5rem;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Ajusta botões do cabeçalho para serem mais compactos, preparando para ícones */
+.header-buttons button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+}
+
+#logout-button {
+    background-color: var(--error-color);
+}
+#logout-button:hover {
+    background-color: #c0392b;
+}
+/* FIM DA ALTERAÇÃO */
+
+#app-content > section {
+    margin-bottom: 1rem;
+}
 
 /* Estilos da Seção de Resumo Financeiro */
-#summary-section { display: flex; flex-direction: column; gap: 1rem; }
-.summary-card { background-color: var(--container-bg-color); padding: 1rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+/* INÍCIO DA ALTERAÇÃO - Permite que os cards quebrem a linha */
+#summary-section {
+    display: flex;
+    flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
+    gap: 1rem;
+}
+/* FIM DA ALTERAÇÃO */
+
+.summary-card {
+    background-color: var(--container-bg-color);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    /* INÍCIO DA ALTERAÇÃO - Define um tamanho base para os cards */
+    flex: 1 1 180px; /* Permite crescer, encolher e tem uma base de 180px */
+    /* FIM DA ALTERAÇÃO */
+}
+
 .summary-card h3 { font-size: 1rem; color: #7f8c8d; margin-bottom: 0.5rem; }
 .summary-card p { font-size: 1.5rem; font-weight: bold; margin-top: 0; }
 #total-revenue { color: var(--revenue-color); }
@@ -241,7 +300,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button {
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-investments-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -249,9 +308,14 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-card-modal-button:hover, .close-card-modal-button:focus,
 .close-settings-modal-button:hover, .close-settings-modal-button:focus,
 .close-edit-recurring-modal-button:hover, .close-edit-recurring-modal-button:focus,
-.close-edit-invoice-tx-modal-button:hover, .close-edit-invoice-tx-modal-button:focus {
+.close-edit-invoice-tx-modal-button:hover, .close-edit-invoice-tx-modal-button:focus,
+.close-investments-modal-button:hover, .close-investments-modal-button:focus,
+.close-pay-invoice-modal-button:hover, .close-pay-invoice-modal-button:focus,
+.close-advance-payment-modal-button:hover, .close-advance-payment-modal-button:focus,
+.close-edit-transfer-modal-button:hover, .close-edit-transfer-modal-button:focus {
     color: var(--text-color);
 }
+
 
 /* Estilos para o seletor de tema e toggle switch */
 #theme-settings-section {
@@ -302,7 +366,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 /* Estilos Específicos do Modal de Cartões e Listas de Admin */
 #user-list, #recurring-list, #budget-list, #account-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
-#credit-card-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
+#credit-card-list, #portfolios-list { list-style-type: none; padding: 0; max-height: 250px; overflow-y: auto; }
 #credit-card-list li {
     background-color: var(--background-color); padding: 0.8rem; margin-bottom: 0.5rem;
     border-radius: 5px; display: flex; justify-content: space-between; align-items: center; text-align: left;
@@ -401,19 +465,15 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 /*          DESIGN RESPONSIVO (TELAS MAIORES)    */
 /* ============================================= */
 @media (min-width: 768px) {
-    body { align-items: center; }
-    main { max-width: 600px; }
     #app-container { max-width: 1200px; }
     #app-content {
-        display: flex; /* INÍCIO DA ALTERAÇÃO - Alterado para flex para reordenação */
+        display: flex;
         flex-direction: column;
         gap: 1rem;
     }
     
-    #summary-section { order: 0; flex-direction: row; } /* Garante que o resumo seja sempre o primeiro */
     #transactions-list { max-height: 80vh; overflow-y: auto; padding-right: 0.5rem; }
     
-    .summary-card { flex: 1; }
     .chart-container { height: auto; min-height: 280px; }
     .modal-content { max-width: 600px; }
     .category-management-container { flex-direction: row; }
@@ -475,7 +535,7 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
     border-bottom-right-radius: 0;
 }
 
-/* INÍCIO DA ALTERAÇÃO - Estilos para Drag-and-Drop */
+/* Estilos para Drag-and-Drop */
 .dashboard-section.dragging {
     opacity: 0.5;
     border: 2px dashed var(--secondary-color);
@@ -484,4 +544,3 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .dashboard-section[draggable="true"] .section-header {
     cursor: move; /* Indica que o cabeçalho é arrastável */
 }
-/* FIM DA ALTERAÇÃO */
