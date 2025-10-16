@@ -8,13 +8,14 @@
 import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
+// INÍCIO DA ALTERAÇÃO
+import * as movements from './movements.js';
+// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency, formatDateToInput } from '../ui/utils.js';
 import { populateAccountSelects } from '../ui/render.js';
 import * as charts from '../ui/charts.js';
-// INÍCIO DA ALTERAÇÃO
 import { getQuotes } from '../../services/brapi.js';
-// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado do Módulo ---
 let _currentPortfolioAssets = [];
@@ -118,9 +119,10 @@ export async function updateInvestmentDashboard(portfolioId) {
             assetsToDisplay = await portfolios.getAllUserAssets(state.currentUser.uid);
         } else {
             assetsToDisplay = await assets.getAssets(portfolioId);
+            // Adiciona portfolioId aos ativos quando uma carteira específica é selecionada
+            assetsToDisplay.forEach(asset => asset.portfolioId = portfolioId);
         }
 
-        // INÍCIO DA ALTERAÇÃO
         // Buscar cotações e atualizar o valor de mercado dos ativos
         const tickers = assetsToDisplay.map(asset => asset.ticker);
         const quotes = await getQuotes(tickers);
@@ -129,10 +131,21 @@ export async function updateInvestmentDashboard(portfolioId) {
             if (quotes[asset.ticker]) {
                 asset.currentValue = quotes[asset.ticker] * asset.quantity;
             } else {
-                // Se a cotação não for encontrada, o valor de mercado é considerado o total investido
                 asset.currentValue = asset.totalInvested;
             }
         });
+        
+        // INÍCIO DA ALTERAÇÃO
+        // Buscar e consolidar o histórico de movimentos
+        const movementPromises = assetsToDisplay.map(async (asset) => {
+            const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
+            // Adiciona o ticker a cada movimento para referência na renderização
+            return assetMovements.map(m => ({ ...m, ticker: asset.ticker }));
+        });
+        
+        const allMovementsNested = await Promise.all(movementPromises);
+        const allMovementsFlat = allMovementsNested.flat();
+        allMovementsFlat.sort((a, b) => b.date - a.date); // Ordena do mais recente para o mais antigo
         // FIM DA ALTERAÇÃO
 
         // --- Cálculos ---
@@ -153,19 +166,21 @@ export async function updateInvestmentDashboard(portfolioId) {
                 labels: Object.keys(composicaoData),
                 values: Object.values(composicaoData)
             },
-            // Outros dados a serem calculados no futuro
+            // INÍCIO DA ALTERAÇÃO
+            history: allMovementsFlat,
+            // FIM DA ALTERAÇÃO
         };
 
         // --- Renderização ---
         renderPatrimonioCard(aggregatedData);
         renderComposicaoCard(aggregatedData);
+        renderInvestmentHistory(aggregatedData);
         
         // Renderiza os outros cards (ainda com placeholders)
         renderRentabilidadeCard({});
         renderCalendarioCard({});
         renderProventosCard({});
         renderAltasBaixasCard({});
-        renderInvestmentHistory({});
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -239,9 +254,36 @@ function renderAltasBaixasCard(data) {
     altasBaixasCard.querySelector('#altas-baixas-list').innerHTML = `<p>Funcionalidade de Altas/Baixas a ser implementada.</p>`;
 }
 
+// INÍCIO DA ALTERAÇÃO
 function renderInvestmentHistory(data) {
-    investmentHistoryCard.querySelector('#investment-history-list').innerHTML = `<li>Histórico de Operações a ser implementado.</li>`;
+    const historyListEl = investmentHistoryCard.querySelector('#investment-history-list');
+    historyListEl.innerHTML = '';
+    const history = data.history || [];
+
+    if (history.length === 0) {
+        historyListEl.innerHTML = `<li>Nenhuma operação registrada no período.</li>`;
+        return;
+    }
+
+    history.forEach(mov => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display: flex; justify-content: space-between; padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--background-color); flex-wrap: wrap; gap: 0.5rem;';
+        
+        const typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
+        const typeClass = mov.type === 'buy' ? 'revenue' : 'expense'; // reuso de cores
+        
+        li.innerHTML = `
+            <span style="font-weight: 500; color: var(--text-color);">${mov.date.toLocaleDateString('pt-BR')}</span>
+            <span style="font-weight: bold;">${mov.ticker}</span>
+            <span class="status-badge ${typeClass}">${typeLabel}</span>
+            <span>${mov.quantity} un.</span>
+            <span>@ ${formatCurrency(mov.pricePerUnit)}</span>
+            <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>
+        `;
+        historyListEl.appendChild(li);
+    });
 }
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento Legadas (agora dentro da tela de Gerenciamento) ---
@@ -305,7 +347,6 @@ export async function loadAndRenderAssets(portfolioId) {
     try {
         const userAssets = await assets.getAssets(portfolioId);
 
-        // INÍCIO DA ALTERAÇÃO
         // Buscar cotações e atualizar o valor de mercado dos ativos
         const tickers = userAssets.map(asset => asset.ticker);
         const quotes = await getQuotes(tickers);
@@ -317,7 +358,6 @@ export async function loadAndRenderAssets(portfolioId) {
                 asset.currentValue = asset.totalInvested;
             }
         });
-        // FIM DA ALTERAÇÃO
 
         _currentPortfolioAssets = userAssets; // Armazena os ativos carregados
         renderAssets(userAssets);
