@@ -300,7 +300,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     margin: 0;
 }
 
-/* INÍCIO DA ALTERAÇÃO */
 .header-controls {
     display: flex;
     align-items: center;
@@ -313,7 +312,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .header-controls .form-control label {
     display: none;
 }
-/* FIM DA ALTERAÇÃO */
 
 .investment-grid {
     display: grid;
@@ -501,7 +499,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button {
+/* INÍCIO DA ALTERAÇÃO */
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -515,9 +514,11 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-edit-transfer-modal-button:hover, .close-edit-transfer-modal-button:focus,
 .close-edit-card-modal-button:hover, .close-edit-card-modal-button:focus,
 .close-split-modal-button:hover, .close-split-modal-button:focus,
-.close-asset-movement-modal-button:hover, .close-asset-movement-modal-button:focus {
+.close-asset-movement-modal-button:hover, .close-asset-movement-modal-button:focus,
+.close-provento-modal-button:hover, .close-provento-modal-button:focus {
     color: var(--text-color);
 }
+/* FIM DA ALTERAÇÃO */
 
 
 /* Estilos para o seletor de tema e toggle switch */
@@ -645,6 +646,10 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .status-badge.paid { background-color: var(--paid-color); }
 .status-badge.pending { background-color: var(--pending-color); }
 .status-badge.approved { background-color: var(--success-color); }
+/* Reuso de cores para o histórico de investimentos */
+.status-badge.buy { background-color: var(--success-color); }
+.status-badge.sell { background-color: var(--error-color); }
+
 
 #invoice-transactions-list { list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; }
 #invoice-transactions-list li {
