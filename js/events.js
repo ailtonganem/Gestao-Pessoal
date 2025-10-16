@@ -35,6 +35,9 @@ const addTransactionForm = document.getElementById('add-transaction-form');
 const addTransferForm = document.getElementById('add-transfer-form');
 const editTransactionForm = document.getElementById('edit-transaction-form');
 const addCreditCardForm = document.getElementById('add-credit-card-form');
+// INÍCIO DA ALTERAÇÃO
+const editCreditCardForm = document.getElementById('edit-credit-card-form');
+// FIM DA ALTERAÇÃO
 const addCategoryForm = document.getElementById('add-category-form');
 const setBudgetForm = document.getElementById('set-budget-form');
 const addRecurringForm = document.getElementById('add-recurring-form');
@@ -346,18 +349,27 @@ export function initializeEventListeners() {
     document.getElementById('back-to-cards-button').addEventListener('click', modals.showCardManagementView);
     addCreditCardForm.addEventListener('submit', handleAddCreditCard);
     
+    // INÍCIO DA ALTERAÇÃO
+    editCreditCardForm.addEventListener('submit', handleUpdateCreditCard);
+    document.querySelector('.close-edit-card-modal-button').addEventListener('click', modals.closeEditCardModal);
+
     document.getElementById('credit-card-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('[data-card-id]');
         if (!eventTarget) return;
+        
         const cardId = eventTarget.dataset.cardId;
+        const card = state.userCreditCards.find(c => c.id === cardId);
+        if (!card) return;
+
         if (eventTarget.matches('.card-info')) {
-            const card = state.userCreditCards.find(c => c.id === cardId);
-            if(card) modals.showInvoiceDetailsView(card);
-        }
-        if (eventTarget.matches('.delete-btn')) {
+            modals.showInvoiceDetailsView(card);
+        } else if (eventTarget.matches('.delete-btn')) {
             handleDeleteCreditCard(cardId);
+        } else if (eventTarget.matches('.edit-btn')) {
+            modals.openEditCardModal(card);
         }
     });
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('invoice-period-select').addEventListener('change', async (e) => {
         const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === e.target.value);
@@ -879,7 +891,6 @@ async function handleDeleteInvoiceTransaction(invoiceId, transactionId) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 async function handleAddCreditCard(e) {
     e.preventDefault();
     const form = e.target;
@@ -899,7 +910,34 @@ async function handleAddCreditCard(e) {
         showNotification(error.message, 'error');
     }
 }
-// --- FIM DA ALTERAÇÃO ---
+
+// INÍCIO DA ALTERAÇÃO
+async function handleUpdateCreditCard(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const cardId = form['edit-card-id'].value;
+    const updatedData = {
+        name: form['edit-card-name'].value,
+        closingDay: parseInt(form['edit-card-closing-day'].value),
+        dueDay: parseInt(form['edit-card-due-day'].value),
+        limit: parseFloat(form['edit-card-limit'].value),
+    };
+
+    try {
+        await creditCard.updateCreditCard(cardId, updatedData);
+        showNotification('Cartão atualizado com sucesso!');
+        modals.closeEditCardModal();
+        await app.loadUserCreditCards(); // Recarrega a lista de cartões para mostrar a alteração
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// FIM DA ALTERAÇÃO
 
 async function handleDeleteCreditCard(cardId) {
     const card = state.userCreditCards.find(c => c.id === cardId);
