@@ -18,9 +18,7 @@ export let allTransactions = []; // Contém todas as transações do período se
 export let filteredTransactions = []; // Contém as transações após a aplicação de filtros na UI
 export let userRecurringTransactions = [];
 export let userAccounts = [];
-// INÍCIO DA ALTERAÇÃO
 export let userPortfolios = []; // Armazena as carteiras de investimento do usuário
-// FIM DA ALTERAÇÃO
 
 
 // --- Estado da Interface (UI State) ---
@@ -28,11 +26,12 @@ export let selectedCardForInvoiceView = null; // Armazena o objeto do cartão se
 export let currentCardInvoices = []; // Armazena as faturas do cartão que está sendo visualizado
 export let expensesChart = null; // Instância do gráfico de despesas (tipo pizza)
 export let trendsChart = null; // Instância do gráfico de tendências (tipo barras)
+// INÍCIO DA ALTERAÇÃO
+export let invoiceSpendingChart = null; // Instância do gráfico de gastos da fatura
+// FIM DA ALTERAÇÃO
 export let lastTransactionDoc = null; // Armazena o último documento da página de transações
 export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
-// INÍCIO DA ALTERAÇÃO
 export let selectedPortfolioForAssetsView = null; // Armazena a carteira selecionada para visualização de ativos
-// FIM DA ALTERAÇÃO
 
 
 
@@ -77,11 +76,9 @@ export function setUserAccounts(accounts) {
     userAccounts = accounts;
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function setUserPortfolios(portfolios) {
     userPortfolios = portfolios;
 }
-// FIM DA ALTERAÇÃO
 
 export function setLastTransactionDoc(doc) {
     lastTransactionDoc = doc;
@@ -95,11 +92,9 @@ export function setSelectedCardForInvoiceView(card) {
     selectedCardForInvoiceView = card;
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function setSelectedPortfolioForAssetsView(portfolio) {
     selectedPortfolioForAssetsView = portfolio;
 }
-// FIM DA ALTERAÇÃO
 
 export function setCurrentCardInvoices(invoices) {
     currentCardInvoices = invoices;
@@ -112,3 +107,9 @@ export function setExpensesChart(chartInstance) {
 export function setTrendsChart(chartInstance) {
     trendsChart = chartInstance;
 }
+
+// INÍCIO DA ALTERAÇÃO
+export function setInvoiceSpendingChart(chartInstance) {
+    invoiceSpendingChart = chartInstance;
+}
+// FIM DA ALTERAÇÃO
