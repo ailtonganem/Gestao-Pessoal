@@ -11,12 +11,13 @@ import { showNotification } from './notifications.js';
 import { getInvoices, getInvoiceTransactions } from '../invoices.js';
 import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
+// INÍCIO DA ALTERAÇÃO
+import * as charts from './charts.js';
+// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
-// INÍCIO DA ALTERAÇÃO
 export let _currentSplits = []; // Armazena os itens da divisão da transação
-// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM (Modais e seus conteúdos) ---
 const editModal = document.getElementById('edit-modal');
@@ -28,9 +29,7 @@ const payInvoiceModal = document.getElementById('pay-invoice-modal');
 const advancePaymentModal = document.getElementById('advance-payment-modal');
 const editTransferModal = document.getElementById('edit-transfer-modal');
 const editCardModal = document.getElementById('edit-card-modal');
-// INÍCIO DA ALTERAÇÃO
 const splitTransactionModal = document.getElementById('split-transaction-modal');
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
@@ -73,7 +72,6 @@ const editCardClosingDayInput = document.getElementById('edit-card-closing-day')
 const editCardDueDayInput = document.getElementById('edit-card-due-day');
 const editCardLimitInput = document.getElementById('edit-card-limit');
 
-// INÍCIO DA ALTERAÇÃO
 // Elementos do Modal de Divisão
 const splitTotalAmountEl = document.getElementById('split-total-amount');
 const splitRemainingAmountEl = document.getElementById('split-remaining-amount');
@@ -81,7 +79,6 @@ const splitListEl = document.getElementById('split-list');
 const splitCategorySelect = document.getElementById('split-category');
 const confirmSplitButton = document.getElementById('confirm-split-button');
 let totalSplitAmount = 0;
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Configurações
 const adminTabButton = document.getElementById('admin-tab-button');
@@ -116,6 +113,11 @@ export function openEditModal(transaction) {
     render.populateCategorySelects(transaction.type, editTransactionCategorySelect);
     editTransactionCategorySelect.value = transaction.category;
 
+    // INÍCIO DA ALTERAÇÃO
+    const tagsString = (transaction.tags || []).join(', ');
+    document.getElementById('edit-transaction-tags').value = tagsString;
+    // FIM DA ALTERAÇÃO
+
     editPaymentMethodSelect.value = transaction.paymentMethod;
 
     if (transaction.paymentMethod === 'credit_card') {
@@ -147,6 +149,26 @@ export function openEditRecurringModal(recurringTx) {
 
     render.populateCategorySelects(recurringTx.type, editRecurringCategorySelect);
     editRecurringCategorySelect.value = recurringTx.category;
+
+    // INÍCIO DA ALTERAÇÃO
+    const paymentMethodSelect = document.getElementById('edit-recurring-payment-method');
+    const accountWrapper = document.getElementById('edit-recurring-account-wrapper');
+    const cardWrapper = document.getElementById('edit-recurring-card-wrapper');
+    const accountSelect = document.getElementById('edit-recurring-account');
+    const cardSelect = document.getElementById('edit-recurring-card');
+
+    paymentMethodSelect.value = recurringTx.paymentMethod || 'account_debit';
+
+    if (paymentMethodSelect.value === 'credit_card') {
+        accountWrapper.style.display = 'none';
+        cardWrapper.style.display = 'block';
+        if (recurringTx.cardId) cardSelect.value = recurringTx.cardId;
+    } else {
+        accountWrapper.style.display = 'block';
+        cardWrapper.style.display = 'none';
+        if (recurringTx.accountId) accountSelect.value = recurringTx.accountId;
+    }
+    // FIM DA ALTERAÇÃO
 
     editRecurringModal.style.display = 'flex';
 }
@@ -210,7 +232,7 @@ export function closeEditCardModal() {
     editCardModal.style.display = 'none';
 }
 
-// --- INÍCIO DA ALTERAÇÃO: Funções de Gerenciamento do Modal de Divisão ---
+// --- Funções de Gerenciamento do Modal de Divisão ---
 
 export function openSplitModal(totalAmount, type) {
     if (isNaN(totalAmount) || totalAmount <= 0) {
@@ -274,7 +296,6 @@ function renderSplits() {
         splitListEl.appendChild(li);
     });
 }
-// --- FIM DA ALTERAÇÃO ---
 
 export function showInvoiceDetailsView(card) {
     state.setSelectedCardForInvoiceView(card);
@@ -310,6 +331,7 @@ export async function loadAndDisplayInvoices(card) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
 export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceSummary(invoice);
     payInvoiceButton.disabled = invoice.status !== 'closed';
@@ -319,12 +341,17 @@ export async function displayInvoiceDetails(invoice) {
         const transactions = await getInvoiceTransactions(invoice.id);
         _currentInvoiceTransactions = transactions;
         render.renderInvoiceTransactionsList(transactions);
+        // Chama a renderização do novo gráfico
+        charts.renderInvoiceSpendingChart(transactions);
     } catch (error) {
         showNotification(error.message, 'error');
         _currentInvoiceTransactions = [];
         render.renderInvoiceTransactionsList([{ description: 'Erro ao carregar.', amount: '' }]);
+        // Limpa o gráfico em caso de erro
+        charts.renderInvoiceSpendingChart([]);
     }
 }
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento do Modal de Configurações ---
