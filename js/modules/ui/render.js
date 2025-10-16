@@ -181,21 +181,24 @@ export function populateCategorySelects(type, selectElement) {
 }
 
 /** Popula os <select> de cartão de crédito com os cartões do usuário. */
+// --- INÍCIO DA ALTERAÇÃO ---
 export function populateCreditCardSelects() {
-    creditCardSelect.innerHTML = '';
-    editCreditCardSelect.innerHTML = '';
+    const recurringCardSelect = document.getElementById('recurring-card');
+    const editRecurringCardSelect = document.getElementById('edit-recurring-card');
+
+    const selects = [creditCardSelect, editCreditCardSelect, recurringCardSelect, editRecurringCardSelect];
+    
+    selects.forEach(select => { if(select) select.innerHTML = ''; });
 
     if (state.userCreditCards.length === 0) {
-        const option = '<option disabled>Nenhum cartão cadastrado</option>';
-        creditCardSelect.innerHTML = option;
-        editCreditCardSelect.innerHTML = option;
+        const option = '<option disabled value="">Nenhum cartão cadastrado</option>';
+        selects.forEach(select => { if(select) select.innerHTML = option; });
     } else {
         state.userCreditCards.forEach(card => {
             const option = document.createElement('option');
             option.value = card.id;
             option.textContent = card.name;
-            creditCardSelect.appendChild(option.cloneNode(true));
-            editCreditCardSelect.appendChild(option.cloneNode(true));
+            selects.forEach(select => { if(select) select.appendChild(option.cloneNode(true)); });
         });
     }
 }
@@ -206,43 +209,31 @@ export function populateAccountSelects() {
     const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
     const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
     const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
+    const recurringAccountSelect = document.getElementById('recurring-account');
+    const editRecurringAccountSelect = document.getElementById('edit-recurring-account');
+    
+    const selects = [
+        transactionAccountSelect, editTransactionAccountSelect, transferFromAccountSelect, 
+        transferToAccountSelect, payInvoiceAccountSelect, advancePaymentAccountSelect,
+        editTransferFromAccountSelect, editTransferToAccountSelect, recurringAccountSelect,
+        editRecurringAccountSelect
+    ];
 
-    transactionAccountSelect.innerHTML = '';
-    editTransactionAccountSelect.innerHTML = '';
-    transferFromAccountSelect.innerHTML = '';
-    transferToAccountSelect.innerHTML = '';
-    payInvoiceAccountSelect.innerHTML = '';
-    advancePaymentAccountSelect.innerHTML = '';
-    editTransferFromAccountSelect.innerHTML = '';
-    editTransferToAccountSelect.innerHTML = '';
-
+    selects.forEach(select => { if(select) select.innerHTML = ''; });
 
     if (state.userAccounts.length === 0) {
         const option = '<option disabled value="">Nenhuma conta cadastrada</option>';
-        transactionAccountSelect.innerHTML = option;
-        editTransactionAccountSelect.innerHTML = option;
-        transferFromAccountSelect.innerHTML = option;
-        transferToAccountSelect.innerHTML = option;
-        payInvoiceAccountSelect.innerHTML = option;
-        advancePaymentAccountSelect.innerHTML = option;
-        editTransferFromAccountSelect.innerHTML = option;
-        editTransferToAccountSelect.innerHTML = option;
+        selects.forEach(select => { if(select) select.innerHTML = option; });
     } else {
         state.userAccounts.forEach(account => {
             const option = document.createElement('option');
             option.value = account.id;
             option.textContent = `${account.name} (${formatCurrency(account.currentBalance)})`;
-            transactionAccountSelect.appendChild(option.cloneNode(true));
-            editTransactionAccountSelect.appendChild(option.cloneNode(true));
-            transferFromAccountSelect.appendChild(option.cloneNode(true));
-            transferToAccountSelect.appendChild(option.cloneNode(true));
-            payInvoiceAccountSelect.appendChild(option.cloneNode(true));
-            advancePaymentAccountSelect.appendChild(option.cloneNode(true));
-            editTransferFromAccountSelect.appendChild(option.cloneNode(true));
-            editTransferToAccountSelect.appendChild(option.cloneNode(true));
+            selects.forEach(select => { if(select) select.appendChild(option.cloneNode(true)); });
         });
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
@@ -289,12 +280,10 @@ export function renderCreditCardList() {
                         Fecha dia ${card.closingDay} | Vence dia ${card.dueDay}
                     </small>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="transaction-actions">
                     <button class="action-btn edit-btn" data-card-id="${card.id}" title="Editar Cartão">&#9998;</button>
                     <button class="action-btn delete-btn" data-card-id="${card.id}" title="Excluir cartão">&times;</button>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
             `;
             creditCardList.appendChild(li);
         });
@@ -451,6 +440,7 @@ export function renderBudgetList() {
 }
 
 /** Renderiza a lista de transações recorrentes a partir dos dados do estado global. */
+// --- INÍCIO DA ALTERAÇÃO ---
 export function renderRecurringList() {
     const recurringTxs = state.userRecurringTransactions;
     recurringList.innerHTML = '';
@@ -465,9 +455,19 @@ export function renderRecurringList() {
         li.className = tx.type;
         li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
 
+        let paymentTargetName = '';
+        if (tx.paymentMethod === 'credit_card') {
+            const card = state.userCreditCards.find(c => c.id === tx.cardId);
+            paymentTargetName = `(Cartão: ${card ? card.name : '...'})`;
+        } else {
+            const account = state.userAccounts.find(a => a.id === tx.accountId);
+            paymentTargetName = `(Conta: ${account ? account.name : '...'})`;
+        }
+
         li.innerHTML = `
             <span style="flex-grow: 1; text-align: left;">
                 Todo dia ${tx.dayOfMonth}: ${tx.description} (${formatCurrency(tx.amount)})
+                <small style="display: block; color: #7f8c8d;">${paymentTargetName}</small>
             </span>
             <div class="transaction-actions">
                 <button class="action-btn edit-btn" data-recurring-id="${tx.id}" title="Editar">&#9998;</button>
@@ -477,6 +477,7 @@ export function renderRecurringList() {
         recurringList.appendChild(li);
     });
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza a lista de usuários para o admin.
