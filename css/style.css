@@ -263,7 +263,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 #transactions-list .transaction-description { font-weight: bold; }
 #transactions-list .transaction-amount { font-family: monospace; font-size: 1.1rem; }
 
-/* INÍCIO DA ALTERAÇÃO */
 .transaction-tags {
     margin-top: 0.25rem;
     display: flex;
@@ -278,7 +277,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     border-radius: 10px;
     border: 1px solid var(--border-color);
 }
-/* FIM DA ALTERAÇÃO */
 
 /* Estilos dos Botões de Ação na Lista */
 .transaction-actions { display: flex; gap: 0.5rem; }
