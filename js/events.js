@@ -320,9 +320,7 @@ export function initializeEventListeners() {
 
     document.getElementById('filter-description').addEventListener('input', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-category').addEventListener('change', app.applyFiltersAndUpdateDashboard);
-    // INÍCIO DA ALTERAÇÃO
     document.getElementById('filter-tag').addEventListener('input', app.applyFiltersAndUpdateDashboard);
-    // FIM DA ALTERAÇÃO
     document.getElementById('filter-payment-method').addEventListener('change', app.applyFiltersAndUpdateDashboard);
     document.getElementById('filter-type').addEventListener('change', app.loadUserDashboard);
     document.getElementById('filter-sort').addEventListener('change', app.applyFiltersAndUpdateDashboard);
@@ -392,6 +390,11 @@ export function initializeEventListeners() {
         const selectedInvoice = state.currentCardInvoices.find(inv => inv.id === e.target.value);
         if (selectedInvoice) await modals.displayInvoiceDetails(selectedInvoice);
     });
+
+    // INÍCIO DA ALTERAÇÃO
+    document.getElementById('prev-invoice-button').addEventListener('click', () => handleNavigateInvoice('prev'));
+    document.getElementById('next-invoice-button').addEventListener('click', () => handleNavigateInvoice('next'));
+    // FIM DA ALTERAÇÃO
 
     document.getElementById('pay-invoice-button').addEventListener('click', modals.openPayInvoiceModal);
     payInvoiceForm.addEventListener('submit', handleConfirmInvoicePayment);
@@ -574,6 +577,28 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+
+// INÍCIO DA ALTERAÇÃO
+function handleNavigateInvoice(direction) {
+    const select = document.getElementById('invoice-period-select');
+    if (!select || select.options.length <= 1) return;
+
+    let currentIndex = select.selectedIndex;
+    let newIndex;
+
+    if (direction === 'next') {
+        newIndex = Math.max(0, currentIndex - 1); // Faturas mais recentes vêm primeiro
+    } else { // 'prev'
+        newIndex = Math.min(select.options.length - 1, currentIndex + 1);
+    }
+
+    if (newIndex !== currentIndex) {
+        select.selectedIndex = newIndex;
+        // Dispara manualmente o evento 'change' para acionar a atualização da fatura
+        select.dispatchEvent(new Event('change'));
+    }
+}
+// FIM DA ALTERAÇÃO
 
 function handleAddSplitItem(e) {
     e.preventDefault();
@@ -770,10 +795,8 @@ async function handleAddTransaction(e) {
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
-    // INÍCIO DA ALTERAÇÃO
     const tagsString = form['transaction-tags'].value;
     const tags = tagsString.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
-    // FIM DA ALTERAÇÃO
 
     const paymentMethod = form['payment-method'].value;
 
@@ -787,7 +810,7 @@ async function handleAddTransaction(e) {
         isInstallment: false,
         isSplit: isTransactionSplit,
         splits: isTransactionSplit ? modals._currentSplits : null,
-        tags: tags.length > 0 ? tags : [] // INÍCIO E FIM DA ALTERAÇÃO
+        tags: tags.length > 0 ? tags : []
     };
 
     if (!isTransactionSplit) {
@@ -874,7 +897,6 @@ async function handleDeleteTransaction(transaction) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function handleUpdateTransaction(e) {
     e.preventDefault();
     const form = e.target;
@@ -914,7 +936,6 @@ async function handleUpdateTransaction(e) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleAddAccount(e) {
     e.preventDefault();
