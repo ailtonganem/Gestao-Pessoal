@@ -444,11 +444,12 @@
                     </div>
                 </div>
 
-                <!-- Visão de Gerenciamento (Antiga 'portfolios-view') - pode ser acessada por um botão -->
+                <!-- Visão de Gerenciamento -->
                 <div id="portfolios-management-view" style="display: none;">
                     <h2>Gerenciar Carteiras e Ativos</h2>
                     <button id="back-to-investment-dashboard-btn" class="button-secondary">&larr; Voltar ao Dashboard</button>
                     
+                    <!-- View de Lista de Carteiras -->
                     <div id="portfolios-view">
                         <section id="portfolio-list-section">
                             <h3>Minhas Carteiras</h3>
@@ -471,12 +472,13 @@
                         </section>
                     </div>
         
+                    <!-- View de Lista de Ativos -->
                     <div id="assets-view" style="display: none;">
                         <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
                         <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
                         
                         <section id="asset-list-section">
-                            <p class="subtitle">Ativos presentes nesta carteira.</p>
+                            <p class="subtitle">Clique em um ativo para ver seus detalhes e movimentos.</p>
                             <ul id="asset-list"></ul>
                         </section>
 
@@ -516,6 +518,25 @@
                             </form>
                         </section>
                     </div>
+
+                    <!-- INÍCIO DA ALTERAÇÃO -->
+                    <!-- View de Detalhes do Ativo e Movimentos -->
+                    <div id="movements-view" style="display: none;">
+                        <button id="back-to-assets-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Ativos</button>
+                        <h2 id="movements-asset-name">Movimentos - [Nome do Ativo]</h2>
+                        
+                        <section id="asset-details-summary">
+                            <!-- Os detalhes do ativo (posição atual) serão renderizados aqui -->
+                        </section>
+                        
+                        <section id="movements-list-section">
+                            <h3>Histórico de Operações</h3>
+                            <ul id="movements-list">
+                                <!-- A lista de movimentos (compras, vendas, proventos) será renderizada aqui -->
+                            </ul>
+                        </section>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                 </div>
             </main>
         </div>
@@ -1054,7 +1075,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="provento-modal" class="modal">
         <div class="modal-content">
             <span class="close-provento-modal-button">&times;</span>
@@ -1082,6 +1102,98 @@
                     <select id="provento-account" required></select>
                 </div>
                 <button type="submit">Registrar Provento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <div id="edit-portfolio-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-portfolio-modal-button">&times;</span>
+            <h2>Editar Carteira</h2>
+            <form id="edit-portfolio-form">
+                <input type="hidden" id="edit-portfolio-id">
+                <div class="form-control">
+                    <label for="edit-portfolio-name">Nome da Carteira</label>
+                    <input type="text" id="edit-portfolio-name" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-portfolio-description">Descrição (opcional)</label>
+                    <input type="text" id="edit-portfolio-description">
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-asset-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-asset-modal-button">&times;</span>
+            <h2>Editar Ativo</h2>
+            <form id="edit-asset-form">
+                <input type="hidden" id="edit-asset-id">
+                <div class="form-control">
+                    <label for="edit-asset-name">Nome do Ativo</label>
+                    <input type="text" id="edit-asset-name" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-asset-ticker">Ticker (Código)</label>
+                    <input type="text" id="edit-asset-ticker" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-asset-type">Tipo</label>
+                    <select id="edit-asset-type" required>
+                        <option value="Ação">Ação</option>
+                        <option value="FII">Fundo Imobiliário (FII)</option>
+                        <option value="Tesouro Direto">Tesouro Direto</option>
+                        <option value="Criptomoeda">Criptomoeda</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label for="edit-asset-class">Classe</label>
+                    <select id="edit-asset-class" required>
+                        <option value="Renda Variável">Renda Variável</option>
+                        <option value="Renda Fixa">Renda Fixa</option>
+                    </select>
+                </div>
+                 <div class="form-control">
+                    <label for="edit-asset-broker">Corretora/Exchange</label>
+                    <input type="text" id="edit-asset-broker">
+                </div>
+                <button type="submit">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-movement-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-movement-modal-button">&times;</span>
+            <h2 id="edit-movement-modal-title">Editar Operação</h2>
+            <form id="edit-movement-form">
+                <input type="hidden" id="edit-movement-id">
+                <div class="form-control">
+                    <label>Tipo de Operação</label>
+                    <div class="radio-container">
+                        <input type="radio" id="edit-movement-type-buy" name="edit-movement-type" value="buy" required>
+                        <label for="edit-movement-type-buy">Compra</label>
+                        <input type="radio" id="edit-movement-type-sell" name="edit-movement-type" value="sell">
+                        <label for="edit-movement-type-sell">Venda</label>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label for="edit-movement-date">Data da Operação</label>
+                    <input type="date" id="edit-movement-date" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-movement-quantity">Quantidade</label>
+                    <input type="number" id="edit-movement-quantity" step="any" required>
+                </div>
+                <div class="form-control">
+                    <label for="edit-movement-price">Preço por Unidade (R$)</label>
+                    <input type="number" id="edit-movement-price" step="any" required>
+                </div>
+                <button type="submit">Salvar Alterações</button>
             </form>
         </div>
     </div>
