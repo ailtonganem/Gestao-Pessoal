@@ -8,9 +8,7 @@
 import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
-// INÍCIO DA ALTERAÇÃO
 import * as movements from './movements.js';
-// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency, formatDateToInput } from '../ui/utils.js';
 import { populateAccountSelects } from '../ui/render.js';
@@ -45,6 +43,14 @@ const movementModalTitle = document.getElementById('asset-movement-modal-title')
 const movementAssetIdInput = document.getElementById('movement-asset-id');
 const movementDateInput = document.getElementById('movement-date');
 const movementAccountSelect = document.getElementById('movement-account');
+
+// INÍCIO DA ALTERAÇÃO
+const proventoModal = document.getElementById('provento-modal');
+const proventoModalTitle = document.getElementById('provento-modal-title');
+const proventoAssetIdInput = document.getElementById('provento-asset-id');
+const proventoPaymentDateInput = document.getElementById('provento-payment-date');
+const proventoAccountSelect = document.getElementById('provento-account');
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento de Views ---
@@ -135,7 +141,6 @@ export async function updateInvestmentDashboard(portfolioId) {
             }
         });
         
-        // INÍCIO DA ALTERAÇÃO
         // Buscar e consolidar o histórico de movimentos
         const movementPromises = assetsToDisplay.map(async (asset) => {
             const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
@@ -146,7 +151,6 @@ export async function updateInvestmentDashboard(portfolioId) {
         const allMovementsNested = await Promise.all(movementPromises);
         const allMovementsFlat = allMovementsNested.flat();
         allMovementsFlat.sort((a, b) => b.date - a.date); // Ordena do mais recente para o mais antigo
-        // FIM DA ALTERAÇÃO
 
         // --- Cálculos ---
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
@@ -166,9 +170,7 @@ export async function updateInvestmentDashboard(portfolioId) {
                 labels: Object.keys(composicaoData),
                 values: Object.values(composicaoData)
             },
-            // INÍCIO DA ALTERAÇÃO
             history: allMovementsFlat,
-            // FIM DA ALTERAÇÃO
         };
 
         // --- Renderização ---
@@ -254,7 +256,6 @@ function renderAltasBaixasCard(data) {
     altasBaixasCard.querySelector('#altas-baixas-list').innerHTML = `<p>Funcionalidade de Altas/Baixas a ser implementada.</p>`;
 }
 
-// INÍCIO DA ALTERAÇÃO
 function renderInvestmentHistory(data) {
     const historyListEl = investmentHistoryCard.querySelector('#investment-history-list');
     historyListEl.innerHTML = '';
@@ -269,21 +270,37 @@ function renderInvestmentHistory(data) {
         const li = document.createElement('li');
         li.style.cssText = 'display: flex; justify-content: space-between; padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--background-color); flex-wrap: wrap; gap: 0.5rem;';
         
-        const typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
-        const typeClass = mov.type === 'buy' ? 'revenue' : 'expense'; // reuso de cores
+        let typeLabel = '';
+        let typeClass = '';
+        let details = '';
+
+        switch(mov.type) {
+            case 'buy':
+                typeLabel = 'Compra';
+                typeClass = 'buy'; // Usará a cor de sucesso (verde)
+                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span>`;
+                break;
+            case 'sell':
+                typeLabel = 'Venda';
+                typeClass = 'sell'; // Usará a cor de erro (vermelho)
+                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span>`;
+                break;
+            case 'provento':
+                typeLabel = mov.proventoType || 'Provento';
+                typeClass = 'revenue'; // Reuso de cor
+                details = `<span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalAmount)}</span>`;
+                break;
+        }
         
         li.innerHTML = `
             <span style="font-weight: 500; color: var(--text-color);">${mov.date.toLocaleDateString('pt-BR')}</span>
             <span style="font-weight: bold;">${mov.ticker}</span>
             <span class="status-badge ${typeClass}">${typeLabel}</span>
-            <span>${mov.quantity} un.</span>
-            <span>@ ${formatCurrency(mov.pricePerUnit)}</span>
-            <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>
+            ${details}
         `;
         historyListEl.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento Legadas (agora dentro da tela de Gerenciamento) ---
@@ -347,7 +364,6 @@ export async function loadAndRenderAssets(portfolioId) {
     try {
         const userAssets = await assets.getAssets(portfolioId);
 
-        // Buscar cotações e atualizar o valor de mercado dos ativos
         const tickers = userAssets.map(asset => asset.ticker);
         const quotes = await getQuotes(tickers);
 
@@ -359,7 +375,7 @@ export async function loadAndRenderAssets(portfolioId) {
             }
         });
 
-        _currentPortfolioAssets = userAssets; // Armazena os ativos carregados
+        _currentPortfolioAssets = userAssets; 
         renderAssets(userAssets);
     } catch (error) {
         showNotification(error.message, 'error');
@@ -382,6 +398,7 @@ function renderAssets(assetsToRender) {
         const li = document.createElement('li');
         li.className = 'asset-item';
 
+        // INÍCIO DA ALTERAÇÃO
         li.innerHTML = `
             <div class="asset-info">
                 <span class="asset-ticker">${asset.ticker}</span>
@@ -393,11 +410,13 @@ function renderAssets(assetsToRender) {
                 <small class="asset-quantity">${asset.quantity} Cotas</small>
             </div>
             <div class="asset-actions">
+                <button class="action-btn add-provento-btn" data-asset-id="${asset.id}" title="Registrar Provento">💲</button>
                 <button class="action-btn add-movement-btn" data-asset-id="${asset.id}" title="Adicionar Movimento (Compra/Venda)">➕</button>
                 <button class="action-btn edit-btn" data-asset-id="${asset.id}" title="Editar Ativo">&#9998;</button>
                 <button class="action-btn delete-btn" data-asset-id="${asset.id}" title="Excluir Ativo">&times;</button>
             </div>
         `;
+        // FIM DA ALTERAÇÃO
         assetListEl.appendChild(li);
     });
 }
@@ -418,7 +437,6 @@ export function openMovementModal(assetId) {
     movementAssetIdInput.value = assetId;
     movementDateInput.value = formatDateToInput(new Date());
 
-    // Popula o select de contas
     populateAccountSelects(movementAccountSelect);
     
     movementModal.style.display = 'flex';
@@ -431,3 +449,33 @@ export function closeMovementModal() {
     document.getElementById('add-movement-form').reset();
     movementModal.style.display = 'none';
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Abre o modal para registrar um novo provento para um ativo.
+ * @param {string} assetId - O ID do ativo para o qual o provento será registrado.
+ */
+export function openProventoModal(assetId) {
+    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
+    if (!asset) {
+        showNotification("Ativo não encontrado.", "error");
+        return;
+    }
+
+    proventoModalTitle.textContent = `Registrar Provento para ${asset.ticker}`;
+    proventoAssetIdInput.value = assetId;
+    proventoPaymentDateInput.value = formatDateToInput(new Date());
+
+    populateAccountSelects(proventoAccountSelect);
+    
+    proventoModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de registro de provento.
+ */
+export function closeProventoModal() {
+    document.getElementById('add-provento-form').reset();
+    proventoModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
