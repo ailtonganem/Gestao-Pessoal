@@ -14,7 +14,12 @@ import {
     Timestamp,
     getDoc,
     increment,
-    serverTimestamp
+    serverTimestamp,
+    // INÍCIO DA ALTERAÇÃO
+    getDocs,
+    query,
+    orderBy
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -121,3 +126,35 @@ export async function addMovement(portfolioId, assetId, movementData) {
         throw error;
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Busca todos os movimentos (operações) de um ativo específico.
+ * @param {string} portfolioId - O ID da carteira.
+ * @param {string} assetId - O ID do ativo.
+ * @returns {Promise<Array<object>>} Uma lista de objetos de movimento, ordenados por data.
+ */
+export async function getMovements(portfolioId, assetId) {
+    try {
+        const movementsRef = collection(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId, 'movements');
+        const q = query(movementsRef, orderBy("date", "desc"));
+
+        const querySnapshot = await getDocs(q);
+        const movements = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            movements.push({
+                id: doc.id,
+                ...data,
+                date: data.date.toDate() // Converte Timestamp para objeto Date do JS
+            });
+        });
+
+        return movements;
+
+    } catch (error) {
+        console.error(`Erro ao buscar movimentos para o ativo ${assetId}:`, error);
+        throw new Error("Não foi possível carregar o histórico de operações do ativo.");
+    }
+}
+// FIM DA ALTERAÇÃO
