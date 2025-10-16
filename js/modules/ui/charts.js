@@ -5,25 +5,24 @@
  */
 
 import * as state from '../state.js';
-// --- INÍCIO DA ALTERAÇÃO ---
 import { unpackSplitTransactions } from '../analytics.js';
-// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const chartCanvas = document.getElementById('expenses-chart');
 const trendsChartCanvas = document.getElementById('trends-chart');
+// INÍCIO DA ALTERAÇÃO
+const invoiceSpendingChartCanvas = document.getElementById('invoice-spending-chart');
+// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza o gráfico de despesas por categoria (tipo 'pie').
  * @param {Array<object>} transactions - A lista de transações a ser analisada.
  */
 export function renderExpensesChart(transactions) {
-    // --- INÍCIO DA ALTERAÇÃO ---
     // Desdobra as transações divididas para garantir que os cálculos sejam feitos nas categorias corretas.
     const unpackedTransactions = unpackSplitTransactions(transactions);
 
     const expenses = unpackedTransactions.filter(t => t.type === 'expense');
-    // --- FIM DA ALTERAÇÃO ---
 
     const spendingByCategory = expenses.reduce((acc, transaction) => {
         const { category, amount } = transaction;
@@ -149,3 +148,61 @@ export function renderTrendsChart(summaryData) {
     // Salva a nova instância do gráfico no estado global
     state.setTrendsChart(newChart);
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Renderiza o gráfico de gastos por categoria para uma fatura específica.
+ * @param {Array<object>} invoiceTransactions - A lista de transações da fatura.
+ */
+export function renderInvoiceSpendingChart(invoiceTransactions) {
+    const spendingByCategory = invoiceTransactions.reduce((acc, transaction) => {
+        const { category, amount } = transaction;
+        if (!acc[category]) {
+            acc[category] = 0;
+        }
+        acc[category] += amount;
+        return acc;
+    }, {});
+
+    const labels = Object.keys(spendingByCategory);
+    const data = Object.values(spendingByCategory);
+
+    if (state.invoiceSpendingChart) {
+        state.invoiceSpendingChart.destroy();
+    }
+
+    if (labels.length === 0) {
+        state.setInvoiceSpendingChart(null);
+        return;
+    }
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Gastos na Fatura',
+            data: data,
+            backgroundColor: labels.map((_, index) => `hsl(${(index * 40) % 360}, 70%, 50%)`),
+            hoverOffset: 4
+        }]
+    };
+
+    const newChart = new Chart(invoiceSpendingChartCanvas, {
+        type: 'pie',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e'
+                    }
+                }
+            }
+        }
+    });
+
+    state.setInvoiceSpendingChart(newChart);
+}
+// FIM DA ALTERAÇÃO
