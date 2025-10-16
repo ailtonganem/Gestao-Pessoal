@@ -11,11 +11,9 @@ import { unpackSplitTransactions } from '../analytics.js';
 const chartCanvas = document.getElementById('expenses-chart');
 const trendsChartCanvas = document.getElementById('trends-chart');
 const invoiceSpendingChartCanvas = document.getElementById('invoice-spending-chart');
-// INÍCIO DA ALTERAÇÃO
 const rentabilidadeChartCanvas = document.getElementById('rentabilidade-chart');
 const composicaoChartCanvas = document.getElementById('composicao-chart');
 const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
-// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza o gráfico de despesas por categoria (tipo 'pie').
@@ -209,7 +207,6 @@ export function renderInvoiceSpendingChart(invoiceTransactions) {
 }
 
 
-// --- INÍCIO DA ALTERAÇÃO ---
 
 /**
  * Renderiza o gráfico de rentabilidade da carteira (tipo 'line').
@@ -257,22 +254,31 @@ export function renderRentabilidadeChart(data) {
     state.setRentabilidadeChart(newChart);
 }
 
+// INÍCIO DA ALTERAÇÃO
 /**
  * Renderiza o gráfico de composição da carteira (tipo 'doughnut').
- * @param {object} data - Dados de composição (placeholder).
+ * @param {object} data - Dados de composição, contendo { labels, values }.
  */
 export function renderComposicaoChart(data) {
     if (state.composicaoChart) {
         state.composicaoChart.destroy();
     }
     
-    // Dados de exemplo
+    // Se não houver dados, não renderiza o gráfico.
+    if (!data || !data.labels || data.labels.length === 0) {
+        composicaoChartCanvas.getContext('2d').clearRect(0, 0, composicaoChartCanvas.width, composicaoChartCanvas.height);
+        state.setComposicaoChart(null);
+        return;
+    }
+
     const chartData = {
-        labels: ['Ações', 'FIIs', 'Renda Fixa'],
+        labels: data.labels,
         datasets: [{
             label: 'Composição',
-            data: [50, 30, 20],
-            backgroundColor: ['#3498db', '#2ecc71', '#95a5a6'],
+            data: data.values,
+            backgroundColor: [
+                '#3498db', '#2ecc71', '#95a5a6', '#f1c40f', '#e74c3c', '#9b59b6'
+            ],
             hoverOffset: 4
         }]
     };
@@ -296,6 +302,7 @@ export function renderComposicaoChart(data) {
 
     state.setComposicaoChart(newChart);
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza o gráfico de evolução do patrimônio (tipo 'bar').
@@ -335,4 +342,3 @@ export function renderPatrimonioChart(data) {
 
     state.setPatrimonioChart(newChart);
 }
-// FIM DA ALTERAÇÃO
