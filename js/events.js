@@ -19,9 +19,7 @@ import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
 import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
-// INÍCIO DA ALTERAÇÃO - Importações de investimento removidas
 import * as investmentsUI from './modules/investments/ui.js';
-// FIM DA ALTERAÇÃO
 
 
 // --- Módulos de UI ---
@@ -48,8 +46,6 @@ const appContent = document.getElementById('app-content');
 const payInvoiceForm = document.getElementById('pay-invoice-form');
 const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
-// INÍCIO DA ALTERAÇÃO - Seletores de investimento removidos
-// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -376,17 +372,24 @@ export function initializeEventListeners() {
     advancePaymentForm.addEventListener('submit', handleConfirmAdvancePayment);
     document.querySelector('.close-advance-payment-modal-button').addEventListener('click', modals.closeAdvancePaymentModal);
 
+    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('invoice-transactions-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-invoice-tx-id]');
         if (!eventTarget) return;
+
         const transactionId = eventTarget.dataset.invoiceTxId;
+        const invoiceId = document.getElementById('invoice-period-select').value;
+
         if (eventTarget.matches('.edit-btn')) {
             modals.openEditInvoiceTransactionModal(transactionId);
         }
         if (eventTarget.matches('.delete-btn')) {
-            showNotification('A exclusão de lançamentos individuais da fatura será implementada em breve.', 'error');
+            if (invoiceId && transactionId) {
+                handleDeleteInvoiceTransaction(invoiceId, transactionId);
+            }
         }
     });
+    // --- FIM DA ALTERAÇÃO ---
 
     document.querySelector('.close-edit-invoice-tx-modal-button').addEventListener('click', modals.closeEditInvoiceTransactionModal);
     editInvoiceTransactionForm.addEventListener('submit', handleUpdateInvoiceTransaction);
@@ -862,6 +865,23 @@ async function handleUpdateInvoiceTransaction(e) {
         submitButton.disabled = false;
     }
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+async function handleDeleteInvoiceTransaction(invoiceId, transactionId) {
+    if (confirm('Tem certeza que deseja excluir este lançamento?')) {
+        try {
+            await invoices.deleteInvoiceTransaction(invoiceId, transactionId);
+            showNotification('Lançamento excluído com sucesso!');
+            // Recarrega os detalhes da fatura para refletir a exclusão
+            if (state.selectedCardForInvoiceView) {
+                await modals.loadAndDisplayInvoices(state.selectedCardForInvoiceView);
+            }
+        } catch (error) {
+            showNotification(error.message, 'error');
+        }
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 async function handleAddCreditCard(e) {
     e.preventDefault();
