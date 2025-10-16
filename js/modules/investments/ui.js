@@ -7,31 +7,16 @@
 
 import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
-// INÍCIO DA ALTERAÇÃO
 import * as assets from './assets.js';
-// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency } from '../ui/utils.js';
 
 // --- Seleção de Elementos do DOM ---
-const investmentsContainer = document.getElementById('investments-container');
 const portfoliosView = document.getElementById('portfolios-view');
 const assetsView = document.getElementById('assets-view');
 const portfoliosListEl = document.getElementById('portfolios-list');
 const assetsPortfolioNameEl = document.getElementById('assets-portfolio-name');
-// INÍCIO DA ALTERAÇÃO
 const assetListEl = document.getElementById('asset-list');
-// FIM DA ALTERAÇÃO
-
-/**
- * Exibe a "página" de investimentos e carrega a lista de carteiras.
- */
-export async function showInvestmentsPage() {
-    if (!state.currentUser) return;
-    
-    showPortfoliosView();
-    await loadAndRenderPortfolios();
-}
 
 
 /**
@@ -47,16 +32,12 @@ export function showPortfoliosView() {
  * Exibe a visualização de gerenciamento de ativos para uma carteira específica.
  * @param {object} portfolio - O objeto da carteira selecionada.
  */
-// INÍCIO DA ALTERAÇÃO - Tornando a função async para carregar os ativos
 export async function showAssetsView(portfolio) {
-// FIM DA ALTERAÇÃO
     state.setSelectedPortfolioForAssetsView(portfolio); // Guarda a carteira selecionada no estado
     assetsPortfolioNameEl.textContent = `Ativos - ${portfolio.name}`;
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
-    // INÍCIO DA ALTERAÇÃO
     await loadAndRenderAssets(portfolio.id); // Carrega e exibe os ativos da carteira
-    // FIM DA ALTERAÇÃO
 }
 
 /**
@@ -88,7 +69,8 @@ function renderPortfolios(portfoliosToRender) {
 
     portfoliosToRender.forEach(portfolio => {
         const li = document.createElement('li');
-        li.className = 'portfolio-item'; // Usar uma classe para estilização futura
+        // INÍCIO DA ALTERAÇÃO - Uso de classes CSS em vez de estilos inline
+        li.className = 'portfolio-item';
         
         const totalValue = portfolio.currentValue || 0;
 
@@ -105,12 +87,13 @@ function renderPortfolios(portfoliosToRender) {
                 </div>
             </div>
         `;
+        // FIM DA ALTERAÇÃO
         portfoliosListEl.appendChild(li);
     });
 }
 
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para carregar e renderizar ativos
+// Novas funções para carregar e renderizar ativos
 
 /**
  * Busca os dados dos ativos de uma carteira e chama a função para renderizá-los.
@@ -141,7 +124,8 @@ function renderAssets(assetsToRender) {
 
     assetsToRender.forEach(asset => {
         const li = document.createElement('li');
-        li.className = 'asset-item'; // Usar classe para estilização futura
+        // INÍCIO DA ALTERAÇÃO - Uso de classes CSS em vez de estilos inline
+        li.className = 'asset-item';
 
         li.innerHTML = `
             <div class="asset-info">
@@ -159,7 +143,7 @@ function renderAssets(assetsToRender) {
                 <button class="action-btn delete-btn" data-asset-id="${asset.id}" title="Excluir Ativo">&times;</button>
             </div>
         `;
+        // FIM DA ALTERAÇÃO
         assetListEl.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
