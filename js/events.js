@@ -21,9 +21,7 @@ import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 // Importação dos módulos de investimento
 import * as portfolios from './modules/investments/portfolios.js';
-// INÍCIO DA ALTERAÇÃO
 import * as assets from './modules/investments/assets.js';
-// FIM DA ALTERAÇÃO
 import * as investmentsUI from './modules/investments/ui.js';
 
 
@@ -53,9 +51,7 @@ const advancePaymentForm = document.getElementById('advance-payment-form');
 const editTransferForm = document.getElementById('edit-transfer-form');
 const addPortfolioForm = document.getElementById('add-portfolio-form');
 const portfoliosList = document.getElementById('portfolios-list');
-// INÍCIO DA ALTERAÇÃO
 const addAssetForm = document.getElementById('add-asset-form');
-// FIM DA ALTERAÇÃO
 
 
 let debounceTimer;
@@ -506,9 +502,7 @@ export function initializeEventListeners() {
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
     portfoliosList.addEventListener('click', handlePortfolioListActions);
-    // INÍCIO DA ALTERAÇÃO
     addAssetForm.addEventListener('submit', handleAddAsset);
-    // FIM DA ALTERAÇÃO
     
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) event.target.style.display = 'none';
@@ -570,7 +564,7 @@ async function handlePortfolioListActions(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Handler para adicionar um novo ativo
+// Handler para adicionar um novo ativo
 async function handleAddAsset(e) {
     e.preventDefault();
     const form = e.target;
@@ -596,15 +590,15 @@ async function handleAddAsset(e) {
         await assets.addAsset(selectedPortfolio.id, assetData);
         showNotification("Ativo adicionado com sucesso!");
         form.reset();
-        // Futuramente, chamar a função para recarregar a lista de ativos
-        // await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
+        // INÍCIO DA ALTERAÇÃO
+        await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
+        // FIM DA ALTERAÇÃO
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 async function handleConfirmInvoicePayment(e) {
     e.preventDefault();
