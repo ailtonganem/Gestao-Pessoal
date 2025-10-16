@@ -18,9 +18,7 @@ import {
     doc,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-// INÍCIO DA ALTERAÇÃO
 import { getAssets } from './assets.js';
-// FIM DA ALTERAÇÃO
 
 /**
  * Adiciona uma nova carteira de investimentos para o usuário.
@@ -107,12 +105,23 @@ export async function deletePortfolio(portfolioId) {
 /**
  * Busca todos os ativos de todas as carteiras de um usuário.
  * @param {string} userId - O ID do usuário.
- * @returns {Promise<Array<object>>} Uma lista consolidada de todos os ativos do usuário.
+ * @returns {Promise<Array<object>>} Uma lista consolidada de todos os ativos do usuário,
+ *                                  com cada ativo contendo a propriedade 'portfolioId'.
  */
 export async function getAllUserAssets(userId) {
     try {
         const userPortfolios = await getPortfolios(userId);
-        const allAssetsPromises = userPortfolios.map(p => getAssets(p.id));
+        
+        // Mapeia cada carteira para uma promessa que busca seus ativos
+        const allAssetsPromises = userPortfolios.map(async (p) => {
+            const assets = await getAssets(p.id);
+            // Adiciona o ID da carteira a cada ativo antes de retornar
+            return assets.map(asset => ({
+                ...asset,
+                portfolioId: p.id 
+            }));
+        });
+
         const assetsByPortfolio = await Promise.all(allAssetsPromises);
         
         // "Achata" o array de arrays em um único array de ativos
