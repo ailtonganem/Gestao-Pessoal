@@ -18,6 +18,9 @@ import {
     doc,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// INÍCIO DA ALTERAÇÃO
+import { getAssets } from './assets.js';
+// FIM DA ALTERAÇÃO
 
 /**
  * Adiciona uma nova carteira de investimentos para o usuário.
@@ -83,8 +86,6 @@ export async function getPortfolios(userId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
-
 /**
  * Exclui uma carteira de investimentos do Firestore.
  * @param {string} portfolioId - O ID do documento da carteira a ser excluída.
@@ -99,6 +100,28 @@ export async function deletePortfolio(portfolioId) {
     } catch (error) {
         console.error("Erro ao excluir carteira:", error);
         throw new Error("Não foi possível excluir a carteira.");
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Busca todos os ativos de todas as carteiras de um usuário.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Array<object>>} Uma lista consolidada de todos os ativos do usuário.
+ */
+export async function getAllUserAssets(userId) {
+    try {
+        const userPortfolios = await getPortfolios(userId);
+        const allAssetsPromises = userPortfolios.map(p => getAssets(p.id));
+        const assetsByPortfolio = await Promise.all(allAssetsPromises);
+        
+        // "Achata" o array de arrays em um único array de ativos
+        const consolidatedAssets = assetsByPortfolio.flat();
+        
+        return consolidatedAssets;
+    } catch (error) {
+        console.error("Erro ao buscar todos os ativos do usuário:", error);
+        throw new Error("Não foi possível carregar a visão consolidada dos ativos.");
     }
 }
 // FIM DA ALTERAÇÃO
