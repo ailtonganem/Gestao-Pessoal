@@ -189,7 +189,6 @@
                                         <label for="type-expense">Despesa</label>
                                     </div>
                                 </div>
-                                <!-- INÍCIO DA ALTERAÇÃO -->
                                 <div class="form-control" id="category-control-wrapper">
                                     <div style="display: flex; justify-content: space-between; align-items: baseline;">
                                         <label for="transaction-category">Categoria</label>
@@ -197,12 +196,18 @@
                                     </div>
                                     <select id="transaction-category" required></select>
                                 </div>
-                                <!-- FIM DA ALTERAÇÃO -->
                                 <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
                                     <label for="transaction-subcategory">Subcategoria (opcional)</label>
                                     <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
                                     <datalist id="subcategory-suggestions"></datalist>
                                 </div>
+                                <!-- INÍCIO DA ALTERAÇÃO -->
+                                <div class="form-control">
+                                    <label for="transaction-tags">Tags (opcional)</label>
+                                    <input type="text" id="transaction-tags" placeholder="Ex: viagem, reforma, projetoX">
+                                    <p class="subtitle" style="text-align: left; font-size: 0.8rem; margin-top: 0.2rem;">Separe as tags por vírgula (,)</p>
+                                </div>
+                                <!-- FIM DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="payment-method">Método de Pagamento</label>
                                     <select id="payment-method" required>
@@ -316,6 +321,12 @@
                                         <option value="all">Todas</option>
                                     </select>
                                 </div>
+                                <!-- INÍCIO DA ALTERAÇÃO -->
+                                <div class="form-control">
+                                    <label for="filter-tag">Filtrar por Tag</label>
+                                    <input type="text" id="filter-tag" placeholder="Ex: viagem">
+                                </div>
+                                <!-- FIM DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="filter-payment-method">Método de Pagamento</label>
                                     <select id="filter-payment-method">
@@ -472,6 +483,12 @@
                     <label for="edit-transaction-category">Categoria</label>
                     <select id="edit-transaction-category" required></select>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div class="form-control">
+                    <label for="edit-transaction-tags">Tags (opcional)</label>
+                    <input type="text" id="edit-transaction-tags" placeholder="Separe as tags por vírgula">
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-payment-method">Método de Pagamento</label>
                     <select id="edit-payment-method" required>
@@ -575,7 +592,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="split-transaction-modal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <span class="close-split-modal-button">&times;</span>
@@ -609,7 +625,6 @@
             </div>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="settings-modal" class="modal">
         <div class="modal-content">
