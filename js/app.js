@@ -18,10 +18,12 @@ import * as budget from './modules/budget.js';
 import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
-
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
-import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
+// INÍCIO DA ALTERAÇÃO - Importação do ponto de entrada do módulo de investimentos
+import { initializeInvestmentsModule } from './modules/investments/main.js';
 // FIM DA ALTERAÇÃO
+
+
+import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
 
 
 // --- Ponto de Entrada da Aplicação ---
@@ -35,6 +37,9 @@ function initializeApp() {
     toggleTheme(savedTheme === 'dark');
     
     initializeEventListeners();
+    // INÍCIO DA ALTERAÇÃO - Inicializa o módulo de investimentos
+    initializeInvestmentsModule();
+    // FIM DA ALTERAÇÃO
     initializeCollapsibleSections();
     applyDashboardOrder(); 
 
