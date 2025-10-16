@@ -189,10 +189,15 @@
                                         <label for="type-expense">Despesa</label>
                                     </div>
                                 </div>
-                                <div class="form-control">
-                                    <label for="transaction-category">Categoria</label>
+                                <!-- INÍCIO DA ALTERAÇÃO -->
+                                <div class="form-control" id="category-control-wrapper">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                        <label for="transaction-category">Categoria</label>
+                                        <button type="button" id="split-transaction-button" class="button-link" style="font-size: 0.8rem; display: none;">Dividir</button>
+                                    </div>
                                     <select id="transaction-category" required></select>
                                 </div>
+                                <!-- FIM DA ALTERAÇÃO -->
                                 <div id="transaction-subcategory-wrapper" class="form-control" style="display: none;">
                                     <label for="transaction-subcategory">Subcategoria (opcional)</label>
                                     <input type="text" id="transaction-subcategory" list="subcategory-suggestions" placeholder="Ex: Supermercado, Restaurante">
@@ -570,6 +575,42 @@
         </div>
     </div>
 
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <div id="split-transaction-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-split-modal-button">&times;</span>
+            <h2>Dividir Transação</h2>
+            <div id="split-summary" class="summary-card" style="margin-bottom: 1rem; text-align: left;">
+                <p>Valor Total: <strong id="split-total-amount">R$ 0,00</strong></p>
+                <p>Valor Restante: <span id="split-remaining-amount">R$ 0,00</span></p>
+            </div>
+
+            <h4>Lançamentos da Divisão</h4>
+            <ul id="split-list" style="list-style: none; padding: 0; max-height: 150px; overflow-y: auto; margin-bottom: 1.5rem;">
+                <!-- Itens da divisão serão adicionados aqui -->
+            </ul>
+
+            <h4>Adicionar Divisão</h4>
+            <form id="add-split-form">
+                <div class="form-control">
+                    <label for="split-category">Categoria</label>
+                    <select id="split-category" required></select>
+                </div>
+                <div class="form-control">
+                    <label for="split-amount">Valor (R$)</label>
+                    <input type="number" id="split-amount" step="0.01" placeholder="0.00" required>
+                </div>
+                <button type="submit">Adicionar Divisão</button>
+            </form>
+
+            <div class="modal-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                <button id="confirm-split-button" class="button-primary" style="flex: 1;" disabled>Confirmar Divisão</button>
+                <button id="cancel-split-button" class="button-secondary" style="flex: 1;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
+
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
@@ -691,7 +732,6 @@
                                     <label for="recurring-type-expense">Despesa</label>
                                 </div>
                             </div>
-                            <!-- INÍCIO DA ALTERAÇÃO -->
                             <div class="form-control">
                                 <label for="recurring-payment-method">Método de Lançamento</label>
                                 <select id="recurring-payment-method" required>
@@ -707,7 +747,6 @@
                                 <label for="recurring-card">Cartão de Crédito</label>
                                 <select id="recurring-card" required></select>
                             </div>
-                            <!-- FIM DA ALTERAÇÃO -->
                             <div class="form-control">
                                 <label for="recurring-category">Categoria</label>
                                 <select id="recurring-category" required></select>
@@ -755,7 +794,6 @@
                         <label for="edit-recurring-type-expense">Despesa</label>
                     </div>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                  <div class="form-control">
                     <label for="edit-recurring-payment-method">Método de Lançamento</label>
                     <select id="edit-recurring-payment-method" required>
@@ -771,7 +809,6 @@
                     <label for="edit-recurring-card">Cartão de Crédito</label>
                     <select id="edit-recurring-card" required></select>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-recurring-category">Categoria</label>
                     <select id="edit-recurring-category" required></select>
