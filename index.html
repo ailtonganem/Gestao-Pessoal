@@ -384,7 +384,6 @@
                     <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
                     <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
                     
-                    <!-- INÍCIO DA ALTERAÇÃO -->
                     <section id="asset-list-section">
                         <p class="subtitle">Ativos presentes nesta carteira.</p>
                         <ul id="asset-list">
@@ -427,7 +426,6 @@
                             <button type="submit">Adicionar Ativo</button>
                         </form>
                     </section>
-                    <!-- FIM DA ALTERAÇÃO -->
                 </div>
             </main>
         </div>
@@ -819,6 +817,44 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO - Novo Modal para Movimentos de Ativos -->
+    <div id="asset-movement-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-asset-movement-modal-button">&times;</span>
+            <h2 id="asset-movement-modal-title">Registrar Operação</h2>
+            <form id="add-movement-form">
+                <input type="hidden" id="movement-asset-id">
+                <div class="form-control">
+                    <label>Tipo de Operação</label>
+                    <div class="radio-container">
+                        <input type="radio" id="movement-type-buy" name="movement-type" value="buy" required checked>
+                        <label for="movement-type-buy">Compra (Aporte)</label>
+                        <input type="radio" id="movement-type-sell" name="movement-type" value="sell">
+                        <label for="movement-type-sell">Venda (Resgate)</label>
+                    </div>
+                </div>
+                <div class="form-control">
+                    <label for="movement-date">Data da Operação</label>
+                    <input type="date" id="movement-date" required>
+                </div>
+                <div class="form-control">
+                    <label for="movement-quantity">Quantidade</label>
+                    <input type="number" id="movement-quantity" placeholder="100" step="any" required>
+                </div>
+                <div class="form-control">
+                    <label for="movement-price">Preço por Unidade (R$)</label>
+                    <input type="number" id="movement-price" placeholder="25.50" step="any" required>
+                </div>
+                <div class="form-control">
+                    <label for="movement-account">Conta para Débito/Crédito</label>
+                    <select id="movement-account" required></select>
+                </div>
+                <button type="submit">Registrar Operação</button>
+            </form>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
