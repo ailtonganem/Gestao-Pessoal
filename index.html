@@ -66,7 +66,6 @@
         </section>
     </main>
 
-    <!-- INÍCIO DA ALTERAÇÃO - Wrapper principal da aplicação logada -->
     <div id="application-wrapper" style="display: none;">
         <header>
             <h1 id="main-header-title">Dashboard</h1>
@@ -382,15 +381,57 @@
     
                 <!-- Visualização dos Ativos (Oculta por padrão) -->
                 <div id="assets-view" style="display: none;">
+                    <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
                     <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
-                    <button id="back-to-portfolios-button" class="button-secondary">&larr; Voltar para Carteiras</button>
                     
-                    <p style="margin-top: 2rem;">A gestão de ativos será implementada aqui.</p>
+                    <!-- INÍCIO DA ALTERAÇÃO -->
+                    <section id="asset-list-section">
+                        <p class="subtitle">Ativos presentes nesta carteira.</p>
+                        <ul id="asset-list">
+                            <!-- Lista de ativos será renderizada aqui via JS -->
+                        </ul>
+                    </section>
+
+                    <section id="add-asset-form-section">
+                        <h3>Adicionar Novo Ativo</h3>
+                        <form id="add-asset-form">
+                            <div class="form-control">
+                                <label for="asset-name">Nome do Ativo</label>
+                                <input type="text" id="asset-name" placeholder="Ex: Petrobras PN" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="asset-ticker">Ticker (Código)</label>
+                                <input type="text" id="asset-ticker" placeholder="Ex: PETR4" required>
+                            </div>
+                            <div class="form-control">
+                                <label for="asset-type">Tipo</label>
+                                <select id="asset-type" required>
+                                    <option value="Ação">Ação</option>
+                                    <option value="FII">Fundo Imobiliário (FII)</option>
+                                    <option value="Tesouro Direto">Tesouro Direto</option>
+                                    <option value="Criptomoeda">Criptomoeda</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label for="asset-class">Classe</label>
+                                <select id="asset-class" required>
+                                    <option value="Renda Variável">Renda Variável</option>
+                                    <option value="Renda Fixa">Renda Fixa</option>
+                                </select>
+                            </div>
+                             <div class="form-control">
+                                <label for="asset-broker">Corretora/Exchange</label>
+                                <input type="text" id="asset-broker" placeholder="Ex: XP, Binance">
+                            </div>
+                            <button type="submit">Adicionar Ativo</button>
+                        </form>
+                    </section>
+                    <!-- FIM DA ALTERAÇÃO -->
                 </div>
             </main>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 
     <!-- Contêiner para notificações (toasts) -->
