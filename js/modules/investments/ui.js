@@ -41,6 +41,7 @@ export function closeInvestmentsModal() {
 export function showPortfoliosView() {
     portfoliosView.style.display = 'block';
     assetsView.style.display = 'none';
+    state.setSelectedPortfolioForAssetsView(null); // Limpa a seleção ao voltar
 }
 
 /**
@@ -48,6 +49,7 @@ export function showPortfoliosView() {
  * @param {object} portfolio - O objeto da carteira selecionada.
  */
 export function showAssetsView(portfolio) {
+    state.setSelectedPortfolioForAssetsView(portfolio); // Guarda a carteira selecionada no estado
     assetsPortfolioNameEl.textContent = `Ativos - ${portfolio.name}`;
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
@@ -57,14 +59,13 @@ export function showAssetsView(portfolio) {
 /**
  * Busca os dados das carteiras do Firestore e chama a função para renderizá-los.
  */
-// INÍCIO DA ALTERAÇÃO
 export async function loadAndRenderPortfolios() {
-// FIM DA ALTERAÇÃO
     portfoliosListEl.innerHTML = '<li>Carregando carteiras...</li>';
     try {
         const userPortfolios = await portfolios.getPortfolios(state.currentUser.uid);
-        // Armazenar no estado global se necessário no futuro
-        // state.setUserPortfolios(userPortfolios); 
+        // INÍCIO DA ALTERAÇÃO
+        state.setUserPortfolios(userPortfolios); // Salva as carteiras no estado global
+        // FIM DA ALTERAÇÃO
         renderPortfolios(userPortfolios);
     } catch (error) {
         showNotification(error.message, 'error');
