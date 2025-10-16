@@ -61,7 +61,6 @@ export function initializeEventListeners() {
     // --- Listeners de Autenticação ---
     document.getElementById('show-register-link').addEventListener('click', (e) => { e.preventDefault(); views.toggleAuthForms(true); });
     document.getElementById('show-login-link').addEventListener('click', (e) => { e.preventDefault(); views.toggleAuthForms(false); });
-    document.getElementById('logout-button').addEventListener('click', () => { auth.logoutUser().catch(err => showNotification(err.message, 'error')); });
     document.getElementById('logout-pending-button').addEventListener('click', () => { auth.logoutUser().catch(err => showNotification(err.message, 'error')); });
     
     loginForm.addEventListener('submit', async (e) => {
@@ -98,6 +97,35 @@ export function initializeEventListeners() {
             }
         }
     });
+
+    // INÍCIO DA ALTERAÇÃO - Listeners de Navegação Principal (Cabeçalho)
+    document.getElementById('nav-dashboard-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        views.showDashboardView();
+    });
+
+    document.getElementById('nav-investments-button').addEventListener('click', async (e) => {
+        e.preventDefault();
+        views.showInvestmentsView();
+        await investmentsUI.loadAndRenderPortfolios();
+    });
+
+    document.getElementById('nav-cards-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        modals.openCardModal();
+    });
+
+    document.getElementById('nav-settings-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        modals.openSettingsModal();
+    });
+    
+    document.getElementById('nav-logout-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        auth.logoutUser().catch(err => showNotification(err.message, 'error'));
+    });
+    // FIM DA ALTERAÇÃO
+
 
     // --- Lógica de UI do Dashboard ---
     appContent.addEventListener('click', (e) => {
@@ -282,9 +310,6 @@ export function initializeEventListeners() {
     document.getElementById('filter-sort').addEventListener('change', app.applyFiltersAndUpdateDashboard);
 
     document.getElementById('export-csv-button').addEventListener('click', handleExportCsv);
-    document.getElementById('settings-button').addEventListener('click', modals.openSettingsModal);
-    document.getElementById('manage-cards-button').addEventListener('click', modals.openCardModal);
-    
     document.getElementById('load-more-button').addEventListener('click', app.loadMoreTransactions);
 
     // --- Delegação de Eventos para a Lista de Transações ---
@@ -471,9 +496,7 @@ export function initializeEventListeners() {
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
     editRecurringForm.addEventListener('submit', handleUpdateRecurring);
 
-    // Listeners para o novo modal de investimentos
-    document.getElementById('investments-button').addEventListener('click', investmentsUI.openInvestmentsModal);
-    document.querySelector('.close-investments-modal-button').addEventListener('click', investmentsUI.closeInvestmentsModal);
+    // Listeners para o módulo de investimentos
     document.getElementById('back-to-portfolios-button').addEventListener('click', investmentsUI.showPortfoliosView);
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
     
@@ -502,9 +525,7 @@ async function handleAddPortfolio(e) {
         await portfolios.addPortfolio(portfolioData);
         showNotification("Carteira criada com sucesso!");
         form.reset();
-        // INÍCIO DA ALTERAÇÃO
         await investmentsUI.loadAndRenderPortfolios(); // Atualiza a lista após adicionar
-        // FIM DA ALTERAÇÃO
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
