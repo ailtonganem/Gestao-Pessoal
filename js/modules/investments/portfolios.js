@@ -14,7 +14,9 @@ import {
     where,
     getDocs,
     Timestamp,
-    orderBy
+    orderBy,
+    doc,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -80,3 +82,23 @@ export async function getPortfolios(userId) {
         throw new Error("Não foi possível carregar suas carteiras de investimento.");
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+
+/**
+ * Exclui uma carteira de investimentos do Firestore.
+ * @param {string} portfolioId - O ID do documento da carteira a ser excluída.
+ * @returns {Promise<void>}
+ */
+export async function deletePortfolio(portfolioId) {
+    try {
+        // Futuramente: Adicionar lógica para excluir subcoleções (ativos, movimentos)
+        // antes de excluir o documento principal da carteira.
+        const portfolioDocRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
+        await deleteDoc(portfolioDocRef);
+    } catch (error) {
+        console.error("Erro ao excluir carteira:", error);
+        throw new Error("Não foi possível excluir a carteira.");
+    }
+}
+// FIM DA ALTERAÇÃO
