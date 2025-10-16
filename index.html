@@ -543,7 +543,6 @@
         </div>
     </div>
     
-    <!-- INÍCIO DA ALTERAÇÃO: Novo Modal para Editar Cartão -->
     <div id="edit-card-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-card-modal-button">&times;</span>
@@ -570,7 +569,6 @@
             </form>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="settings-modal" class="modal">
         <div class="modal-content">
@@ -693,6 +691,23 @@
                                     <label for="recurring-type-expense">Despesa</label>
                                 </div>
                             </div>
+                            <!-- INÍCIO DA ALTERAÇÃO -->
+                            <div class="form-control">
+                                <label for="recurring-payment-method">Método de Lançamento</label>
+                                <select id="recurring-payment-method" required>
+                                    <option value="account_debit">Débito em Conta</option>
+                                    <option value="credit_card">Fatura do Cartão</option>
+                                </select>
+                            </div>
+                            <div id="recurring-account-wrapper" class="form-control">
+                                <label for="recurring-account">Conta</label>
+                                <select id="recurring-account" required></select>
+                            </div>
+                            <div id="recurring-card-wrapper" class="form-control" style="display: none;">
+                                <label for="recurring-card">Cartão de Crédito</label>
+                                <select id="recurring-card" required></select>
+                            </div>
+                            <!-- FIM DA ALTERAÇÃO -->
                             <div class="form-control">
                                 <label for="recurring-category">Categoria</label>
                                 <select id="recurring-category" required></select>
@@ -740,6 +755,23 @@
                         <label for="edit-recurring-type-expense">Despesa</label>
                     </div>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                 <div class="form-control">
+                    <label for="edit-recurring-payment-method">Método de Lançamento</label>
+                    <select id="edit-recurring-payment-method" required>
+                        <option value="account_debit">Débito em Conta</option>
+                        <option value="credit_card">Fatura do Cartão</option>
+                    </select>
+                </div>
+                <div id="edit-recurring-account-wrapper" class="form-control">
+                    <label for="edit-recurring-account">Conta</label>
+                    <select id="edit-recurring-account" required></select>
+                </div>
+                <div id="edit-recurring-card-wrapper" class="form-control" style="display: none;">
+                    <label for="edit-recurring-card">Cartão de Crédito</label>
+                    <select id="edit-recurring-card" required></select>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-recurring-category">Categoria</label>
                     <select id="edit-recurring-category" required></select>
