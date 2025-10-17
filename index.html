@@ -487,11 +487,9 @@
                             <div>
                                 <button id="back-to-portfolios-button" class="button-secondary">&larr; Voltar para Carteiras</button>
                             </div>
-                            <!-- INÍCIO DA ALTERAÇÃO -->
                             <div id="asset-view-header-actions">
                                 <button id="update-quotes-btn" class="button-secondary">Atualizar Cotações</button>
                             </div>
-                            <!-- FIM DA ALTERAÇÃO -->
                         </div>
                         <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
                         
@@ -567,33 +565,117 @@
                         </section>
                     </div>
 
-                    <!-- View de Detalhes do Ativo e Movimentos -->
-                    <div id="movements-view" style="display: none;">
-                        <button id="back-to-assets-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Ativos</button>
-                        <div class="asset-header-details">
-                            <h2 id="movements-asset-name">[Nome do Ativo]</h2>
-                            <p id="movements-asset-type-broker">[Tipo] - [Corretora]</p>
+                    <!-- INÍCIO DA ALTERAÇÃO -->
+                    <!-- View de Detalhes do Ativo (NOVA VIEW) -->
+                    <div id="asset-detail-view" style="display: none;">
+                        <button id="back-to-assets-from-detail-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Ativos</button>
+                        
+                        <header class="asset-header-details">
+                            <h2 id="detail-asset-ticker">[TICKER]</h2>
+                            <p id="detail-asset-name">[Nome completo do Ativo]</p>
+                        </header>
+                    
+                        <!-- Seção de Resumo com Cards -->
+                        <section id="asset-detail-summary-cards" class="summary-section" style="margin-bottom: 2rem;">
+                            <!-- Card de Posição -->
+                            <div class="summary-card">
+                                <h3>Posição Atual</h3>
+                                <p id="detail-asset-quantity">0</p>
+                                <small>Preço Médio: <span id="detail-asset-avg-price">R$ 0,00</span></small>
+                            </div>
+                            <!-- Card de Valor de Mercado -->
+                            <div class="summary-card">
+                                <h3>Valor de Mercado</h3>
+                                <p id="detail-asset-market-value">R$ 0,00</p>
+                                <small>Cotação Atual: <span id="detail-asset-current-price">R$ 0,00</span></small>
+                            </div>
+                            <!-- Card de Performance -->
+                            <div class="summary-card">
+                                <h3>Resultado Total</h3>
+                                <p id="detail-asset-total-result">R$ 0,00</p>
+                                <small>Rentabilidade: <span id="detail-asset-total-result-percent">0,00%</span></small>
+                            </div>
+                            <!-- Card de Proventos e YOC -->
+                            <div class="summary-card">
+                                <h3>Proventos (YOC)</h3>
+                                <p id="detail-asset-yoc">0,00%</p>
+                                <small>Total Recebido: <span id="detail-asset-total-proventos">R$ 0,00</span></small>
+                            </div>
+                        </section>
+                    
+                        <!-- Seção de Informações do Ativo -->
+                        <section class="investment-card full-width" style="margin-bottom: 1.5rem; text-align: left;">
+                            <h3 style="border: none; margin-bottom: 1rem;">Informações do Ativo</h3>
+                            <div id="asset-static-info" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                <div><strong>Tipo:</strong> <span id="detail-asset-type">--</span></div>
+                                <div><strong>Classe:</strong> <span id="detail-asset-class">--</span></div>
+                                <div><strong>Corretora:</strong> <span id="detail-asset-broker">--</span></div>
+                                <div><strong>Custo Total:</strong> <span id="detail-asset-total-cost">R$ 0,00</span></div>
+                            </div>
+                        </section>
+                    
+                        <!-- Abas para Histórico de Operações e Proventos -->
+                        <div class="modal-tabs">
+                            <button class="tab-link active" data-asset-tab="asset-operations-tab">Operações</button>
+                            <button class="tab-link" data-asset-tab="asset-proventos-tab">Proventos</button>
+                        </div>
+                    
+                        <!-- Conteúdo da Aba de Operações -->
+                        <div id="asset-operations-tab" class="tab-content active">
+                            <section id="asset-detail-movements-list-section" class="investment-card full-width">
+                                <h3>Histórico de Compras e Vendas</h3>
+                                <div class="movement-table-header">
+                                    <div class="header-item">Data</div>
+                                    <div class="header-item">Tipo</div>
+                                    <div class="header-item numeric">Quantidade</div>
+                                    <div class="header-item numeric">Preço Unit.</div>
+                                    <div class="header-item numeric">Valor Total</div>
+                                    <div class="header-item actions">Ações</div>
+                                </div>
+                                <ul id="asset-detail-movements-list">
+                                    <!-- Linhas da tabela de movimentos serão renderizadas aqui -->
+                                </ul>
+                            </section>
                         </div>
                         
-                        <section id="asset-details-summary">
-                            <!-- Cards de detalhe do ativo serão renderizados aqui pelo JS -->
-                        </section>
-                        
-                        <section id="movements-list-section">
-                            <h3>Histórico de Operações</h3>
-                            <div class="movement-table-header">
-                                <div class="header-item">Data</div>
-                                <div class="header-item">Tipo</div>
-                                <div class="header-item numeric">Quantidade</div>
-                                <div class="header-item numeric">Preço Unit.</div>
-                                <div class="header-item numeric">Valor Total</div>
-                                <div class="header-item actions">Ações</div>
-                            </div>
-                            <ul id="movements-list">
-                                <!-- Linhas da tabela de movimentos serão renderizadas aqui -->
-                            </ul>
-                        </section>
+                        <!-- Conteúdo da Aba de Proventos -->
+                        <div id="asset-proventos-tab" class="tab-content">
+                            <section class="investment-card full-width" style="margin-bottom: 1.5rem;">
+                                <h3>Histórico de Proventos</h3>
+                                <div id="asset-detail-proventos-list">
+                                    <!-- Tabela de proventos será renderizada aqui -->
+                                </div>
+                            </section>
+                            
+                            <section class="investment-card full-width">
+                                <h3>Registrar Novo Provento</h3>
+                                <form id="add-asset-detail-provento-form">
+                                    <div class="form-control">
+                                        <label for="detail-provento-date">Data do Pagamento</label>
+                                        <input type="date" id="detail-provento-date" required>
+                                    </div>
+                                    <div class="form-control">
+                                        <label for="detail-provento-type">Tipo</label>
+                                        <select id="detail-provento-type" required>
+                                            <option value="Dividendo">Dividendo</option>
+                                            <option value="JCP">Juros Sobre Capital Próprio (JCP)</option>
+                                            <option value="Rendimento">Rendimento (FIIs)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-control">
+                                        <label for="detail-provento-value-per-share">Valor por Cota/Ação (R$)</label>
+                                        <input type="number" id="detail-provento-value-per-share" placeholder="0.10" step="any" required>
+                                    </div>
+                                    <div class="form-control">
+                                        <label>Conta para Crédito</label>
+                                        <select id="detail-provento-account" required></select>
+                                    </div>
+                                    <button type="submit">Registrar Provento</button>
+                                </form>
+                            </section>
+                        </div>
                     </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                 </div>
             </main>
         </div>
@@ -1322,7 +1404,7 @@
     <div id="update-quotes-modal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <span class="close-update-quotes-modal-button">&times;</span>
-            <h2>Atualizar Cotações e Dados de Proventos</h2>
+            <h2>Atualizar Cotações</h2>
             <p class="subtitle">Insira os valores mais recentes para os ativos de sua carteira. Estes dados serão salvos e compartilhados entre todas as carteiras.</p>
             
             <ul id="update-quotes-list" class="quote-update-list">
