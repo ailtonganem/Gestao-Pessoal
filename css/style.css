@@ -548,7 +548,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     gap: 1.5rem;
 }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* Estilos para a Página de Transações de Investimentos */
 .transactions-investment-header {
     display: flex;
@@ -567,7 +566,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     box-shadow: none;
     border: 1px solid var(--border-color);
 }
-/* --- FIM DA ALTERAÇÃO --- */
 
 /* Estilos para a lista de Próximas Faturas */
 #upcoming-invoices-list {
@@ -627,7 +625,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button {
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -645,7 +643,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-provento-modal-button:hover, .close-provento-modal-button:focus,
 .close-edit-portfolio-modal-button:hover, .close-edit-portfolio-modal-button:focus,
 .close-edit-asset-modal-button:hover, .close-edit-asset-modal-button:focus,
-.close-edit-movement-modal-button:hover, .close-edit-movement-modal-button:focus {
+.close-edit-movement-modal-button:hover, .close-edit-movement-modal-button:focus,
+.close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus {
     color: var(--text-color);
 }
 
@@ -889,3 +888,41 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .dashboard-section[draggable="true"] .section-header {
     cursor: move; /* Indica que o cabeçalho é arrastável */
 }
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para o Modal de Atualização de Cotações */
+.quote-update-list {
+    list-style: none;
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.quote-update-item {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.quote-update-item:last-child {
+    border-bottom: none;
+}
+
+.quote-update-item .ticker {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.quote-update-item .form-control label {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+.quote-update-item .form-control input {
+    padding: 0.5rem;
+}
+/* --- FIM DA ALTERAÇÃO --- */
