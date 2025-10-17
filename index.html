@@ -456,7 +456,6 @@
                             <p class="subtitle">Selecione uma carteira para ver os ativos ou crie uma nova abaixo.</p>
                             <ul id="portfolios-list"></ul>
                         </section>
-                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <section id="add-portfolio-form-section">
                             <h3>Criar Nova Carteira</h3>
                             <form id="add-portfolio-form">
@@ -480,12 +479,20 @@
                                 <button type="submit">Criar Carteira</button>
                             </form>
                         </section>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
         
                     <!-- View de Lista de Ativos -->
                     <div id="assets-view" style="display: none;">
-                        <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; gap: 1rem;">
+                            <div>
+                                <button id="back-to-portfolios-button" class="button-secondary">&larr; Voltar para Carteiras</button>
+                            </div>
+                            <!-- INÍCIO DA ALTERAÇÃO -->
+                            <div id="asset-view-header-actions">
+                                <button id="update-quotes-btn" class="button-secondary">Atualizar Cotações</button>
+                            </div>
+                            <!-- FIM DA ALTERAÇÃO -->
+                        </div>
                         <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
                         
                         <section id="portfolio-summary-section">
@@ -1310,6 +1317,24 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <div id="update-quotes-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-update-quotes-modal-button">&times;</span>
+            <h2>Atualizar Cotações e Dados de Proventos</h2>
+            <p class="subtitle">Insira os valores mais recentes para os ativos de sua carteira. Estes dados serão salvos e compartilhados entre todas as carteiras.</p>
+            
+            <ul id="update-quotes-list" class="quote-update-list">
+                <!-- Itens serão preenchidos via JS -->
+            </ul>
+
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button id="save-quotes-btn" class="button-primary" style="width: 100%;">Salvar Cotações</button>
+            </div>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
