@@ -143,6 +143,13 @@ export function initializeEventListeners() {
         modals.openCardModal();
     });
 
+    // --- INÍCIO DA ALTERAÇÃO ---
+    document.getElementById('nav-management-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        modals.openManagementModal();
+    });
+    // --- FIM DA ALTERAÇÃO ---
+
     document.getElementById('nav-settings-button').addEventListener('click', (e) => {
         e.preventDefault();
         modals.openSettingsModal();
@@ -484,15 +491,26 @@ export function initializeEventListeners() {
     });
     confirmSplitButton.addEventListener('click', handleConfirmSplit);
 
+    // --- INÍCIO DA ALTERAÇÃO ---
     document.querySelector('.close-settings-modal-button').addEventListener('click', modals.closeSettingsModal);
+    document.querySelector('.close-management-modal-button').addEventListener('click', modals.closeManagementModal);
+    
     themeToggle.addEventListener('change', () => app.toggleTheme(themeToggle.checked));
     
-    document.querySelector('.modal-tabs').addEventListener('click', (e) => {
+    document.querySelector('#settings-modal .modal-tabs').addEventListener('click', (e) => {
         if (e.target.matches('.tab-link')) {
             const tabId = e.target.dataset.tab;
             modals.switchSettingsTab(tabId);
         }
     });
+
+    document.querySelector('#management-modal .modal-tabs').addEventListener('click', (e) => {
+        if (e.target.matches('.tab-link')) {
+            const tabId = e.target.dataset.tab;
+            modals.switchManagementTab(tabId);
+        }
+    });
+    // --- FIM DA ALTERAÇÃO ---
 
     addAccountForm.addEventListener('submit', handleAddAccount);
     addCategoryForm.addEventListener('submit', handleAddCategory);
@@ -598,16 +616,18 @@ export function initializeEventListeners() {
     });
 
     document.body.addEventListener('click', (e) => {
+        // --- INÍCIO DA ALTERAÇÃO ---
         if (e.target.id === 'go-to-accounts') {
             e.preventDefault();
-            modals.openSettingsModal();
-            modals.switchSettingsTab('account-management-tab');
+            modals.openManagementModal();
+            modals.switchManagementTab('account-management-tab');
         }
         if (e.target.id === 'go-to-budgets') {
             e.preventDefault();
-            modals.openSettingsModal();
-            modals.switchSettingsTab('budget-management-tab');
+            modals.openManagementModal();
+            modals.switchManagementTab('budget-management-tab');
         }
+        // --- FIM DA ALTERAÇÃO ---
     });
     
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
@@ -629,8 +649,6 @@ export function initializeEventListeners() {
         e.preventDefault();
         investmentsUI.showPortfoliosManagementView();
     });
-
-    // --- INÍCIO DA ALTERAÇÃO ---
     
     // Listener para o novo botão "Voltar" na página de detalhes do ativo
     const backToAssetsFromDetailBtn = document.getElementById('back-to-assets-from-detail-button');
@@ -665,8 +683,6 @@ export function initializeEventListeners() {
         const detailMovementsList = document.getElementById('asset-detail-movements-list');
         detailMovementsList.addEventListener('click', handleMovementsListActions);
     }
-    
-    // --- FIM DA ALTERAÇÃO ---
 
     document.querySelector('.close-edit-portfolio-modal-button').addEventListener('click', investmentsUI.closeEditPortfolioModal);
     document.querySelector('.close-edit-asset-modal-button').addEventListener('click', investmentsUI.closeEditAssetModal);
@@ -799,7 +815,6 @@ async function handleDeleteInvestmentTransaction(movementData) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 async function handleAddProventoFromDetail(e) {
     e.preventDefault();
     const form = e.target;
@@ -836,7 +851,6 @@ async function handleAddProventoFromDetail(e) {
         submitButton.disabled = false;
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 function handleNavigateInvoice(direction) {
     const select = document.getElementById('invoice-period-select');
@@ -887,7 +901,7 @@ function handleConfirmSplit() {
 
 function resetSplitState() {
     isTransactionSplit = false;
-    modals.clearSplits(); // INÍCIO DA ALTERAÇÃO - Usa a nova função para limpar
+    modals.clearSplits(); 
     const categorySelect = document.getElementById('transaction-category');
     const categoryWrapper = document.getElementById('category-control-wrapper');
     categorySelect.disabled = false;
