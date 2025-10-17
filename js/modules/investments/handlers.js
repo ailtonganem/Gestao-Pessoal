@@ -176,8 +176,16 @@ async function handleAssetListActions(e) {
     const addMovementButton = e.target.closest('.add-movement-btn[data-asset-id]');
     const addProventoButton = e.target.closest('.add-provento-btn[data-asset-id]');
     const assetInfo = e.target.closest('.asset-info[data-asset-id]');
+    // INÍCIO DA ALTERAÇÃO
+    const editButton = e.target.closest('.edit-btn[data-asset-id]');
 
-    if (deleteButton) {
+    if (editButton) {
+        e.stopPropagation();
+        const assetId = editButton.dataset.assetId;
+        investmentsUI.openEditAssetModal(assetId);
+    }
+    // FIM DA ALTERAÇÃO
+    else if (deleteButton) {
         e.stopPropagation();
         const assetId = deleteButton.dataset.assetId;
         const selectedPortfolio = state.selectedPortfolioForAssetsView;
@@ -313,7 +321,7 @@ async function handleUpdatePortfolio(e) {
         await portfolios.updatePortfolio(portfolioId, updatedData);
         showNotification("Carteira atualizada com sucesso!");
         investmentsUI.closeEditPortfolioModal();
-        await investmentsUI.loadAndRenderPortfolios(); // Recarrega a lista
+        await investmentsUI.loadAndRenderPortfolios();
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
@@ -321,10 +329,36 @@ async function handleUpdatePortfolio(e) {
     }
 }
 
-function handleUpdateAsset(e) {
+// INÍCIO DA ALTERAÇÃO
+async function handleUpdateAsset(e) {
     e.preventDefault();
-    showNotification("Lógica de salvar edição de ativo pendente.", "info");
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const portfolioId = state.selectedPortfolioForAssetsView.id;
+    const assetId = form['edit-asset-id'].value;
+    
+    const updatedData = {
+        name: form['edit-asset-name'].value,
+        ticker: form['edit-asset-ticker'].value.toUpperCase(),
+        type: form['edit-asset-type'].value,
+        assetClass: form['edit-asset-class'].value,
+        broker: form['edit-asset-broker'].value,
+    };
+
+    try {
+        await assets.updateAsset(portfolioId, assetId, updatedData);
+        showNotification("Ativo atualizado com sucesso!");
+        investmentsUI.closeEditAssetModal();
+        await investmentsUI.loadAndRenderAssets(portfolioId);
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
 }
+// FIM DA ALTERAÇÃO
 
 function handleUpdateMovement(e) {
     e.preventDefault();
