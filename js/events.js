@@ -27,8 +27,9 @@ import * as views from './modules/ui/views.js';
 import * as modals from './modules/ui/modals.js';
 import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
-// INÍCIO DA ALTERAÇÃO
 import * as proventosUI from './modules/proventos/ui.js';
+// INÍCIO DA ALTERAÇÃO
+// import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js'; // Será criado a seguir
 // FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
@@ -126,11 +127,19 @@ export function initializeEventListeners() {
         await investmentsUI.loadInvestmentDashboard();
     });
 
-    // INÍCIO DA ALTERAÇÃO
     document.getElementById('nav-proventos-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showProventosView();
         await proventosUI.loadProventosPage(); 
+    });
+
+    // INÍCIO DA ALTERAÇÃO
+    document.getElementById('nav-transactions-investment-button').addEventListener('click', async (e) => {
+        e.preventDefault();
+        views.showTransactionsInvestmentView();
+        // TODO: Chamar a função principal para carregar os dados da página de transações
+        // await transactionsInvestmentUI.loadTransactionsPage(); 
+        showNotification("Página de Transações de Investimentos em implementação.", "info");
     });
     // FIM DA ALTERAÇÃO
 
