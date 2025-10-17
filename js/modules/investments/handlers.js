@@ -303,6 +303,7 @@ async function handleAddProvento(e) {
 
 // --- Handlers do CRUD de Investimentos ---
 
+// INÍCIO DA ALTERAÇÃO
 async function handleUpdatePortfolio(e) {
     e.preventDefault();
     const form = e.target;
@@ -361,7 +362,6 @@ function handleUpdateMovement(e) {
     showNotification("Lógica de salvar edição de movimento pendente.", "info");
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function handleMovementsListActions(e) {
     const editButton = e.target.closest('.edit-btn[data-movement-id]');
     const deleteButton = e.target.closest('.delete-btn[data-movement-id]');
