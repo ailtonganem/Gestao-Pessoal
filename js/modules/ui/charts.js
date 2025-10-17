@@ -14,6 +14,9 @@ const invoiceSpendingChartCanvas = document.getElementById('invoice-spending-cha
 const rentabilidadeChartCanvas = document.getElementById('rentabilidade-chart');
 const composicaoChartCanvas = document.getElementById('composicao-chart');
 const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
+// INÍCIO DA ALTERAÇÃO
+const proventosMonthlyChartCanvas = document.getElementById('proventos-monthly-chart');
+// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza o gráfico de despesas por categoria (tipo 'pie').
@@ -254,7 +257,6 @@ export function renderRentabilidadeChart(data) {
     state.setRentabilidadeChart(newChart);
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Renderiza o gráfico de composição da carteira (tipo 'doughnut').
  * @param {object} data - Dados de composição, contendo { labels, values }.
@@ -302,7 +304,6 @@ export function renderComposicaoChart(data) {
 
     state.setComposicaoChart(newChart);
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza o gráfico de evolução do patrimônio (tipo 'bar').
@@ -342,3 +343,63 @@ export function renderPatrimonioChart(data) {
 
     state.setPatrimonioChart(newChart);
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Renderiza o gráfico de evolução mensal de proventos (tipo 'bar').
+ * @param {object} chartData - Objeto com { labels, values }.
+ */
+export function renderProventosMonthlyChart(chartData) {
+    if (state.proventosMonthlyChart) {
+        state.proventosMonthlyChart.destroy();
+    }
+
+    const data = {
+        labels: chartData.labels,
+        datasets: [{
+            label: 'Proventos Recebidos',
+            data: chartData.values,
+            backgroundColor: 'rgba(46, 204, 113, 0.7)',
+            borderColor: 'rgba(46, 204, 113, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
+    const newChart = new Chart(proventosMonthlyChartCanvas, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Legenda é redundante aqui
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: textColor.replace('rgb', 'rgba').replace(')', ', 0.1)')
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: 'transparent'
+                    }
+                }
+            }
+        }
+    });
+
+    state.setProventosMonthlyChart(newChart);
+}
+// FIM DA ALTERAÇÃO
