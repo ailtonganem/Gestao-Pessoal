@@ -73,9 +73,7 @@
                 <a href="#" id="nav-dashboard-button" class="header-icon-button" title="Dashboard">📊</a>
                 <a href="#" id="nav-investments-button" class="header-icon-button" title="Meus Investimentos">📈</a>
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
-                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
                 <a href="#" id="nav-settings-button" class="header-icon-button" title="Configurações">⚙️</a>
                 <a href="#" id="nav-logout-button" class="header-icon-button" title="Sair">🚪</a>
@@ -424,20 +422,20 @@
                             </div>
                              <p id="patrimonio-total-valor" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
                         </div>
-                        <div class="investment-card" id="proventos-card">
-                            <h3>Proventos</h3>
-                            <div id="proventos-summary">
-                                <!-- Conteúdo do resumo será gerado via JS -->
-                                <p>Carregando proventos...</p>
+                        <!-- INÍCIO DA ALTERAÇÃO -->
+                        <div class="investment-card" id="proventos-mes-card">
+                            <h3>Proventos no Mês</h3>
+                            <div id="proventos-mes-summary">
+                                <p id="proventos-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
                             </div>
                         </div>
-                        <div class="investment-card" id="altas-baixas-card">
-                            <h3>Altas / Baixas (Mês)</h3>
-                            <div id="altas-baixas-list">
-                                <!-- Conteúdo da lista será gerado via JS -->
-                                <p>Carregando...</p>
+                        <div class="investment-card" id="resultado-mes-card">
+                            <h3>Resultado do Mês</h3>
+                            <div id="resultado-mes-summary">
+                                 <p id="resultado-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
                             </div>
                         </div>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
 
                     <div class="investment-card full-width" id="investment-history-card">
@@ -619,7 +617,6 @@
             </main>
         </div>
         
-        <!-- INÍCIO DA ALTERAÇÃO -->
         <!-- Contêiner da Página de Transações de Investimentos -->
         <div id="transactions-investment-container" style="display: none;">
             <main>
@@ -648,7 +645,6 @@
                 </section>
             </main>
         </div>
-        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
