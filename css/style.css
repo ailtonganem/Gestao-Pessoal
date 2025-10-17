@@ -122,7 +122,7 @@ a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
 /* Estilos para os contêineres de "página" */
-#dashboard-container, #investments-container, #proventos-container {
+#dashboard-container, #investments-container, #proventos-container, #transactions-investment-container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
@@ -533,7 +533,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     text-align: center;
 }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* Estilos para a Página de Proventos */
 .proventos-header {
     display: flex;
@@ -547,6 +546,26 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 #proventos-summary-cards {
     gap: 1.5rem;
+}
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para a Página de Transações de Investimentos */
+.transactions-investment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.transactions-investment-header h2 {
+    border: none;
+    margin: 0;
+}
+.transactions-investment-filters {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: transparent;
+    box-shadow: none;
+    border: 1px solid var(--border-color);
 }
 /* --- FIM DA ALTERAÇÃO --- */
 
