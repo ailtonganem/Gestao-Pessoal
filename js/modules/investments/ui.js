@@ -32,10 +32,8 @@ const patrimonioCard = document.getElementById('patrimonio-card');
 const proventosMesCard = document.getElementById('proventos-mes-card');
 const resultadoMesCard = document.getElementById('resultado-mes-card');
 const investmentHistoryCard = document.getElementById('investment-history-card');
-// INÍCIO DA ALTERAÇÃO
 const proventosMesTotalEl = document.getElementById('proventos-mes-total');
 const resultadoMesTotalEl = document.getElementById('resultado-mes-total');
-// FIM DA ALTERAÇÃO
 
 const portfoliosView = document.getElementById('portfolios-view');
 const assetsView = document.getElementById('assets-view');
@@ -48,12 +46,18 @@ const movementModalTitle = document.getElementById('asset-movement-modal-title')
 const movementAssetIdInput = document.getElementById('movement-asset-id');
 const movementDateInput = document.getElementById('movement-date');
 const movementAccountSelect = document.getElementById('movement-account');
+// INÍCIO DA ALTERAÇÃO
+const movementAccountWrapper = document.getElementById('movement-account-wrapper');
+// FIM DA ALTERAÇÃO
 
 const proventoModal = document.getElementById('provento-modal');
 const proventoModalTitle = document.getElementById('provento-modal-title');
 const proventoAssetIdInput = document.getElementById('provento-asset-id');
 const proventoPaymentDateInput = document.getElementById('provento-payment-date');
 const proventoAccountSelect = document.getElementById('provento-account');
+// INÍCIO DA ALTERAÇÃO
+const proventoAccountWrapper = document.getElementById('provento-account-wrapper');
+// FIM DA ALTERAÇÃO
 
 const movementsView = document.getElementById('movements-view');
 const movementsAssetNameEl = document.getElementById('movements-asset-name');
@@ -106,6 +110,21 @@ export async function showAssetsView(portfolio) {
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
     movementsView.style.display = 'none';
+
+    // INÍCIO DA ALTERAÇÃO
+    // Controla a visibilidade do campo de conta com base no tipo de carteira
+    const assetInitialAccountWrapper = document.getElementById('asset-initial-account-wrapper');
+    const assetInitialAccountSelect = document.getElementById('asset-initial-account');
+
+    if (portfolio.ownershipType === 'third-party') {
+        assetInitialAccountWrapper.style.display = 'none';
+        assetInitialAccountSelect.required = false;
+    } else {
+        assetInitialAccountWrapper.style.display = 'block';
+        assetInitialAccountSelect.required = true;
+    }
+    // FIM DA ALTERAÇÃO
+
     await loadAndRenderAssets(portfolio.id); 
 }
 
@@ -277,10 +296,8 @@ function renderLoadingPlaceholders() {
     calendarioCard.querySelector('#proventos-calendar').innerHTML = `<p>Carregando calendário...</p>`;
     patrimonioCard.querySelector('.chart-container').innerHTML = `<p>Carregando patrimônio...</p>`;
     document.getElementById('patrimonio-total-valor').textContent = '...';
-    // INÍCIO DA ALTERAÇÃO
     if (proventosMesTotalEl) proventosMesTotalEl.textContent = 'Carregando...';
     if (resultadoMesTotalEl) resultadoMesTotalEl.textContent = 'Carregando...';
-    // FIM DA ALTERAÇÃO
     investmentHistoryCard.querySelector('#investment-history-list').innerHTML = `<li>Carregando histórico...</li>`;
 }
 
@@ -318,7 +335,6 @@ function renderPatrimonioCard(data) {
     document.getElementById('patrimonio-total-valor').textContent = formatCurrency(data.totalPatrimonio || 0);
 }
 
-// INÍCIO DA ALTERAÇÃO
 function renderProventosMesCard(data) {
     if (proventosMesTotalEl) {
         proventosMesTotalEl.textContent = formatCurrency(data.proventosMes || 0);
@@ -332,7 +348,6 @@ function renderResultadoMesCard(data) {
         resultadoMesTotalEl.style.color = value >= 0 ? 'var(--success-color)' : 'var(--error-color)';
     }
 }
-// FIM DA ALTERAÇÃO
 
 function renderInvestmentHistory(data) {
     const historyListEl = investmentHistoryCard.querySelector('#investment-history-list');
@@ -605,7 +620,17 @@ export function openMovementModal(assetId) {
     movementAssetIdInput.value = assetId;
     movementDateInput.value = formatDateToInput(new Date());
 
-    populateAccountSelects(movementAccountSelect);
+    // INÍCIO DA ALTERAÇÃO
+    const currentPortfolio = state.selectedPortfolioForAssetsView;
+    if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
+        movementAccountWrapper.style.display = 'none';
+        movementAccountSelect.required = false;
+    } else {
+        movementAccountWrapper.style.display = 'block';
+        movementAccountSelect.required = true;
+        populateAccountSelects();
+    }
+    // FIM DA ALTERAÇÃO
     
     movementModal.style.display = 'flex';
 }
@@ -625,8 +650,18 @@ export function openProventoModal(assetId) {
     proventoModalTitle.textContent = `Registrar Provento para ${asset.ticker}`;
     proventoAssetIdInput.value = assetId;
     proventoPaymentDateInput.value = formatDateToInput(new Date());
-
-    populateAccountSelects(proventoAccountSelect);
+    
+    // INÍCIO DA ALTERAÇÃO
+    const currentPortfolio = state.selectedPortfolioForAssetsView;
+    if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
+        proventoAccountWrapper.style.display = 'none';
+        proventoAccountSelect.required = false;
+    } else {
+        proventoAccountWrapper.style.display = 'block';
+        proventoAccountSelect.required = true;
+        populateAccountSelects();
+    }
+    // FIM DA ALTERAÇÃO
     
     proventoModal.style.display = 'flex';
 }
