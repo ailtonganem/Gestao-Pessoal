@@ -287,4 +287,48 @@ async function updateTransaction(transactionId, updatedData) {
     }
 }
 
-export { addTransaction, getTransactions, deleteTransaction, updateTransaction };
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Exclui uma transação de investimento e estorna o valor na conta correspondente.
+ * Usado pela função de correção de dados históricos.
+ * @param {string} transactionId - O ID da transação a ser excluída.
+ * @param {boolean} isCorrection - Flag para indicar que é uma operação de correção.
+ * @returns {Promise<boolean>} Retorna true se a correção foi feita.
+ */
+async function deleteInvestmentTransaction(transactionId, isCorrection = false) {
+    if (!transactionId) {
+        return false;
+    }
+
+    const batch = writeBatch(db);
+    const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+
+    try {
+        const txSnap = await getDoc(transactionDocRef);
+        if (!txSnap.exists()) {
+            console.warn(`Transação de correção ${transactionId} não encontrada. Provavelmente já foi corrigida.`);
+            return false;
+        }
+        const transaction = txSnap.data();
+
+        // Se não houver conta associada, apenas removemos a transação.
+        if (transaction.accountId) {
+             // O estorno de uma despesa ('buy') é uma receita.
+            const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
+            updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
+        }
+        
+        batch.delete(transactionDocRef);
+        await batch.commit();
+        
+        console.log(`Transação ${transactionId} foi corrigida e estornada.`);
+        return true;
+
+    } catch (error) {
+        console.error(`Erro ao corrigir transação ${transactionId}:`, error);
+        return false;
+    }
+}
+// FIM DA ALTERAÇÃO
+
+export { addTransaction, getTransactions, deleteTransaction, updateTransaction, deleteInvestmentTransaction };
