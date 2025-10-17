@@ -23,6 +23,9 @@ let _currentAssetMovements = [];
 const investmentDashboardView = document.getElementById('investment-dashboard-view');
 const portfoliosManagementView = document.getElementById('portfolios-management-view');
 const portfolioFilterSelect = document.getElementById('portfolio-filter-select');
+// INÍCIO DA ALTERAÇÃO
+const investmentDashboardHeader = document.querySelector('.investment-dashboard-header .header-controls');
+// FIM DA ALTERAÇÃO
 
 // Cards do Dashboard
 const rentabilidadeCard = document.getElementById('rentabilidade-card');
@@ -46,18 +49,14 @@ const movementModalTitle = document.getElementById('asset-movement-modal-title')
 const movementAssetIdInput = document.getElementById('movement-asset-id');
 const movementDateInput = document.getElementById('movement-date');
 const movementAccountSelect = document.getElementById('movement-account');
-// INÍCIO DA ALTERAÇÃO
 const movementAccountWrapper = document.getElementById('movement-account-wrapper');
-// FIM DA ALTERAÇÃO
 
 const proventoModal = document.getElementById('provento-modal');
 const proventoModalTitle = document.getElementById('provento-modal-title');
 const proventoAssetIdInput = document.getElementById('provento-asset-id');
 const proventoPaymentDateInput = document.getElementById('provento-payment-date');
 const proventoAccountSelect = document.getElementById('provento-account');
-// INÍCIO DA ALTERAÇÃO
 const proventoAccountWrapper = document.getElementById('provento-account-wrapper');
-// FIM DA ALTERAÇÃO
 
 const movementsView = document.getElementById('movements-view');
 const movementsAssetNameEl = document.getElementById('movements-asset-name');
@@ -111,7 +110,6 @@ export async function showAssetsView(portfolio) {
     assetsView.style.display = 'block';
     movementsView.style.display = 'none';
 
-    // INÍCIO DA ALTERAÇÃO
     // Controla a visibilidade do campo de conta com base no tipo de carteira
     const assetInitialAccountWrapper = document.getElementById('asset-initial-account-wrapper');
     const assetInitialAccountSelect = document.getElementById('asset-initial-account');
@@ -123,34 +121,8 @@ export async function showAssetsView(portfolio) {
         assetInitialAccountWrapper.style.display = 'block';
         assetInitialAccountSelect.required = true;
     }
-    // FIM DA ALTERAÇÃO
 
     await loadAndRenderAssets(portfolio.id); 
-}
-
-/**
- * Exibe a visualização de detalhes e movimentos de um ativo específico.
- * @param {string} assetId - O ID do ativo selecionado.
- */
-export async function showMovementsView(assetId) {
-    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
-    if (!asset) {
-        showNotification("Ativo não encontrado.", "error");
-        return;
-    }
-    
-    // Adiciona a carteira ao objeto de ativo selecionado para referência futura
-    asset.portfolioId = state.selectedPortfolioForAssetsView.id;
-    state.setSelectedAssetForMovementsView(asset);
-    
-    const assetHeaderDetails = document.querySelector('.asset-header-details');
-    assetHeaderDetails.querySelector('h2').textContent = `${asset.ticker} - ${asset.name}`;
-    assetHeaderDetails.querySelector('p').textContent = `${asset.type} - ${asset.broker || 'N/A'}`;
-    
-    assetsView.style.display = 'none';
-    movementsView.style.display = 'block';
-
-    await loadAndRenderMovements(asset);
 }
 
 /**
@@ -185,6 +157,11 @@ export async function refreshMovementsView() {
 export async function loadInvestmentDashboard() {
     showInvestmentDashboardView();
     try {
+        // INÍCIO DA ALTERAÇÃO
+        if (!document.getElementById('refresh-quotes-button')) {
+            addRefreshButtonToDashboardHeader();
+        }
+        // FIM DA ALTERAÇÃO
         const userPortfolios = await portfolios.getPortfolios(state.currentUser.uid);
         state.setUserPortfolios(userPortfolios);
         renderPortfolioFilter(userPortfolios);
@@ -214,11 +191,10 @@ export async function updateInvestmentDashboard(portfolioId) {
         const quotes = await getQuotes(tickers);
 
         assetsToDisplay.forEach(asset => {
-            if (quotes[asset.ticker]) {
-                asset.currentValue = quotes[asset.ticker] * asset.quantity;
-            } else {
-                asset.currentValue = asset.totalInvested;
-            }
+            // Se a cotação não for encontrada, mantemos o valor investido para evitar R$ 0,00
+            const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
+            asset.currentValue = currentPrice * asset.quantity;
+            asset.currentPrice = currentPrice;
         });
         
         const movementPromises = assetsToDisplay.map(async (asset) => {
@@ -272,6 +248,40 @@ export async function updateInvestmentDashboard(portfolioId) {
         showNotification(error.message, 'error');
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+/** Adiciona o botão de atualização manual de cotações ao cabeçalho. */
+function addRefreshButtonToDashboardHeader() {
+    const refreshButton = document.createElement('button');
+    refreshButton.id = 'refresh-quotes-button';
+    refreshButton.className = 'button-secondary';
+    refreshButton.textContent = 'Atualizar Cotações';
+    refreshButton.title = 'Buscar cotações mais recentes no Google Finance';
+
+    refreshButton.addEventListener('click', async () => {
+        refreshButton.disabled = true;
+        refreshButton.textContent = 'Atualizando...';
+        showNotification('Buscando novas cotações...', 'info');
+
+        try {
+            const portfolioId = portfolioFilterSelect.value;
+            await updateInvestmentDashboard(portfolioId);
+            showNotification('Cotações atualizadas com sucesso!');
+        } catch (error) {
+            showNotification('Erro ao buscar cotações. Tente novamente mais tarde.', 'error');
+        } finally {
+            refreshButton.disabled = false;
+            refreshButton.textContent = 'Atualizar Cotações';
+        }
+    });
+
+    // Adiciona o botão ao lado dos controles do cabeçalho, antes do botão de gerenciar
+    const manageButton = document.getElementById('go-to-portfolios-management-btn');
+    if (manageButton && investmentDashboardHeader) {
+        investmentDashboardHeader.insertBefore(refreshButton, manageButton);
+    }
+}
+// FIM DA ALTERAÇÃO
 
 /**
  * Popula o select de filtro de carteiras.
@@ -453,9 +463,11 @@ export async function loadAndRenderAssets(portfolioId) {
         let portfolioTotalCost = 0;
 
         userAssets.forEach(asset => {
-            const quote = quotes[asset.ticker];
-            asset.currentPrice = quote || (asset.quantity > 0 ? asset.averagePrice : 0);
-            asset.currentValue = asset.currentPrice * asset.quantity;
+            // Se a cotação não for encontrada, mantemos o valor investido para evitar R$ 0,00
+            const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
+            asset.currentValue = currentPrice * asset.quantity;
+            asset.currentPrice = currentPrice;
+            
             asset.resultValue = asset.currentValue - asset.totalInvested;
             asset.resultPercent = asset.totalInvested > 0 ? (asset.resultValue / asset.totalInvested) * 100 : 0;
             
@@ -620,7 +632,7 @@ export function openMovementModal(assetId) {
     movementAssetIdInput.value = assetId;
     movementDateInput.value = formatDateToInput(new Date());
 
-    // INÍCIO DA ALTERAÇÃO
+    // Controla a visibilidade do campo de conta com base no tipo de carteira
     const currentPortfolio = state.selectedPortfolioForAssetsView;
     if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
         movementAccountWrapper.style.display = 'none';
@@ -630,7 +642,6 @@ export function openMovementModal(assetId) {
         movementAccountSelect.required = true;
         populateAccountSelects();
     }
-    // FIM DA ALTERAÇÃO
     
     movementModal.style.display = 'flex';
 }
@@ -651,7 +662,7 @@ export function openProventoModal(assetId) {
     proventoAssetIdInput.value = assetId;
     proventoPaymentDateInput.value = formatDateToInput(new Date());
     
-    // INÍCIO DA ALTERAÇÃO
+    // Controla a visibilidade do campo de conta com base no tipo de carteira
     const currentPortfolio = state.selectedPortfolioForAssetsView;
     if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
         proventoAccountWrapper.style.display = 'none';
@@ -661,7 +672,6 @@ export function openProventoModal(assetId) {
         proventoAccountSelect.required = true;
         populateAccountSelects();
     }
-    // FIM DA ALTERAÇÃO
     
     proventoModal.style.display = 'flex';
 }
