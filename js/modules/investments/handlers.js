@@ -22,10 +22,15 @@ const assetList = document.getElementById('asset-list');
 const closeMovementModalButton = document.querySelector('.close-asset-movement-modal-button');
 const addMovementForm = document.getElementById('add-movement-form');
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
-// INÍCIO DA ALTERAÇÃO
 const closeProventoModalButton = document.querySelector('.close-provento-modal-button');
 const addProventoForm = document.getElementById('add-provento-form');
-// FIM DA ALTERAÇÃO
+const backToAssetsButton = document.getElementById('back-to-assets-button');
+const movementsList = document.getElementById('movements-list');
+
+// Formulários de Edição de Investimentos
+const editPortfolioForm = document.getElementById('edit-portfolio-form');
+const editAssetForm = document.getElementById('edit-asset-form');
+const editMovementForm = document.getElementById('edit-movement-form');
 
 
 /**
@@ -43,10 +48,23 @@ export function initializeInvestmentEventListeners() {
         e.preventDefault();
         investmentsUI.showPortfoliosManagementView();
     });
-    // INÍCIO DA ALTERAÇÃO
     closeProventoModalButton.addEventListener('click', investmentsUI.closeProventoModal);
     addProventoForm.addEventListener('submit', handleAddProvento);
-    // FIM DA ALTERAÇÃO
+
+    backToAssetsButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
+    });
+
+    document.querySelector('.close-edit-portfolio-modal-button').addEventListener('click', investmentsUI.closeEditPortfolioModal);
+    document.querySelector('.close-edit-asset-modal-button').addEventListener('click', investmentsUI.closeEditAssetModal);
+    document.querySelector('.close-edit-movement-modal-button').addEventListener('click', investmentsUI.closeEditMovementModal);
+
+    editPortfolioForm.addEventListener('submit', handleUpdatePortfolio);
+    editAssetForm.addEventListener('submit', handleUpdateAsset);
+    editMovementForm.addEventListener('submit', handleUpdateMovement);
+
+    movementsList.addEventListener('click', handleMovementsListActions);
 }
 
 // --- Funções "Handler" ---
@@ -79,13 +97,19 @@ async function handleAddPortfolio(e) {
 }
 
 /**
- * Handler para ações na lista de carteiras (excluir/visualizar).
+ * Handler para ações na lista de carteiras (excluir/visualizar/editar).
  */
 async function handlePortfolioListActions(e) {
     const deleteButton = e.target.closest('.delete-btn[data-portfolio-id]');
     const infoArea = e.target.closest('.portfolio-info[data-portfolio-id]');
+    const editButton = e.target.closest('.edit-btn[data-portfolio-id]');
 
-    if (deleteButton) {
+    if (editButton) {
+        e.stopPropagation();
+        const portfolioId = editButton.dataset.portfolioId;
+        investmentsUI.openEditPortfolioModal(portfolioId);
+    }
+    else if (deleteButton) {
         e.stopPropagation();
         const portfolioId = deleteButton.dataset.portfolioId;
         
@@ -145,15 +169,14 @@ async function handleAddAsset(e) {
 
 
 /**
- * Handler para ações na lista de ativos (ex: excluir, adicionar movimento).
+ * Handler para ações na lista de ativos.
  */
 async function handleAssetListActions(e) {
     const deleteButton = e.target.closest('.delete-btn[data-asset-id]');
     const addMovementButton = e.target.closest('.add-movement-btn[data-asset-id]');
-    // INÍCIO DA ALTERAÇÃO
     const addProventoButton = e.target.closest('.add-provento-btn[data-asset-id]');
-    // FIM DA ALTERAÇÃO
-    
+    const assetInfo = e.target.closest('.asset-info[data-asset-id]');
+
     if (deleteButton) {
         e.stopPropagation();
         const assetId = deleteButton.dataset.assetId;
@@ -168,7 +191,7 @@ async function handleAssetListActions(e) {
             try {
                 await assets.deleteAsset(selectedPortfolio.id, assetId);
                 showNotification('Ativo excluído com sucesso!');
-                await investmentsUI.loadAndRenderAssets(selectedPortfolio.id); // Recarrega a lista
+                await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
             } catch (error) {
                 showNotification(error.message, 'error');
             }
@@ -177,13 +200,14 @@ async function handleAssetListActions(e) {
         e.stopPropagation();
         const assetId = addMovementButton.dataset.assetId;
         investmentsUI.openMovementModal(assetId);
-    // INÍCIO DA ALTERAÇÃO
     } else if (addProventoButton) {
         e.stopPropagation();
         const assetId = addProventoButton.dataset.assetId;
         investmentsUI.openProventoModal(assetId);
+    } else if (assetInfo) {
+        const assetId = assetInfo.dataset.assetId;
+        investmentsUI.showMovementsView(assetId);
     }
-    // FIM DA ALTERAÇÃO
 }
 
 /**
@@ -218,10 +242,9 @@ async function handleAddMovement(e) {
         showNotification("Operação registrada com sucesso!");
         investmentsUI.closeMovementModal();
         
-        // Atualiza a UI para refletir as mudanças
         await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
-        await loadUserDashboard(); // Recarrega o dashboard para atualizar os totais
-        await loadUserAccounts(); // Recarrega as contas para atualizar os saldos
+        await loadUserDashboard();
+        await loadUserAccounts();
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -230,7 +253,6 @@ async function handleAddMovement(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Handler para o formulário de adicionar um novo provento.
  */
@@ -262,10 +284,9 @@ async function handleAddProvento(e) {
         showNotification("Provento registrado com sucesso!");
         investmentsUI.closeProventoModal();
         
-        // Atualiza as telas para refletir a nova receita
-        await investmentsUI.loadInvestmentDashboard(); // Atualiza o dashboard de investimentos
-        await loadUserDashboard(); // Atualiza o dashboard principal
-        await loadUserAccounts();  // Atualiza os saldos das contas
+        await investmentsUI.loadInvestmentDashboard();
+        await loadUserDashboard();
+        await loadUserAccounts();
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -273,4 +294,56 @@ async function handleAddProvento(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
+
+// --- Handlers do CRUD de Investimentos ---
+
+async function handleUpdatePortfolio(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const portfolioId = form['edit-portfolio-id'].value;
+    const updatedData = {
+        name: form['edit-portfolio-name'].value,
+        description: form['edit-portfolio-description'].value,
+    };
+
+    try {
+        await portfolios.updatePortfolio(portfolioId, updatedData);
+        showNotification("Carteira atualizada com sucesso!");
+        investmentsUI.closeEditPortfolioModal();
+        await investmentsUI.loadAndRenderPortfolios(); // Recarrega a lista
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+function handleUpdateAsset(e) {
+    e.preventDefault();
+    showNotification("Lógica de salvar edição de ativo pendente.", "info");
+}
+
+function handleUpdateMovement(e) {
+    e.preventDefault();
+    showNotification("Lógica de salvar edição de movimento pendente.", "info");
+}
+
+function handleMovementsListActions(e) {
+    const editButton = e.target.closest('.edit-btn[data-movement-id]');
+    const deleteButton = e.target.closest('.delete-btn[data-movement-id]');
+
+    if (editButton) {
+        const movementId = editButton.dataset.movementId;
+        investmentsUI.openEditMovementModal(movementId);
+    }
+
+    if (deleteButton) {
+        const movementId = deleteButton.dataset.movementId;
+        if (confirm("Tem certeza que deseja excluir esta operação? Esta ação é irreversível.")) {
+            showNotification(`Lógica para excluir movimento ${movementId} pendente.`, "info");
+        }
+    }
+}
