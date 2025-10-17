@@ -472,14 +472,29 @@
                         </section>
                     </div>
         
+                    <!-- INÍCIO DA ALTERAÇÃO -->
                     <!-- View de Lista de Ativos -->
                     <div id="assets-view" style="display: none;">
                         <button id="back-to-portfolios-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Carteiras</button>
                         <h2 id="assets-portfolio-name">Ativos - [Nome da Carteira]</h2>
                         
+                        <section id="portfolio-summary-section">
+                            <!-- Cards de resumo (Patrimônio, Custo, Resultado) serão inseridos aqui pelo JS -->
+                        </section>
+
                         <section id="asset-list-section">
-                            <p class="subtitle">Clique em um ativo para ver seus detalhes e movimentos.</p>
-                            <ul id="asset-list"></ul>
+                            <div class="asset-table-header">
+                                <div class="header-item asset-info">Ativo</div>
+                                <div class="header-item numeric">% Carteira</div>
+                                <div class="header-item numeric">Posição Atual</div>
+                                <div class="header-item numeric">Cotação</div>
+                                <div class="header-item numeric">Valor de Mercado</div>
+                                <div class="header-item numeric">Resultado</div>
+                                <div class="header-item actions">Ações</div>
+                            </div>
+                            <ul id="asset-list">
+                                <!-- Linhas da tabela de ativos serão renderizadas aqui -->
+                            </ul>
                         </section>
 
                         <section id="add-asset-form-section">
@@ -519,35 +534,30 @@
                         </section>
                     </div>
 
-                    <!-- INÍCIO DA ALTERAÇÃO -->
                     <!-- View de Detalhes do Ativo e Movimentos -->
                     <div id="movements-view" style="display: none;">
                         <button id="back-to-assets-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Ativos</button>
-                        <h2 id="movements-asset-name">Movimentos - [Nome do Ativo]</h2>
+                        <div class="asset-header-details">
+                            <h2 id="movements-asset-name">[Nome do Ativo]</h2>
+                            <p id="movements-asset-type-broker">[Tipo] - [Corretora]</p>
+                        </div>
                         
                         <section id="asset-details-summary">
-                            <div class="detail-item">
-                                <h4>Posição Atual</h4>
-                                <p>0</p>
-                            </div>
-                            <div class="detail-item">
-                                <h4>Preço Médio</h4>
-                                <p>R$ 0,00</p>
-                            </div>
-                            <div class="detail-item">
-                                <h4>Custo Total</h4>
-                                <p>R$ 0,00</p>
-                            </div>
-                             <div class="detail-item">
-                                <h4>Valor de Mercado</h4>
-                                <p>R$ 0,00</p>
-                            </div>
+                            <!-- Cards de detalhe do ativo serão renderizados aqui pelo JS -->
                         </section>
                         
                         <section id="movements-list-section">
                             <h3>Histórico de Operações</h3>
+                            <div class="movement-table-header">
+                                <div class="header-item">Data</div>
+                                <div class="header-item">Tipo</div>
+                                <div class="header-item numeric">Quantidade</div>
+                                <div class="header-item numeric">Preço Unit.</div>
+                                <div class="header-item numeric">Valor Total</div>
+                                <div class="header-item actions">Ações</div>
+                            </div>
                             <ul id="movements-list">
-                                <!-- A lista de movimentos (compras, vendas, proventos) será renderizada aqui -->
+                                <!-- Linhas da tabela de movimentos serão renderizadas aqui -->
                             </ul>
                         </section>
                     </div>
@@ -1121,7 +1131,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="edit-portfolio-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-portfolio-modal-button">&times;</span>
@@ -1212,7 +1221,6 @@
             </form>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
