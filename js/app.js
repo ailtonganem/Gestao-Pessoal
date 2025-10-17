@@ -100,10 +100,8 @@ async function loadInitialData(userId) {
     const transferDateInput = document.getElementById('transfer-date');
     if(transferDateInput) transferDateInput.value = new Date().toISOString().split('T')[0];
 
-    // INÍCIO DA ALTERAÇÃO
     // Executa a correção dos dados históricos.
     await fixIncorrectThirdPartyTransactions(userId);
-    // FIM DA ALTERAÇÃO
 
     // Carrega os cartões PRIMEIRO, pois são necessários para processar as recorrências
     await loadUserCreditCards();
@@ -484,7 +482,6 @@ function applyDashboardOrder() {
     });
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * FUNÇÃO DE CORREÇÃO: Encontra e exclui transações financeiras ligadas a carteiras de terceiros.
  * Esta função é projetada para ser executada uma única vez para limpar dados inconsistentes.
@@ -530,7 +527,6 @@ async function fixIncorrectThirdPartyTransactions(userId) {
         showNotification("Erro ao tentar corrigir transações antigas.", "error");
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 // --- Inicia a aplicação ---
 initializeApp();
