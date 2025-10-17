@@ -15,6 +15,14 @@ const firebaseConfig = {
   appId: "1:541609699147:web:c0dbaf8862e2c0c4796ace"
 };
 
+// --- INÍCIO DA ALTERAÇÃO ---
+// Adicione seu token da Brapi API aqui.
+// Você pode obter um token gratuito em https://brapi.dev/
+// IMPORTANTE: Adicione este arquivo (firebase-config.js) ao seu .gitignore para não expor suas chaves!
+const brapiApiToken = "5yemombtoQBbWAQRzE3pS5";
+// --- FIM DA ALTERAÇÃO ---
+
+
 // Inicializa o Firebase com as configurações fornecidas.
 const app = initializeApp(firebaseConfig);
 
@@ -25,4 +33,4 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Exporta as instâncias dos serviços que serão usados em outros módulos da aplicação.
-export { auth, db };
+export { auth, db, brapiApiToken };
