@@ -122,7 +122,7 @@ a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
 a:hover { text-decoration: underline; }
 
 /* Estilos para os contêineres de "página" */
-#dashboard-container, #investments-container {
+#dashboard-container, #investments-container, #proventos-container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
@@ -175,8 +175,8 @@ a:hover { text-decoration: underline; }
     text-decoration: none;
 }
 
-#app-content > section {
-    margin-bottom: 1rem;
+#app-content > section, #proventos-container main > section {
+    margin-bottom: 1.5rem;
 }
 
 /* Estilos da Seção de Resumo Financeiro */
@@ -421,7 +421,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     font-family: monospace;
 }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* Estilos para View de Ativos */
 #portfolio-summary-section {
     display: grid;
@@ -532,6 +531,22 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     flex-basis: 120px;
     flex-grow: 0;
     text-align: center;
+}
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para a Página de Proventos */
+.proventos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.proventos-header h2 {
+    border: none;
+    margin: 0;
+}
+#proventos-summary-cards {
+    gap: 1.5rem;
 }
 /* --- FIM DA ALTERAÇÃO --- */
 
