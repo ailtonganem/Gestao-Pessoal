@@ -20,10 +20,8 @@ import {
     orderBy,
     deleteDoc,
     runTransaction,
-    // INÍCIO DA ALTERAÇÃO
     collectionGroup,
     where
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -47,7 +45,7 @@ export async function addMovement(portfolioId, assetId, movementData) {
         }
         const currentAsset = assetSnap.data();
 
-        const { type, quantity, price, date, accountId } = movementData;
+        const { type, quantity, price, date, accountId, userId } = movementData;
         const totalCost = quantity * price;
 
         const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
@@ -59,7 +57,8 @@ export async function addMovement(portfolioId, assetId, movementData) {
             totalCost,
             date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id 
+            transactionId: newTransactionRef.id,
+            userId: userId
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
@@ -184,9 +183,7 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
             createdAt: serverTimestamp(),
             transactionId: newTransactionRef.id,
-            // INÍCIO DA ALTERAÇÃO: Adiciona userId para consulta de grupo
             userId: userId
-            // FIM DA ALTERAÇÃO
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
@@ -215,7 +212,6 @@ export async function addProvento(portfolioId, assetId, proventoData) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Busca todos os movimentos do tipo 'provento' de um usuário.
  * Utiliza uma consulta de grupo de coleção para buscar em todas as subcoleções 'movements'.
@@ -258,6 +254,49 @@ export async function getAllProventos(userId) {
              throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação.");
         }
         throw new Error("Não foi possível carregar os dados de proventos.");
+    }
+}
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Busca todas as transações de investimento (compra/venda) de um usuário.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Array<object>>} Uma lista consolidada de todas as transações.
+ */
+export async function getAllInvestmentTransactions(userId) {
+    try {
+        const movementsGroupRef = collectionGroup(db, 'movements');
+        const q = query(
+            movementsGroupRef,
+            where("type", "in", ["buy", "sell"]),
+            where("userId", "==", userId),
+            orderBy("date", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const transactions = [];
+
+        for (const doc of querySnapshot.docs) {
+            const data = doc.data();
+            const assetRef = doc.ref.parent.parent;
+            if (assetRef) {
+                const assetSnap = await getDoc(assetRef);
+                if (assetSnap.exists()) {
+                    data.ticker = assetSnap.data().ticker;
+                }
+            }
+            transactions.push({
+                id: doc.id,
+                ...data,
+                date: data.date.toDate()
+            });
+        }
+        return transactions;
+    } catch (error) {
+        console.error("Erro ao buscar todas as transações de investimento:", error);
+        if (error.code === 'failed-precondition') {
+             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação.");
+        }
+        throw new Error("Não foi possível carregar o histórico de transações.");
     }
 }
 // FIM DA ALTERAÇÃO
