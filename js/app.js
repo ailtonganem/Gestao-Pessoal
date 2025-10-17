@@ -22,13 +22,24 @@ import { initializeInvestmentsModule } from './modules/investments/main.js';
 import * as portfolios from './modules/investments/portfolios.js';
 import * as assets from './modules/investments/assets.js';
 import * as quotes from './modules/investments/quotes.js';
-// INÍCIO DA ALTERAÇÃO
 import * as movements from './modules/investments/movements.js'; 
-// FIM DA ALTERAÇÃO
 import { formatCurrency } from './modules/ui/utils.js';
 
 
 import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
+
+// --- INÍCIO DA ALTERAÇÃO ---
+// Definição das seções do dashboard para personalização
+const DASHBOARD_SECTIONS = [
+    { id: 'accounts-summary', name: 'Minhas Contas' },
+    { id: 'upcoming-invoices', name: 'Próximas Faturas' },
+    { id: 'expenses-chart', name: 'Análise de Despesas' },
+    { id: 'trends-chart', name: 'Evolução Mensal' },
+    { id: 'budget-progress', name: 'Acompanhamento de Orçamentos' },
+    { id: 'forms', name: 'Lançamentos' },
+    { id: 'history', name: 'Histórico' }
+];
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Ponto de Entrada da Aplicação ---
@@ -45,6 +56,9 @@ function initializeApp() {
     initializeInvestmentsModule();
     initializeCollapsibleSections();
     applyDashboardOrder(); 
+    // --- INÍCIO DA ALTERAÇÃO ---
+    applyDashboardVisibility();
+    // --- FIM DA ALTERAÇÃO ---
 
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
@@ -481,6 +495,83 @@ function applyDashboardOrder() {
         }
     });
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+
+// --- Lógica para Personalização do Dashboard ---
+
+/**
+ * Popula a lista de checkboxes no modal de configurações para personalizar o dashboard.
+ */
+export function populateDashboardCustomization() {
+    const listEl = document.getElementById('dashboard-customization-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    const savedPrefs = getDashboardVisibility();
+
+    DASHBOARD_SECTIONS.forEach(section => {
+        const isVisible = savedPrefs[section.id] !== false; // Padrão é ser visível
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>${section.name}</span>
+            <label class="switch">
+                <input type="checkbox" data-section-id="${section.id}" ${isVisible ? 'checked' : ''}>
+                <span class="slider round"></span>
+            </label>
+        `;
+        listEl.appendChild(li);
+    });
+}
+
+/**
+ * Lê as preferências de visibilidade do localStorage.
+ * @returns {object} Um objeto com as preferências, ex: { 'accounts-summary': true, 'history': false }.
+ */
+function getDashboardVisibility() {
+    try {
+        const savedPrefs = localStorage.getItem(STORAGE_KEYS.DASHBOARD_VISIBILITY);
+        return savedPrefs ? JSON.parse(savedPrefs) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+/**
+ * Salva as novas preferências de visibilidade do dashboard no localStorage.
+ */
+export function saveDashboardVisibility() {
+    const newPrefs = {};
+    const checkboxes = document.querySelectorAll('#dashboard-customization-list input[type="checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        const sectionId = checkbox.dataset.sectionId;
+        newPrefs[sectionId] = checkbox.checked;
+    });
+
+    localStorage.setItem(STORAGE_KEYS.DASHBOARD_VISIBILITY, JSON.stringify(newPrefs));
+    applyDashboardVisibility();
+}
+
+/**
+ * Aplica as preferências de visibilidade salvas às seções do dashboard.
+ */
+function applyDashboardVisibility() {
+    const prefs = getDashboardVisibility();
+    
+    DASHBOARD_SECTIONS.forEach(section => {
+        const sectionEl = document.querySelector(`.dashboard-section[data-section-id="${section.id}"]`);
+        if (sectionEl) {
+            if (prefs[section.id] === false) {
+                sectionEl.style.display = 'none';
+            } else {
+                sectionEl.style.display = ''; // Usa o estilo padrão da folha de estilos
+            }
+        }
+    });
+}
+// --- FIM DA ALTERAÇÃO ---
+
 
 /**
  * FUNÇÃO DE CORREÇÃO: Encontra e exclui transações financeiras ligadas a carteiras de terceiros.
