@@ -39,6 +39,14 @@ export async function addMovement(portfolioId, assetId, movementData) {
         const assetRef = doc(portfolioRef, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
 
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const portfolioSnap = await getDoc(portfolioRef);
+        if (!portfolioSnap.exists()) {
+            throw new Error("Carteira não encontrada.");
+        }
+        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
+        // --- FIM DA ALTERAÇÃO ---
+
         const assetSnap = await getDoc(assetRef);
         if (!assetSnap.exists()) {
             throw new Error("Ativo não encontrado para registrar a operação.");
@@ -47,8 +55,35 @@ export async function addMovement(portfolioId, assetId, movementData) {
 
         const { type, quantity, price, date, accountId, userId } = movementData;
         const totalCost = quantity * price;
+        let transactionIdForMovement = null;
 
-        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+        if (isOwnPortfolio) {
+            if (!accountId) {
+                throw new Error("A conta para débito/crédito é obrigatória para carteiras próprias.");
+            }
+            const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+            transactionIdForMovement = newTransactionRef.id;
+
+            const transactionType = type === 'buy' ? 'expense' : 'revenue';
+            const transactionDescription = type === 'buy' ? `Compra de ${currentAsset.ticker}` : `Venda de ${currentAsset.ticker}`;
+            
+            const transactionData = {
+                description: transactionDescription,
+                amount: totalCost,
+                date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
+                type: transactionType,
+                category: "Investimentos",
+                paymentMethod: transactionType === 'expense' ? 'debit' : 'credit',
+                userId: userId,
+                accountId: accountId,
+                createdAt: serverTimestamp()
+            };
+            batch.set(newTransactionRef, transactionData);
+
+            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+            const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
+            batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
+        }
         
         const newMovementData = {
             type,
@@ -57,7 +92,7 @@ export async function addMovement(portfolioId, assetId, movementData) {
             totalCost,
             date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id,
+            transactionId: transactionIdForMovement,
             userId: userId
         };
         const newMovementRef = doc(movementsRef);
@@ -93,26 +128,6 @@ export async function addMovement(portfolioId, assetId, movementData) {
             averagePrice: newAveragePrice
         };
         batch.update(assetRef, assetUpdateData);
-
-        const transactionType = type === 'buy' ? 'expense' : 'revenue';
-        const transactionDescription = type === 'buy' ? `Compra de ${currentAsset.ticker}` : `Venda de ${currentAsset.ticker}`;
-        
-        const transactionData = {
-            description: transactionDescription,
-            amount: totalCost,
-            date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
-            type: transactionType,
-            category: "Investimentos",
-            paymentMethod: 'debit',
-            userId: movementData.userId,
-            accountId: accountId,
-            createdAt: serverTimestamp()
-        };
-        batch.set(newTransactionRef, transactionData);
-
-        const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-        const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
-        batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
         
         await batch.commit();
 
@@ -163,6 +178,15 @@ export async function addProvento(portfolioId, assetId, proventoData) {
     const batch = writeBatch(db);
 
     try {
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
+        const portfolioSnap = await getDoc(portfolioRef);
+        if (!portfolioSnap.exists()) {
+            throw new Error("Carteira não encontrada.");
+        }
+        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
+        // --- FIM DA ALTERAÇÃO ---
+
         const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
 
@@ -173,8 +197,32 @@ export async function addProvento(portfolioId, assetId, proventoData) {
         const currentAsset = assetSnap.data();
 
         const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
+        let transactionIdForMovement = null;
 
-        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+        if (isOwnPortfolio) {
+            if (!accountId) {
+                throw new Error("A conta de destino é obrigatória para carteiras próprias.");
+            }
+            const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+            transactionIdForMovement = newTransactionRef.id;
+
+            const transactionData = {
+                description: `${proventoType} de ${currentAsset.ticker}`,
+                amount: totalAmount,
+                date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+                type: 'revenue',
+                category: 'Investimentos', // Categoria genérica, pode ser melhorada
+                subcategory: proventoType,
+                paymentMethod: 'credit', // Provento é um crédito em conta
+                userId: userId,
+                accountId: accountId,
+                createdAt: serverTimestamp()
+            };
+            batch.set(newTransactionRef, transactionData);
+
+            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+            batch.update(accountRef, { currentBalance: increment(totalAmount) });
+        }
 
         const newMovementData = {
             type: 'provento',
@@ -182,27 +230,11 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             totalAmount: totalAmount,
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id,
+            transactionId: transactionIdForMovement,
             userId: userId
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
-
-        const transactionData = {
-            description: `${proventoType} de ${currentAsset.ticker}`,
-            amount: totalAmount,
-            date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
-            type: 'revenue',
-            category: 'Dividendos',
-            paymentMethod: 'credit',
-            userId: userId,
-            accountId: accountId,
-            createdAt: serverTimestamp()
-        };
-        batch.set(newTransactionRef, transactionData);
-
-        const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-        batch.update(accountRef, { currentBalance: increment(totalAmount) });
         
         await batch.commit();
 
@@ -230,10 +262,10 @@ export async function getAllProventos(userId) {
         const querySnapshot = await getDocs(q);
         const proventos = [];
 
-        for (const doc of querySnapshot.docs) {
-            const data = doc.data();
+        for (const docSnap of querySnapshot.docs) {
+            const data = docSnap.data();
             // Para obter o ticker, precisamos acessar o documento pai (ativo)
-            const assetRef = doc.ref.parent.parent;
+            const assetRef = docSnap.ref.parent.parent;
             if (assetRef) {
                 const assetSnap = await getDoc(assetRef);
                 if (assetSnap.exists()) {
@@ -242,7 +274,7 @@ export async function getAllProventos(userId) {
                 }
             }
             proventos.push({
-                id: doc.id,
+                id: docSnap.id,
                 ...data,
                 date: data.date.toDate()
             });
@@ -257,7 +289,6 @@ export async function getAllProventos(userId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Busca todas as transações de investimento (compra/venda) de um usuário.
  * @param {string} userId - O ID do usuário.
@@ -275,9 +306,9 @@ export async function getAllInvestmentTransactions(userId) {
         const querySnapshot = await getDocs(q);
         const transactions = [];
 
-        for (const doc of querySnapshot.docs) {
-            const data = doc.data();
-            const assetRef = doc.ref.parent.parent;
+        for (const docSnap of querySnapshot.docs) {
+            const data = docSnap.data();
+            const assetRef = docSnap.ref.parent.parent;
             if (assetRef) {
                 const assetSnap = await getDoc(assetRef);
                 if (assetSnap.exists()) {
@@ -285,7 +316,7 @@ export async function getAllInvestmentTransactions(userId) {
                 }
             }
             transactions.push({
-                id: doc.id,
+                id: docSnap.id,
                 ...data,
                 date: data.date.toDate()
             });
@@ -299,7 +330,6 @@ export async function getAllInvestmentTransactions(userId) {
         throw new Error("Não foi possível carregar o histórico de transações.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Exclui um movimento e recalcula a posição do ativo.
