@@ -39,13 +39,11 @@ export async function addMovement(portfolioId, assetId, movementData) {
         const assetRef = doc(portfolioRef, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
 
-        // --- INÍCIO DA ALTERAÇÃO ---
         const portfolioSnap = await getDoc(portfolioRef);
         if (!portfolioSnap.exists()) {
             throw new Error("Carteira não encontrada.");
         }
         const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
-        // --- FIM DA ALTERAÇÃO ---
 
         const assetSnap = await getDoc(assetRef);
         if (!assetSnap.exists()) {
@@ -178,14 +176,12 @@ export async function addProvento(portfolioId, assetId, proventoData) {
     const batch = writeBatch(db);
 
     try {
-        // --- INÍCIO DA ALTERAÇÃO ---
         const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
         const portfolioSnap = await getDoc(portfolioRef);
         if (!portfolioSnap.exists()) {
             throw new Error("Carteira não encontrada.");
         }
         const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
-        // --- FIM DA ALTERAÇÃO ---
 
         const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
@@ -311,9 +307,14 @@ export async function getAllInvestmentTransactions(userId) {
             const assetRef = docSnap.ref.parent.parent;
             if (assetRef) {
                 const assetSnap = await getDoc(assetRef);
+                // --- INÍCIO DA ALTERAÇÃO ---
+                const portfolioRef = assetRef.parent.parent;
                 if (assetSnap.exists()) {
                     data.ticker = assetSnap.data().ticker;
+                    data.assetId = assetRef.id;
+                    data.portfolioId = portfolioRef.id;
                 }
+                // --- FIM DA ALTERAÇÃO ---
             }
             transactions.push({
                 id: docSnap.id,
