@@ -20,6 +20,7 @@ import * as accounts from './modules/accounts.js';
 import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 import * as investmentsUI from './modules/investments/ui.js';
+import * as movements from './modules/investments/movements.js';
 
 
 // --- Módulos de UI ---
@@ -28,9 +29,7 @@ import * as modals from './modules/ui/modals.js';
 import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
 import * as proventosUI from './modules/proventos/ui.js';
-// INÍCIO DA ALTERAÇÃO
 import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js';
-// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const loginForm = document.querySelector('#login-form form');
@@ -60,6 +59,8 @@ const backToInvestmentDashboardBtn = document.getElementById('back-to-investment
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
 const backToAssetsButton = document.getElementById('back-to-assets-button');
 const movementsList = document.getElementById('movements-list');
+const transactionsInvestmentList = document.getElementById('transactions-investment-list'); // Novo elemento
+
 
 // Formulários de Edição de Investimentos
 const editPortfolioForm = document.getElementById('edit-portfolio-form');
@@ -133,13 +134,11 @@ export function initializeEventListeners() {
         await proventosUI.loadProventosPage(); 
     });
 
-    // INÍCIO DA ALTERAÇÃO
     document.getElementById('nav-transactions-investment-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showTransactionsInvestmentView();
         await transactionsInvestmentUI.loadTransactionsPage(); 
     });
-    // FIM DA ALTERAÇÃO
 
     document.getElementById('nav-cards-button').addEventListener('click', (e) => {
         e.preventDefault();
@@ -377,6 +376,31 @@ export function initializeEventListeners() {
         }
         if (target.matches('.delete-btn')) {
             handleDeleteTransaction(transaction);
+        }
+    });
+
+    // --- Delegação de Eventos para a Lista de Transações de Investimento ---
+    transactionsInvestmentList.addEventListener('click', (e) => {
+        const deleteButton = e.target.closest('.delete-btn[data-movement-id]');
+        const editButton = e.target.closest('.edit-btn[data-movement-id]');
+        
+        if (editButton && !editButton.disabled) {
+            showNotification("Funcionalidade de edição de transação de investimento pendente.", "info");
+        }
+
+        if (deleteButton && !deleteButton.disabled) {
+            const movementId = deleteButton.dataset.movementId;
+            const txContainer = deleteButton.closest('.movement-item');
+            
+            // É crucial passar todos os dados necessários para o handler de exclusão,
+            // que foram anexados ao elemento em transactions-investment/ui.js
+            const movementData = {
+                id: movementId,
+                portfolioId: txContainer.dataset.portfolioId,
+                assetId: txContainer.dataset.assetId
+            };
+            
+            handleDeleteInvestmentTransaction(movementData);
         }
     });
 
@@ -724,6 +748,27 @@ async function handleMovementsListActions(e) {
             } catch (error) {
                 showNotification(error.message, "error");
             }
+        }
+    }
+}
+
+async function handleDeleteInvestmentTransaction(movementData) {
+    if (confirm("Tem certeza que deseja excluir esta transação de investimento? O movimento será removido, o saldo da sua conta será estornado e o preço médio do ativo será recalculado. Esta ação é irreversível.")) {
+        try {
+            await movements.deleteMovementAndRecalculate(
+                movementData.portfolioId, 
+                movementData.assetId, 
+                movementData.id
+            );
+            showNotification("Transação de investimento excluída e dados financeiros estornados com sucesso!");
+            
+            // Recarrega todas as informações importantes
+            await transactionsInvestmentUI.loadTransactionsPage();
+            await app.loadUserDashboard();
+            await app.loadUserAccounts();
+
+        } catch (error) {
+            showNotification(error.message, "error");
         }
     }
 }
