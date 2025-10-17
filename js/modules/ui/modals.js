@@ -12,6 +12,10 @@ import { getInvoices, getInvoiceTransactions } from '../invoices.js';
 import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
 import * as charts from './charts.js';
+// INÍCIO DA ALTERAÇÃO
+import { populateDashboardCustomization } from '../../app.js';
+// FIM DA ALTERAÇÃO
+
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
@@ -21,9 +25,7 @@ export let _currentSplits = []; // Armazena os itens da divisão da transação
 const editModal = document.getElementById('edit-modal');
 const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
-// --- INÍCIO DA ALTERAÇÃO ---
 const managementModal = document.getElementById('management-modal');
-// --- FIM DA ALTERAÇÃO ---
 const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
@@ -358,9 +360,12 @@ export async function displayInvoiceDetails(invoice) {
 
 // --- Funções de Gerenciamento do Modal de Configurações ---
 
-// --- INÍCIO DA ALTERAÇÃO ---
 export async function openSettingsModal() {
     if (!state.currentUser) return;
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    populateDashboardCustomization();
+    // --- FIM DA ALTERAÇÃO ---
 
     if (state.currentUserProfile.role === 'admin') {
         adminTabButton.style.display = 'block';
@@ -424,7 +429,6 @@ export function switchSettingsTab(tabId) {
 export function switchManagementTab(tabId) {
     switchTab(tabId, managementModal);
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções para o modal de pagamento de fatura ---
