@@ -75,9 +75,7 @@
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
                 <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <a href="#" id="nav-management-button" class="header-icon-button" title="Gerenciamento Financeiro">📒</a>
-                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-settings-button" class="header-icon-button" title="Configurações">⚙️</a>
                 <a href="#" id="nav-logout-button" class="header-icon-button" title="Sair">🚪</a>
             </nav>
@@ -933,14 +931,16 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
             <h2>Configurações do Sistema</h2>
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="theme-settings-tab">Aparência</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <button class="tab-link" data-tab="dashboard-customization-tab">Personalizar Dashboard</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
             <div id="settings-content">
                 <div id="theme-settings-tab" class="tab-content active">
@@ -955,6 +955,18 @@
                         </div>
                     </section>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div id="dashboard-customization-tab" class="tab-content">
+                    <section>
+                        <h3>Personalizar Dashboard</h3>
+                        <p class="subtitle">Selecione as seções que você deseja exibir na sua tela inicial.</p>
+                        <ul id="dashboard-customization-list" class="customization-list">
+                            <!-- Checkboxes serão renderizados aqui pelo JS -->
+                        </ul>
+                        <button type="button" id="save-dashboard-customization-button" style="margin-top: 1.5rem; width: 100%;">Salvar Alterações</button>
+                    </section>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
                 <div id="user-management-tab" class="tab-content">
                     <section>
                         <h3>Gerenciar Usuários</h3>
@@ -1104,7 +1116,6 @@
             </div>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
