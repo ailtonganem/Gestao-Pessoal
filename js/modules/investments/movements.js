@@ -166,51 +166,79 @@ export async function getMovements(portfolioId, assetId) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
 /**
- * Adiciona um provento a um ativo e cria a transação de receita correspondente.
+ * Adiciona um provento a um ativo, calculando o valor total com base na posição da data.
  * @param {string} portfolioId - O ID da carteira.
  * @param {string} assetId - O ID do ativo.
  * @param {object} proventoData - Dados do provento.
+ * @param {number} proventoData.valuePerShare - Valor do provento por cota/ação.
  * @returns {Promise<void>}
  */
 export async function addProvento(portfolioId, assetId, proventoData) {
     const batch = writeBatch(db);
+    const { proventoType, paymentDate, valuePerShare, accountId, userId } = proventoData;
+    const paymentTimestamp = Timestamp.fromDate(new Date(paymentDate + 'T00:00:00'));
 
     try {
         const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
-        const portfolioSnap = await getDoc(portfolioRef);
-        if (!portfolioSnap.exists()) {
-            throw new Error("Carteira não encontrada.");
-        }
-        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
-
-        const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+        const assetRef = doc(portfolioRef, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
 
-        const assetSnap = await getDoc(assetRef);
-        if (!assetSnap.exists()) {
-            throw new Error("Ativo não encontrado para registrar o provento.");
-        }
-        const currentAsset = assetSnap.data();
+        // 1. Verifica se a carteira é própria
+        const portfolioSnap = await getDoc(portfolioRef);
+        if (!portfolioSnap.exists()) throw new Error("Carteira não encontrada.");
+        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
 
-        const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
+        // 2. Busca o ticker do ativo
+        const assetSnap = await getDoc(assetRef);
+        if (!assetSnap.exists()) throw new Error("Ativo não encontrado para registrar o provento.");
+        const assetTicker = assetSnap.data().ticker;
+
+        // 3. Calcula a quantidade de cotas na data do pagamento
+        const allMovementsQuery = query(movementsRef, where("date", "<=", paymentTimestamp), orderBy("date", "asc"));
+        const movementsSnapshot = await getDocs(allMovementsQuery);
+        let quantityOnDate = 0;
+        movementsSnapshot.forEach(doc => {
+            const mov = doc.data();
+            if (mov.type === 'buy') quantityOnDate += mov.quantity;
+            if (mov.type === 'sell') quantityOnDate -= mov.quantity;
+        });
+
+        if (quantityOnDate <= 0) {
+            throw new Error(`Você não possuía cotas de ${assetTicker} na data ${paymentDate} para receber proventos.`);
+        }
+
+        // 4. Calcula o valor total e prepara o registro do movimento
+        const totalAmount = quantityOnDate * valuePerShare;
         let transactionIdForMovement = null;
 
+        const newMovementData = {
+            type: 'provento',
+            proventoType: proventoType,
+            totalAmount: totalAmount,
+            valuePerShare: valuePerShare,
+            quantityOnDate: quantityOnDate,
+            date: paymentTimestamp,
+            createdAt: serverTimestamp(),
+            userId: userId
+        };
+
+        // 5. Se for carteira própria, cria a transação financeira
         if (isOwnPortfolio) {
-            if (!accountId) {
-                throw new Error("A conta de destino é obrigatória para carteiras próprias.");
-            }
+            if (!accountId) throw new Error("A conta de destino é obrigatória para carteiras próprias.");
+            
             const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
             transactionIdForMovement = newTransactionRef.id;
 
             const transactionData = {
-                description: `${proventoType} de ${currentAsset.ticker}`,
+                description: `${proventoType} de ${assetTicker}`,
                 amount: totalAmount,
-                date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+                date: paymentTimestamp,
                 type: 'revenue',
-                category: 'Investimentos', // Categoria genérica, pode ser melhorada
+                category: 'Investimentos',
                 subcategory: proventoType,
-                paymentMethod: 'credit', // Provento é um crédito em conta
+                paymentMethod: 'credit',
                 userId: userId,
                 accountId: accountId,
                 createdAt: serverTimestamp()
@@ -220,16 +248,9 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
             batch.update(accountRef, { currentBalance: increment(totalAmount) });
         }
-
-        const newMovementData = {
-            type: 'provento',
-            proventoType: proventoType,
-            totalAmount: totalAmount,
-            date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
-            createdAt: serverTimestamp(),
-            transactionId: transactionIdForMovement,
-            userId: userId
-        };
+        
+        // 6. Salva o registro do movimento
+        newMovementData.transactionId = transactionIdForMovement;
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
         
@@ -237,13 +258,13 @@ export async function addProvento(portfolioId, assetId, proventoData) {
 
     } catch (error) {
         console.error("Erro ao registrar provento:", error);
-        throw new Error("Não foi possível salvar o registro do provento.");
+        throw error; // Re-lança o erro para ser capturado no handler
     }
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Busca todos os movimentos do tipo 'provento' de um usuário.
- * Utiliza uma consulta de grupo de coleção para buscar em todas as subcoleções 'movements'.
  * @param {string} userId - O ID do usuário.
  * @returns {Promise<Array<object>>} Uma lista de objetos de provento.
  */
@@ -306,22 +327,17 @@ export async function getAllInvestmentTransactions(userId) {
             const data = docSnap.data();
             const assetRef = docSnap.ref.parent.parent; // Referência ao documento do ativo
             
-            // --- INÍCIO DA ALTERAÇÃO ---
-            // Garante que a referência ao ativo e sua carteira pai existam no caminho do documento
             if (assetRef && assetRef.parent && assetRef.parent.parent) {
                 const portfolioRef = assetRef.parent.parent; // Referência ao documento da carteira
                 
-                // Atribui os IDs a partir do caminho da referência, existam os documentos ou não
                 data.assetId = assetRef.id;
                 data.portfolioId = portfolioRef.id;
 
-                // Tenta obter o ticker apenas se o documento do ativo ainda existir
                 const assetSnap = await getDoc(assetRef);
                 if (assetSnap.exists()) {
                     data.ticker = assetSnap.data().ticker;
                 }
             }
-            // --- FIM DA ALTERAÇÃO ---
             
             transactions.push({
                 id: docSnap.id,
@@ -354,22 +370,17 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
         let movementRef;
         let assetRef;
 
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Lida com a exclusão de movimentos órfãos e normais de forma separada
         if (isOrphan) {
-            // Se for órfão, encontra o movimento usando uma consulta de grupo
             const movementsGroupRef = collectionGroup(db, 'movements');
             const q = query(movementsGroupRef, where(document.id(), "==", movementId));
             const snapshot = await getDocs(q);
             if (snapshot.empty) throw new Error(`Movimento órfão ${movementId} não encontrado.`);
             movementRef = snapshot.docs[0].ref;
         } else {
-            // Se for normal, constrói o caminho como antes
             assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
             movementRef = doc(assetRef, 'movements', movementId);
         }
 
-        // ETAPA 1: Transação Atômica para Exclusão e Estorno
         await runTransaction(db, async (transaction) => {
             const movementSnap = await transaction.get(movementRef);
             if (!movementSnap.exists()) {
@@ -377,7 +388,6 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
             }
             const movementData = movementSnap.data();
 
-            // Reverte a transação financeira associada, se houver
             if (movementData.transactionId) {
                 const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
                 const financialTxSnap = await transaction.get(transactionRef);
@@ -393,11 +403,9 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
                 }
             }
             
-            // Exclui o documento do movimento
             transaction.delete(movementRef);
         });
 
-        // ETAPA 2: Recálculo (apenas se não for órfão e o ativo ainda existir)
         if (!isOrphan) {
             const assetSnap = await getDoc(assetRef);
             if (assetSnap.exists()) {
@@ -435,7 +443,6 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
                 });
             }
         }
-        // --- FIM DA ALTERAÇÃO ---
     } catch (error) {
         console.error("Erro ao excluir e recalcular movimento:", error);
         throw new Error("Falha ao excluir a operação. Verifique os dados e tente novamente.");
