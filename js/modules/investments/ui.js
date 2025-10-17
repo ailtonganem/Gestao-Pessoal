@@ -32,6 +32,10 @@ const patrimonioCard = document.getElementById('patrimonio-card');
 const proventosMesCard = document.getElementById('proventos-mes-card');
 const resultadoMesCard = document.getElementById('resultado-mes-card');
 const investmentHistoryCard = document.getElementById('investment-history-card');
+// INÍCIO DA ALTERAÇÃO
+const proventosMesTotalEl = document.getElementById('proventos-mes-total');
+const resultadoMesTotalEl = document.getElementById('resultado-mes-total');
+// FIM DA ALTERAÇÃO
 
 const portfoliosView = document.getElementById('portfolios-view');
 const assetsView = document.getElementById('assets-view');
@@ -175,7 +179,6 @@ export async function loadInvestmentDashboard() {
  * Atualiza todos os componentes do dashboard com base na carteira selecionada.
  * @param {string} portfolioId - O ID da carteira a ser exibida, ou 'all' para consolidado.
  */
-// INÍCIO DA ALTERAÇÃO
 export async function updateInvestmentDashboard(portfolioId) {
     renderLoadingPlaceholders();
 
@@ -250,7 +253,6 @@ export async function updateInvestmentDashboard(portfolioId) {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Popula o select de filtro de carteiras.
@@ -275,8 +277,10 @@ function renderLoadingPlaceholders() {
     calendarioCard.querySelector('#proventos-calendar').innerHTML = `<p>Carregando calendário...</p>`;
     patrimonioCard.querySelector('.chart-container').innerHTML = `<p>Carregando patrimônio...</p>`;
     document.getElementById('patrimonio-total-valor').textContent = '...';
-    proventosMesCard.querySelector('#proventos-mes-summary').innerHTML = `<p>Carregando...</p>`;
-    resultadoMesCard.querySelector('#resultado-mes-summary').innerHTML = `<p>Carregando...</p>`;
+    // INÍCIO DA ALTERAÇÃO
+    if (proventosMesTotalEl) proventosMesTotalEl.textContent = 'Carregando...';
+    if (resultadoMesTotalEl) resultadoMesTotalEl.textContent = 'Carregando...';
+    // FIM DA ALTERAÇÃO
     investmentHistoryCard.querySelector('#investment-history-list').innerHTML = `<li>Carregando histórico...</li>`;
 }
 
@@ -316,15 +320,17 @@ function renderPatrimonioCard(data) {
 
 // INÍCIO DA ALTERAÇÃO
 function renderProventosMesCard(data) {
-    const valueEl = proventosMesCard.querySelector('#proventos-mes-total');
-    valueEl.textContent = formatCurrency(data.proventosMes || 0);
+    if (proventosMesTotalEl) {
+        proventosMesTotalEl.textContent = formatCurrency(data.proventosMes || 0);
+    }
 }
 
 function renderResultadoMesCard(data) {
-    const valueEl = resultadoMesCard.querySelector('#resultado-mes-total');
-    const value = data.resultadoMes || 0;
-    valueEl.textContent = formatCurrency(value);
-    valueEl.style.color = value >= 0 ? 'var(--success-color)' : 'var(--error-color)';
+    if (resultadoMesTotalEl) {
+        const value = data.resultadoMes || 0;
+        resultadoMesTotalEl.textContent = formatCurrency(value);
+        resultadoMesTotalEl.style.color = value >= 0 ? 'var(--success-color)' : 'var(--error-color)';
+    }
 }
 // FIM DA ALTERAÇÃO
 
