@@ -17,14 +17,14 @@ import {
     doc,
     deleteDoc,
     updateDoc,
-    // INÍCIO DA ALTERAÇÃO
     writeBatch,
     serverTimestamp,
-    increment
+    increment,
+    // INÍCIO DA ALTERAÇÃO
+    getDoc
     // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Adiciona um novo ativo a uma carteira específica, incluindo sua primeira operação de compra.
  * @param {string} portfolioId - O ID do documento da carteira pai.
@@ -46,23 +46,58 @@ export async function addAssetWithInitialPurchase(portfolioId, assetData, purcha
     const batch = writeBatch(db);
 
     try {
-        // 1. Define as referências para os novos documentos
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // 1. Busca os dados da carteira para verificar o tipo de propriedade
+        const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
+        const portfolioSnap = await getDoc(portfolioRef);
+        if (!portfolioSnap.exists()) {
+            throw new Error("Carteira não encontrada.");
+        }
+        const portfolioInfo = portfolioSnap.data();
+        const isOwnPortfolio = portfolioInfo.ownershipType === 'own';
+        // --- FIM DA ALTERAÇÃO ---
+
+        // 2. Define as referências para os novos documentos
         const assetsRef = collection(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets');
         const newAssetRef = doc(assetsRef); // Gera um ID para o novo ativo
 
         const movementsRef = collection(newAssetRef, 'movements');
         const newMovementRef = doc(movementsRef); // Gera um ID para o primeiro movimento
 
-        const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
-        const newTransactionRef = doc(transactionsRef); // Gera um ID para a transação financeira
-
-        const accountRef = doc(db, COLLECTIONS.ACCOUNTS, purchaseData.accountId);
-        
-        // 2. Prepara os dados para salvar
         const totalCost = purchaseData.quantity * purchaseData.price;
         const purchaseDate = new Date(purchaseData.date + 'T00:00:00');
+        let transactionIdForMovement = null;
 
-        // Dados do novo ativo com base na primeira compra
+        // 3. Se a carteira for própria, cria a transação financeira e atualiza o saldo da conta
+        if (isOwnPortfolio) {
+            if (!purchaseData.accountId) {
+                throw new Error("A conta para débito é obrigatória para carteiras próprias.");
+            }
+            const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+            const newTransactionRef = doc(transactionsRef);
+            transactionIdForMovement = newTransactionRef.id;
+
+            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, purchaseData.accountId);
+            
+            // Dados da transação financeira (despesa)
+            const transactionDataToSave = {
+                description: `Compra de ${assetData.ticker}`,
+                amount: totalCost,
+                date: Timestamp.fromDate(purchaseDate),
+                type: 'expense',
+                category: 'Investimentos',
+                paymentMethod: 'debit', // Compra de ativo sempre debita de uma conta
+                userId: purchaseData.userId,
+                accountId: purchaseData.accountId,
+                createdAt: serverTimestamp()
+            };
+            batch.set(newTransactionRef, transactionDataToSave);
+
+            // Atualiza o saldo da conta
+            batch.update(accountRef, { currentBalance: increment(-totalCost) });
+        }
+        
+        // 4. Prepara os dados do ativo e do primeiro movimento (compra)
         const assetDataToSave = {
             ...assetData,
             quantity: purchaseData.quantity,
@@ -72,7 +107,6 @@ export async function addAssetWithInitialPurchase(portfolioId, assetData, purcha
         };
         batch.set(newAssetRef, assetDataToSave);
 
-        // Dados do primeiro movimento (compra)
         const movementDataToSave = {
             type: 'buy',
             quantity: purchaseData.quantity,
@@ -80,28 +114,12 @@ export async function addAssetWithInitialPurchase(portfolioId, assetData, purcha
             totalCost: totalCost,
             date: Timestamp.fromDate(purchaseDate),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id
+            transactionId: transactionIdForMovement, // Será null para carteiras de terceiros
+            userId: purchaseData.userId // Adiciona userId ao movimento
         };
         batch.set(newMovementRef, movementDataToSave);
-
-        // Dados da transação financeira (despesa)
-        const transactionDataToSave = {
-            description: `Compra de ${assetData.ticker}`,
-            amount: totalCost,
-            date: Timestamp.fromDate(purchaseDate),
-            type: 'expense',
-            category: 'Investimentos',
-            paymentMethod: 'debit', // Compra de ativo sempre debita de uma conta
-            userId: purchaseData.userId,
-            accountId: purchaseData.accountId,
-            createdAt: serverTimestamp()
-        };
-        batch.set(newTransactionRef, transactionDataToSave);
-
-        // 3. Atualiza o saldo da conta
-        batch.update(accountRef, { currentBalance: increment(-totalCost) });
-
-        // 4. Executa todas as operações de uma vez
+        
+        // 5. Executa todas as operações de uma vez
         await batch.commit();
 
     } catch (error) {
@@ -109,7 +127,6 @@ export async function addAssetWithInitialPurchase(portfolioId, assetData, purcha
         throw new Error("Não foi possível salvar o novo ativo e sua primeira compra.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Busca todos os ativos de uma carteira específica.
