@@ -17,7 +17,11 @@ import {
     serverTimestamp,
     getDocs,
     query,
-    orderBy
+    orderBy,
+    // INÍCIO DA ALTERAÇÃO
+    deleteDoc,
+    runTransaction
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -44,11 +48,8 @@ export async function addMovement(portfolioId, assetId, movementData) {
         const { type, quantity, price, date, accountId } = movementData;
         const totalCost = quantity * price;
 
-        // INÍCIO DA ALTERAÇÃO
-        // 1. Preparar a criação da transação financeira para obter seu ID
         const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
         
-        // 2. Preparar o documento do novo movimento, incluindo o ID da transação
         const newMovementData = {
             type,
             quantity,
@@ -56,13 +57,11 @@ export async function addMovement(portfolioId, assetId, movementData) {
             totalCost,
             date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id // Vínculo com a transação financeira
+            transactionId: newTransactionRef.id 
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
-        // FIM DA ALTERAÇÃO
 
-        // 3. Calcular os novos valores para o ativo
         let newQuantity, newTotalInvested, newAveragePrice;
 
         if (type === 'buy') {
@@ -70,7 +69,6 @@ export async function addMovement(portfolioId, assetId, movementData) {
             newTotalInvested = currentAsset.totalInvested + totalCost;
             newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
             
-            // 3a. Atualiza o total investido na carteira
             batch.update(portfolioRef, { totalInvested: increment(totalCost) });
 
         } else { // 'sell'
@@ -78,19 +76,16 @@ export async function addMovement(portfolioId, assetId, movementData) {
                 throw new Error("Não é possível vender mais ativos do que você possui.");
             }
             newQuantity = currentAsset.quantity - quantity;
-            // Reduz o custo total proporcionalmente ao preço médio
             newTotalInvested = currentAsset.totalInvested - (quantity * currentAsset.averagePrice);
-            newAveragePrice = currentAsset.averagePrice; // Preço médio não muda na venda
-            if (newQuantity === 0) { // Se vendeu tudo, zera o custo para evitar resíduos
+            newAveragePrice = currentAsset.averagePrice; 
+            if (newQuantity === 0) {
                 newTotalInvested = 0;
                 newAveragePrice = 0;
             }
 
-            // 3b. Atualiza o total investido na carteira
             batch.update(portfolioRef, { totalInvested: increment(-(quantity * currentAsset.averagePrice)) });
         }
         
-        // 4. Preparar a atualização do ativo
         const assetUpdateData = {
             quantity: newQuantity,
             totalInvested: newTotalInvested,
@@ -98,7 +93,6 @@ export async function addMovement(portfolioId, assetId, movementData) {
         };
         batch.update(assetRef, assetUpdateData);
 
-        // 5. Preparar os dados da transação financeira correspondente
         const transactionType = type === 'buy' ? 'expense' : 'revenue';
         const transactionDescription = type === 'buy' ? `Compra de ${currentAsset.ticker}` : `Venda de ${currentAsset.ticker}`;
         
@@ -108,24 +102,21 @@ export async function addMovement(portfolioId, assetId, movementData) {
             date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
             type: transactionType,
             category: "Investimentos",
-            paymentMethod: 'debit', // Assume que saiu/entrou da conta
+            paymentMethod: 'debit',
             userId: movementData.userId,
             accountId: accountId,
             createdAt: serverTimestamp()
         };
         batch.set(newTransactionRef, transactionData);
 
-        // 6. Atualizar o saldo da conta selecionada
         const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
         const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
         batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
         
-        // 7. Executar todas as operações
         await batch.commit();
 
     } catch (error) {
         console.error("Erro ao registrar movimento:", error);
-        // Lança o erro para ser capturado pelo handler
         throw error;
     }
 }
@@ -148,7 +139,7 @@ export async function getMovements(portfolioId, assetId) {
             movements.push({
                 id: doc.id,
                 ...data,
-                date: data.date.toDate() // Converte Timestamp para objeto Date do JS
+                date: data.date.toDate()
             });
         });
 
@@ -182,42 +173,35 @@ export async function addProvento(portfolioId, assetId, proventoData) {
 
         const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
 
-        // INÍCIO DA ALTERAÇÃO
-        // 1. Preparar a transação de receita para obter seu ID
         const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
 
-        // 2. Registra o provento como um tipo de 'movimento', incluindo o ID da transação
         const newMovementData = {
             type: 'provento',
             proventoType: proventoType,
             totalAmount: totalAmount,
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id // Vínculo com a transação financeira
+            transactionId: newTransactionRef.id
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
-        // FIM DA ALTERAÇÃO
 
-        // 3. Prepara os dados da transação de receita correspondente
         const transactionData = {
             description: `${proventoType} de ${currentAsset.ticker}`,
             amount: totalAmount,
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
             type: 'revenue',
-            category: 'Dividendos', // Categoria genérica para todos os proventos
-            paymentMethod: 'credit', // Representa uma entrada de dinheiro
+            category: 'Dividendos',
+            paymentMethod: 'credit',
             userId: userId,
             accountId: accountId,
             createdAt: serverTimestamp()
         };
         batch.set(newTransactionRef, transactionData);
 
-        // 4. Atualiza o saldo da conta de destino
         const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
         batch.update(accountRef, { currentBalance: increment(totalAmount) });
         
-        // 5. Executa todas as operações
         await batch.commit();
 
     } catch (error) {
@@ -225,3 +209,88 @@ export async function addProvento(portfolioId, assetId, proventoData) {
         throw new Error("Não foi possível salvar o registro do provento.");
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Exclui um movimento e recalcula a posição do ativo.
+ * @param {string} portfolioId - ID da carteira.
+ * @param {string} assetId - ID do ativo.
+ * @param {string} movementId - ID do movimento a ser excluído.
+ * @returns {Promise<void>}
+ */
+export async function deleteMovementAndRecalculate(portfolioId, assetId, movementId) {
+    const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+    const movementRef = doc(assetRef, 'movements', movementId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            // 1. Obter os dados do movimento a ser excluído
+            const movementSnap = await transaction.get(movementRef);
+            if (!movementSnap.exists()) {
+                throw new Error("Movimento não encontrado para exclusão.");
+            }
+            const movementData = movementSnap.data();
+            
+            // 2. Reverter a transação financeira associada
+            if (movementData.transactionId) {
+                const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
+                const financialTxSnap = await transaction.get(transactionRef);
+
+                if (financialTxSnap.exists()) {
+                    const financialTx = financialTxSnap.data();
+                    const accountRef = doc(db, COLLECTIONS.ACCOUNTS, financialTx.accountId);
+                    const amountToRevert = financialTx.type === 'expense' ? financialTx.amount : -financialTx.amount;
+                    
+                    transaction.update(accountRef, { currentBalance: increment(amountToRevert) });
+                    transaction.delete(transactionRef);
+                }
+            }
+            
+            // 3. Excluir o documento do movimento
+            transaction.delete(movementRef);
+
+            // 4. Buscar TODOS os outros movimentos do ativo
+            const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
+            const movementsSnapshot = await getDocs(movementsQuery); // Precisa ser fora da transação
+            
+            let allMovements = [];
+            movementsSnapshot.forEach(doc => {
+                if (doc.id !== movementId) { // Garante que o movimento excluído não entre no recálculo
+                    allMovements.push(doc.data());
+                }
+            });
+
+            // 5. Recalcular a posição do ativo do zero
+            let newQuantity = 0;
+            let newTotalInvested = 0;
+            let newAveragePrice = 0;
+
+            allMovements.forEach(mov => {
+                if (mov.type === 'buy') {
+                    newQuantity += mov.quantity;
+                    newTotalInvested += mov.totalCost;
+                } else if (mov.type === 'sell') {
+                    newTotalInvested -= mov.quantity * newAveragePrice; // Abate o custo pelo preço médio daquele momento
+                    newQuantity -= mov.quantity;
+                }
+                newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+            });
+
+            if (newQuantity <= 0) {
+                newTotalInvested = 0;
+                newAveragePrice = 0;
+            }
+
+            // 6. Atualizar o documento do ativo com os valores recalculados
+            transaction.update(assetRef, {
+                quantity: newQuantity,
+                totalInvested: newTotalInvested,
+                averagePrice: newAveragePrice
+            });
+        });
+    } catch (error) {
+        console.error("Erro transacional ao excluir e recalcular movimento:", error);
+        throw new Error("Falha ao excluir a operação. Tente novamente.");
+    }
+}
+// FIM DA ALTERAÇÃO
