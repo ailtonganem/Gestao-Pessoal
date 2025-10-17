@@ -116,7 +116,6 @@ export async function showMovementsView(assetId) {
         return;
     }
     
-    // INÍCIO DA ALTERAÇÃO
     // Adiciona a carteira ao objeto de ativo selecionado para referência futura
     asset.portfolioId = state.selectedPortfolioForAssetsView.id;
     state.setSelectedAssetForMovementsView(asset);
@@ -124,7 +123,6 @@ export async function showMovementsView(assetId) {
     const assetHeaderDetails = document.querySelector('.asset-header-details');
     assetHeaderDetails.querySelector('h2').textContent = `${asset.ticker} - ${asset.name}`;
     assetHeaderDetails.querySelector('p').textContent = `${asset.type} - ${asset.broker || 'N/A'}`;
-    // FIM DA ALTERAÇÃO
     
     assetsView.style.display = 'none';
     movementsView.style.display = 'block';
@@ -139,11 +137,15 @@ export async function refreshMovementsView() {
     const currentAsset = state.selectedAssetForMovementsView;
     if (!currentAsset) return;
 
+    // Recarrega todos os ativos da carteira para obter os dados atualizados
     await loadAndRenderAssets(currentAsset.portfolioId);
+    // Encontra o ativo atualizado na lista recarregada
     const updatedAsset = _currentPortfolioAssets.find(a => a.id === currentAsset.id);
 
     if (updatedAsset) {
+        // Atualiza o estado global com o ativo atualizado
         state.setSelectedAssetForMovementsView(updatedAsset);
+        // Renderiza a tela de movimentos com os novos dados
         await loadAndRenderMovements(updatedAsset);
     } else {
         // Se o ativo foi deletado (não encontrado), volta para a lista de ativos
