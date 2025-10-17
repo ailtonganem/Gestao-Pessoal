@@ -12,6 +12,9 @@ import * as movements from './movements.js';
 import * as investmentsUI from './ui.js';
 import { showNotification } from '../ui/notifications.js';
 import { loadUserDashboard, loadUserAccounts } from '../../app.js';
+// INÍCIO DA ALTERAÇÃO
+import { formatCurrency } from '../ui/utils.js';
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const addPortfolioForm = document.getElementById('add-portfolio-form');
@@ -42,6 +45,9 @@ export function initializeInvestmentEventListeners() {
     addAssetForm.addEventListener('submit', handleAddAsset);
     backToPortfoliosButton.addEventListener('click', investmentsUI.showPortfoliosView);
     assetList.addEventListener('click', handleAssetListActions);
+    // INÍCIO DA ALTERAÇÃO
+    assetList.addEventListener('input', handleQuoteInputChange);
+    // FIM DA ALTERAÇÃO
     closeMovementModalButton.addEventListener('click', investmentsUI.closeMovementModal);
     addMovementForm.addEventListener('submit', handleAddMovement);
     goToPortfoliosManagementBtn.addEventListener('click', (e) => {
@@ -68,6 +74,106 @@ export function initializeInvestmentEventListeners() {
 }
 
 // --- Funções "Handler" ---
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Handler para o evento de input nos campos de cotação manual.
+ * Recalcula os valores do ativo e da carteira toda vez que o usuário altera a cotação.
+ * @param {Event} e - O evento de input.
+ */
+function handleQuoteInputChange(e) {
+    if (e.target.classList.contains('quote-input')) {
+        const assetId = e.target.dataset.assetId;
+        const newPrice = parseFloat(e.target.value);
+
+        // Encontra o ativo no estado local do módulo de UI
+        const asset = investmentsUI._currentPortfolioAssets.find(a => a.id === assetId);
+        if (!asset || isNaN(newPrice)) {
+            return;
+        }
+
+        // 1. Atualiza os dados do ativo específico
+        asset.currentPrice = newPrice;
+        asset.currentValue = asset.quantity * newPrice;
+        asset.resultValue = asset.currentValue - asset.totalInvested;
+        asset.resultPercent = asset.totalInvested > 0 ? (asset.resultValue / asset.totalInvested) * 100 : 0;
+        
+        // 2. Atualiza a linha do ativo na tabela (DOM)
+        updateAssetRowUI(asset);
+
+        // 3. Recalcula e atualiza os totais da carteira
+        recalculatePortfolioTotals();
+    }
+}
+
+/**
+ * Atualiza os elementos da interface do usuário para uma linha de ativo específica.
+ * @param {object} asset - O objeto de ativo com os dados atualizados.
+ */
+function updateAssetRowUI(asset) {
+    const marketValueEl = document.getElementById(`market-value-${asset.id}`);
+    const resultValueEl = document.getElementById(`result-value-${asset.id}`);
+    const resultPercentEl = document.getElementById(`result-percent-${asset.id}`);
+    
+    if (marketValueEl) marketValueEl.textContent = formatCurrency(asset.currentValue);
+    
+    if (resultValueEl && resultPercentEl) {
+        resultValueEl.textContent = formatCurrency(asset.resultValue);
+        resultPercentEl.textContent = `${asset.resultPercent.toFixed(2)}%`;
+
+        const resultClass = asset.resultValue >= 0 ? 'positive' : 'negative';
+        const oppositeClass = asset.resultValue >= 0 ? 'negative' : 'positive';
+        
+        resultValueEl.classList.remove(oppositeClass);
+        resultPercentEl.classList.remove(oppositeClass);
+        resultValueEl.classList.add(resultClass);
+        resultPercentEl.classList.add(resultClass);
+    }
+}
+
+/**
+ * Recalcula e atualiza os totais do portfólio (Patrimônio, Resultado) e o peso de cada ativo.
+ */
+function recalculatePortfolioTotals() {
+    const assets = investmentsUI._currentPortfolioAssets;
+    
+    // 1. Calcula o novo patrimônio total
+    const portfolioTotalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
+
+    // 2. Atualiza o peso (%) de cada ativo na carteira
+    assets.forEach(asset => {
+        const weight = portfolioTotalValue > 0 ? (asset.currentValue / portfolioTotalValue) * 100 : 0;
+        const weightEl = document.getElementById(`weight-${asset.id}`);
+        if (weightEl) {
+            weightEl.querySelector('span').textContent = `${weight.toFixed(2)}%`;
+        }
+    });
+
+    // 3. Recalcula o resultado total da carteira
+    const portfolioTotalCost = assets.reduce((sum, asset) => sum + asset.totalInvested, 0);
+    const portfolioResult = portfolioTotalValue - portfolioTotalCost;
+    const portfolioResultPercent = portfolioTotalCost > 0 ? (portfolioResult / portfolioTotalCost) * 100 : 0;
+
+    // 4. Atualiza os cards de resumo da carteira no DOM
+    const totalValueEl = document.getElementById('portfolio-total-value');
+    const resultValueEl = document.getElementById('portfolio-result-value');
+    const resultPercentEl = document.getElementById('portfolio-result-percent');
+    const resultContainer = document.getElementById('portfolio-result-container');
+
+    if (totalValueEl) totalValueEl.textContent = formatCurrency(portfolioTotalValue);
+
+    if (resultValueEl && resultPercentEl && resultContainer) {
+        resultValueEl.textContent = formatCurrency(portfolioResult);
+        resultPercentEl.textContent = portfolioResultPercent.toFixed(2);
+        
+        const resultClass = portfolioResult >= 0 ? 'positive' : 'negative';
+        const oppositeClass = portfolioResult >= 0 ? 'negative' : 'positive';
+        resultContainer.classList.remove(oppositeClass);
+        resultContainer.classList.add(resultClass);
+    }
+}
+// FIM DA ALTERAÇÃO
+
 
 /**
  * Handler para o formulário de adicionar nova carteira.
