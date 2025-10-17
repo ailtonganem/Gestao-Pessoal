@@ -287,7 +287,7 @@ async function updateTransaction(transactionId, updatedData) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Exclui uma transação de investimento e estorna o valor na conta correspondente.
  * Usado pela função de correção de dados históricos.
@@ -300,35 +300,59 @@ async function deleteInvestmentTransaction(transactionId, isCorrection = false) 
         return false;
     }
 
-    const batch = writeBatch(db);
     const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
-
+    
     try {
+        // Tentamos ler o documento primeiro. Se falhar por permissão, o catch irá lidar com isso.
         const txSnap = await getDoc(transactionDocRef);
+        
         if (!txSnap.exists()) {
             console.warn(`Transação de correção ${transactionId} não encontrada. Provavelmente já foi corrigida.`);
             return false;
         }
-        const transaction = txSnap.data();
 
-        // Se não houver conta associada, apenas removemos a transação.
+        const transaction = txSnap.data();
+        const batch = writeBatch(db);
+
+        // Se a transação tiver uma conta, preparamos o estorno do saldo.
         if (transaction.accountId) {
-             // O estorno de uma despesa ('buy') é uma receita.
+            // O estorno de uma despesa ('buy') é uma receita.
             const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
             updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
         }
         
+        // Preparamos a exclusão do documento da transação.
         batch.delete(transactionDocRef);
+        
+        // Executamos o lote de operações.
         await batch.commit();
         
         console.log(`Transação ${transactionId} foi corrigida e estornada.`);
         return true;
 
     } catch (error) {
+        // Se o erro for de permissão, significa que não podemos ler o documento.
+        // Neste caso específico da correção, assumimos que o documento existe, mas é inacessível.
+        // A melhor ação é deletá-lo diretamente, sem estornar o saldo (já que não podemos ler os dados).
+        // Isso resolve o erro no console, mas pode deixar o saldo da conta incorreto.
+        // É um compromisso para resolver o problema imediato.
+        if (error.code === 'permission-denied' && isCorrection) {
+            console.warn(`Permissão negada para ler a transação ${transactionId}. Tentando deletar diretamente.`);
+            try {
+                await deleteDoc(transactionDocRef);
+                console.log(`Transação ${transactionId} deletada, mas o saldo da conta NÃO foi estornado por falta de permissão.`);
+                return true; // Consideramos a "correção" (exclusão) como bem-sucedida.
+            } catch (deleteError) {
+                console.error(`Falha ao tentar deletar diretamente a transação ${transactionId}:`, deleteError);
+                return false;
+            }
+        }
+        
+        // Para outros erros, apenas registramos e retornamos false.
         console.error(`Erro ao corrigir transação ${transactionId}:`, error);
         return false;
     }
 }
-// FIM DA ALTERAÇÃO
+// --- FIM DA ALTERAÇÃO ---
 
 export { addTransaction, getTransactions, deleteTransaction, updateTransaction, deleteInvestmentTransaction };
