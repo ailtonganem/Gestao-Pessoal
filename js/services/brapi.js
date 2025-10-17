@@ -2,19 +2,16 @@
 
 /**
  * Módulo de serviço para buscar cotações de ativos.
- * ATENÇÃO: A fonte de dados foi alterada da Brapi para uma API pública que consome dados
- * do Yahoo Finance, para evitar a necessidade de uma chave de API (token).
+ * ATENÇÃO: A fonte de dados foi alterada para uma API que utiliza dados do Google Finance,
+ * para garantir estabilidade e evitar a necessidade de uma chave de API (token).
  */
 
-const API_URL_BASE = 'https://query1.finance.yahoo.com/v7/finance/quote';
-// Usamos um proxy público para contornar problemas de CORS (Cross-Origin Resource Sharing)
-// ao fazer a chamada do navegador diretamente para a API do Yahoo Finance.
-const CORS_PROXY = 'https://api.allorigins.win/get?url=';
-
+// Este endpoint público não oficial costuma ser muito confiável e não exige chave.
+const API_URL_BASE = 'https://finance.google.com/finance/info?client=ig&q='; 
 
 /**
  * Busca as cotações mais recentes para uma lista de tickers.
- * @param {Array<string>} tickers - Um array de tickers de ativos (ex: ['PETR4', 'MGLU3']).
+ * @param {Array<string>} tickers - Um array de tickers de ativos (ex: ['PETR4', 'MGLU3', 'MXRF11']).
  * @returns {Promise<object>} Um objeto mapeando cada ticker ao seu preço atual. Ex: { "PETR4": 29.50, "MGLU3": 2.10 }.
  */
 export async function getQuotes(tickers) {
@@ -22,12 +19,12 @@ export async function getQuotes(tickers) {
         return {}; // Retorna um objeto vazio se nenhum ticker for fornecido.
     }
 
-    // A API do Yahoo Finance requer o sufixo ".SA" para ações brasileiras.
-    const tickersWithSuffix = tickers.map(ticker => `${ticker}.SA`);
-    const tickerString = tickersWithSuffix.join(',');
+    // O Google Finance usa o padrão "B3:TICKER" para o mercado brasileiro.
+    const symbols = tickers.map(ticker => `B3:${ticker}`).join(',');
 
-    // Monta a URL final, passando a URL da API do Yahoo pelo proxy.
-    const url = `${CORS_PROXY}${encodeURIComponent(`${API_URL_BASE}?symbols=${tickerString}`)}`;
+    // A API retorna um JSON envolto em um callback (JSONP), que o `fetch` pode ter dificuldade em processar.
+    // Usaremos um proxy para limpar a resposta e garantir que o navegador possa ler o JSON puro.
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`${API_URL_BASE}${symbols}`)}`;
 
     try {
         const response = await fetch(url);
@@ -35,36 +32,28 @@ export async function getQuotes(tickers) {
             throw new Error(`A API de cotações respondeu com o status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const rawData = await response.json();
         
-        // O proxy envolve a resposta original em um campo "contents".
-        // Precisamos extrair e converter essa string JSON para um objeto.
-        const yahooData = JSON.parse(data.contents);
-        
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Verificação robusta para a estrutura da resposta e para erros internos da API.
-        if (!yahooData || !yahooData.quoteResponse) {
-            console.warn("Resposta da API de cotações em formato inesperado (sem quoteResponse):", yahooData);
+        // A resposta original vem como string: `// [ { ...dados } ]`
+        // 1. Remove os caracteres iniciais `//` e faz o parse.
+        const cleanJsonString = rawData.contents.trim().replace(/^\/\//, '').trim();
+        const quotesArray = JSON.parse(cleanJsonString);
+
+        if (!Array.isArray(quotesArray)) {
+            console.warn("Resposta da API de cotações em formato inesperado (não é um array):", rawData.contents);
             return {};
         }
 
-        if (yahooData.quoteResponse.error) {
-            console.error("Erro retornado pela API de cotações:", yahooData.quoteResponse.error.description || yahooData.quoteResponse.error);
-            return {};
-        }
+        const quotesMap = quotesArray.reduce((map, quote) => {
+            // Verifica se a cotação é válida e se tem a propriedade 'l_cur' (Last Price)
+            if (quote && quote.t && quote.l_cur) {
+                // Remove o prefixo "B3:" e obtém o preço como float
+                const originalTicker = quote.t.replace('B3:', '');
+                const price = parseFloat(quote.l_cur.replace(',', '.')); // Garante que o separador decimal seja o ponto
 
-        if (!yahooData.quoteResponse.result) {
-            console.warn("Resposta da API de cotações em formato inesperado (sem result):", yahooData);
-            return {};
-        }
-        // --- FIM DA ALTERAÇÃO ---
-
-        // Transforma o array de resultados em um objeto de mapa para fácil acesso (ticker -> preço).
-        const quotesMap = yahooData.quoteResponse.result.reduce((map, quote) => {
-            if (quote && quote.symbol && quote.regularMarketPrice) {
-                // Remove o sufixo ".SA" para que a chave do objeto seja o ticker original (ex: "PETR4").
-                const originalTicker = quote.symbol.replace('.SA', '');
-                map[originalTicker] = quote.regularMarketPrice;
+                if (!isNaN(price) && price > 0) {
+                     map[originalTicker] = price;
+                }
             }
             return map;
         }, {});
@@ -72,8 +61,7 @@ export async function getQuotes(tickers) {
         return quotesMap;
 
     } catch (error) {
-        console.error("Erro ao buscar cotações da API pública:", error);
-        // Em caso de erro, retorna um objeto vazio para não quebrar a aplicação.
+        console.error("Erro ao buscar cotações do Google Finance API:", error);
         return {};
     }
 }
