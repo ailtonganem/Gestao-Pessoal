@@ -1,11 +1,16 @@
 // js/services/brapi.js
 
 /**
- * Módulo de serviço para interagir com a API da Brapi (https://brapi.dev/).
- * Responsável por buscar cotações de ativos do mercado brasileiro.
+ * Módulo de serviço para buscar cotações de ativos.
+ * ATENÇÃO: A fonte de dados foi alterada da Brapi para uma API pública que consome dados
+ * do Yahoo Finance, para evitar a necessidade de uma chave de API (token).
  */
 
-const API_BASE_URL = 'https://brapi.dev/api';
+const API_URL_BASE = 'https://query1.finance.yahoo.com/v7/finance/quote';
+// Usamos um proxy público para contornar problemas de CORS (Cross-Origin Resource Sharing)
+// ao fazer a chamada do navegador diretamente para a API do Yahoo Finance.
+const CORS_PROXY = 'https://api.allorigins.win/get?url=';
+
 
 /**
  * Busca as cotações mais recentes para uma lista de tickers.
@@ -17,9 +22,12 @@ export async function getQuotes(tickers) {
         return {}; // Retorna um objeto vazio se nenhum ticker for fornecido.
     }
 
-    // A API permite buscar múltiplos tickers de uma vez, separados por vírgula.
-    const tickerString = tickers.join(',');
-    const url = `${API_BASE_URL}/quote/${tickerString}?range=1d&interval=1d&fundamental=false`;
+    // A API do Yahoo Finance requer o sufixo ".SA" para ações brasileiras.
+    const tickersWithSuffix = tickers.map(ticker => `${ticker}.SA`);
+    const tickerString = tickersWithSuffix.join(',');
+
+    // Monta a URL final, passando a URL da API do Yahoo pelo proxy.
+    const url = `${CORS_PROXY}${encodeURIComponent(`${API_URL_BASE}?symbols=${tickerString}`)}`;
 
     try {
         const response = await fetch(url);
@@ -29,17 +37,21 @@ export async function getQuotes(tickers) {
 
         const data = await response.json();
         
-        // Verifica se a resposta contém os resultados esperados.
-        if (!data || !data.results) {
-            console.warn("Resposta da API de cotações em formato inesperado:", data);
+        // O proxy envolve a resposta original em um campo "contents".
+        // Precisamos extrair e converter essa string JSON para um objeto.
+        const yahooData = JSON.parse(data.contents);
+        
+        if (!yahooData || !yahooData.quoteResponse || !yahooData.quoteResponse.result) {
+            console.warn("Resposta da API de cotações em formato inesperado:", yahooData);
             return {};
         }
 
         // Transforma o array de resultados em um objeto de mapa para fácil acesso (ticker -> preço).
-        const quotesMap = data.results.reduce((map, quote) => {
-            // A API retorna 'error: true' para tickers não encontrados.
-            if (quote && quote.symbol && !quote.error) {
-                map[quote.symbol] = quote.regularMarketPrice;
+        const quotesMap = yahooData.quoteResponse.result.reduce((map, quote) => {
+            if (quote && quote.symbol && quote.regularMarketPrice) {
+                // Remove o sufixo ".SA" para que a chave do objeto seja o ticker original (ex: "PETR4").
+                const originalTicker = quote.symbol.replace('.SA', '');
+                map[originalTicker] = quote.regularMarketPrice;
             }
             return map;
         }, {});
@@ -47,9 +59,8 @@ export async function getQuotes(tickers) {
         return quotesMap;
 
     } catch (error) {
-        console.error("Erro ao buscar cotações da Brapi API:", error);
+        console.error("Erro ao buscar cotações da API pública:", error);
         // Em caso de erro, retorna um objeto vazio para não quebrar a aplicação.
-        // A notificação de erro pode ser tratada por quem chama a função, se necessário.
         return {};
     }
 }
