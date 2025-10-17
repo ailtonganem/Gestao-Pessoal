@@ -17,9 +17,7 @@ import {
     orderBy,
     doc,
     deleteDoc,
-    // INÍCIO DA ALTERAÇÃO
     updateDoc
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { getAssets } from './assets.js';
 
@@ -29,6 +27,7 @@ import { getAssets } from './assets.js';
  * @param {string} portfolioData.name - Nome da carteira.
  * @param {string} [portfolioData.description] - Descrição opcional.
  * @param {string} portfolioData.userId - ID do usuário.
+ * @param {string} portfolioData.ownershipType - 'own' ou 'third-party'.
  * @returns {Promise<DocumentReference>}
  */
 export async function addPortfolio(portfolioData) {
@@ -43,6 +42,7 @@ export async function addPortfolio(portfolioData) {
             userId: portfolioData.userId,
             name: portfolioData.name.trim(),
             description: portfolioData.description.trim() || "",
+            ownershipType: portfolioData.ownershipType, // 'own' or 'third-party'
             totalInvested: 0,
             currentValue: 0,
             createdAt: Timestamp.now()
@@ -87,7 +87,6 @@ export async function getPortfolios(userId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Atualiza os dados de uma carteira de investimentos.
  * @param {string} portfolioId - O ID da carteira a ser atualizada.
@@ -106,7 +105,6 @@ export async function updatePortfolio(portfolioId, updatedData) {
         throw new Error("Não foi possível salvar as alterações da carteira.");
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Exclui uma carteira de investimentos do Firestore.
@@ -126,17 +124,20 @@ export async function deletePortfolio(portfolioId) {
 }
 
 /**
- * Busca todos os ativos de todas as carteiras de um usuário.
+ * Busca todos os ativos de todas as carteiras PRÓPRIAS de um usuário.
  * @param {string} userId - O ID do usuário.
  * @returns {Promise<Array<object>>} Uma lista consolidada de todos os ativos do usuário,
  *                                  com cada ativo contendo a propriedade 'portfolioId'.
  */
 export async function getAllUserAssets(userId) {
     try {
-        const userPortfolios = await getPortfolios(userId);
+        const allUserPortfolios = await getPortfolios(userId);
         
+        // Filtra para incluir apenas carteiras próprias no cálculo consolidado
+        const ownPortfolios = allUserPortfolios.filter(p => p.ownershipType === 'own');
+
         // Mapeia cada carteira para uma promessa que busca seus ativos
-        const allAssetsPromises = userPortfolios.map(async (p) => {
+        const allAssetsPromises = ownPortfolios.map(async (p) => {
             const assets = await getAssets(p.id);
             // Adiciona o ID da carteira a cada ativo antes de retornar
             return assets.map(asset => ({
