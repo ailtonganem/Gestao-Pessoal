@@ -176,7 +176,6 @@ async function handleAssetListActions(e) {
     const addMovementButton = e.target.closest('.add-movement-btn[data-asset-id]');
     const addProventoButton = e.target.closest('.add-provento-btn[data-asset-id]');
     const assetInfo = e.target.closest('.asset-info[data-asset-id]');
-    // INÍCIO DA ALTERAÇÃO
     const editButton = e.target.closest('.edit-btn[data-asset-id]');
 
     if (editButton) {
@@ -184,7 +183,6 @@ async function handleAssetListActions(e) {
         const assetId = editButton.dataset.assetId;
         investmentsUI.openEditAssetModal(assetId);
     }
-    // FIM DA ALTERAÇÃO
     else if (deleteButton) {
         e.stopPropagation();
         const assetId = deleteButton.dataset.assetId;
@@ -329,7 +327,6 @@ async function handleUpdatePortfolio(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function handleUpdateAsset(e) {
     e.preventDefault();
     const form = e.target;
@@ -358,14 +355,14 @@ async function handleUpdateAsset(e) {
         submitButton.disabled = false;
     }
 }
-// FIM DA ALTERAÇÃO
 
 function handleUpdateMovement(e) {
     e.preventDefault();
     showNotification("Lógica de salvar edição de movimento pendente.", "info");
 }
 
-function handleMovementsListActions(e) {
+// INÍCIO DA ALTERAÇÃO
+async function handleMovementsListActions(e) {
     const editButton = e.target.closest('.edit-btn[data-movement-id]');
     const deleteButton = e.target.closest('.delete-btn[data-movement-id]');
 
@@ -376,8 +373,23 @@ function handleMovementsListActions(e) {
 
     if (deleteButton) {
         const movementId = deleteButton.dataset.movementId;
-        if (confirm("Tem certeza que deseja excluir esta operação? Esta ação é irreversível.")) {
-            showNotification(`Lógica para excluir movimento ${movementId} pendente.`, "info");
+        const currentAsset = state.selectedAssetForMovementsView;
+
+        if (!currentAsset || !currentAsset.portfolioId) {
+            showNotification("Erro: Não foi possível identificar o ativo ou carteira.", "error");
+            return;
+        }
+
+        if (confirm("Tem certeza que deseja excluir esta operação? O saldo da sua conta e a posição do ativo serão recalculados. Esta ação é irreversível.")) {
+            try {
+                await movements.deleteMovementAndRecalculate(currentAsset.portfolioId, currentAsset.id, movementId);
+                showNotification("Operação excluída e posição do ativo recalculada com sucesso!");
+                // Recarrega a view de movimentos para mostrar os dados atualizados
+                await investmentsUI.refreshMovementsView();
+            } catch (error) {
+                showNotification(error.message, "error");
+            }
         }
     }
 }
+// FIM DA ALTERAÇÃO
