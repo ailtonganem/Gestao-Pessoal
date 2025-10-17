@@ -57,9 +57,7 @@ const confirmSplitButton = document.getElementById('confirm-split-button');
 const portfolioFilterSelect = document.getElementById('portfolio-filter-select');
 const backToInvestmentDashboardBtn = document.getElementById('back-to-investment-dashboard-btn');
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
-const backToAssetsButton = document.getElementById('back-to-assets-button');
-const movementsList = document.getElementById('movements-list');
-const transactionsInvestmentList = document.getElementById('transactions-investment-list'); // Novo elemento
+const transactionsInvestmentList = document.getElementById('transactions-investment-list');
 
 
 // Formulários de Edição de Investimentos
@@ -392,8 +390,6 @@ export function initializeEventListeners() {
             const movementId = deleteButton.dataset.movementId;
             const txContainer = deleteButton.closest('.movement-item');
             
-            // É crucial passar todos os dados necessários para o handler de exclusão,
-            // que foram anexados ao elemento em transactions-investment/ui.js
             const movementData = {
                 id: movementId,
                 portfolioId: txContainer.dataset.portfolioId,
@@ -633,10 +629,44 @@ export function initializeEventListeners() {
         e.preventDefault();
         investmentsUI.showPortfoliosManagementView();
     });
-    backToAssetsButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
-    });
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    
+    // Listener para o novo botão "Voltar" na página de detalhes do ativo
+    const backToAssetsFromDetailBtn = document.getElementById('back-to-assets-from-detail-button');
+    if (backToAssetsFromDetailBtn) {
+        backToAssetsFromDetailBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (state.selectedPortfolioForAssetsView) {
+                investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
+            }
+        });
+    }
+
+    // Listeners para a nova página de detalhes do ativo
+    const assetDetailView = document.getElementById('asset-detail-view');
+    if (assetDetailView) {
+        // Listener para as abas
+        assetDetailView.querySelector('.modal-tabs').addEventListener('click', (e) => {
+            if (e.target.matches('.tab-link')) {
+                const tabId = e.target.dataset.assetTab;
+                assetDetailView.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                assetDetailView.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+                assetDetailView.querySelector(`#${tabId}`).classList.add('active');
+                e.target.classList.add('active');
+            }
+        });
+
+        // Listener para o formulário de adicionar provento
+        const addDetailProventoForm = document.getElementById('add-asset-detail-provento-form');
+        addDetailProventoForm.addEventListener('submit', handleAddProventoFromDetail);
+
+        // Listener para a lista de operações (para exclusão)
+        const detailMovementsList = document.getElementById('asset-detail-movements-list');
+        detailMovementsList.addEventListener('click', handleMovementsListActions);
+    }
+    
+    // --- FIM DA ALTERAÇÃO ---
 
     document.querySelector('.close-edit-portfolio-modal-button').addEventListener('click', investmentsUI.closeEditPortfolioModal);
     document.querySelector('.close-edit-asset-modal-button').addEventListener('click', investmentsUI.closeEditAssetModal);
@@ -645,8 +675,6 @@ export function initializeEventListeners() {
     editPortfolioForm.addEventListener('submit', handleUpdatePortfolio);
     editAssetForm.addEventListener('submit', handleUpdateAsset);
     editMovementForm.addEventListener('submit', handleUpdateMovement);
-
-    movementsList.addEventListener('click', handleMovementsListActions);
 }
 
 
@@ -743,7 +771,6 @@ async function handleMovementsListActions(e) {
             try {
                 await movements.deleteMovementAndRecalculate(currentAsset.portfolioId, currentAsset.id, movementId);
                 showNotification("Operação excluída e posição do ativo recalculada com sucesso!");
-                // Recarrega a view de movimentos para mostrar os dados atualizados
                 await investmentsUI.refreshMovementsView();
             } catch (error) {
                 showNotification(error.message, "error");
@@ -762,7 +789,6 @@ async function handleDeleteInvestmentTransaction(movementData) {
             );
             showNotification("Transação de investimento excluída e dados financeiros estornados com sucesso!");
             
-            // Recarrega todas as informações importantes
             await transactionsInvestmentUI.loadTransactionsPage();
             await app.loadUserDashboard();
             await app.loadUserAccounts();
@@ -773,6 +799,45 @@ async function handleDeleteInvestmentTransaction(movementData) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
+async function handleAddProventoFromDetail(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const currentAsset = state.selectedAssetForMovementsView;
+    if (!currentAsset) {
+        showNotification("Erro: Ativo não selecionado.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    const proventoData = {
+        proventoType: form['detail-provento-type'].value,
+        paymentDate: form['detail-provento-date'].value,
+        valuePerShare: parseFloat(form['detail-provento-value-per-share'].value),
+        accountId: form['detail-provento-account'].value,
+        userId: state.currentUser.uid,
+    };
+
+    try {
+        await movements.addProvento(currentAsset.portfolioId, currentAsset.id, proventoData);
+        showNotification("Provento registrado com sucesso!");
+        form.reset();
+        
+        // Recarrega a view de detalhes para mostrar o novo provento
+        await investmentsUI.refreshMovementsView();
+        await app.loadUserAccounts(); // Atualiza saldo das contas
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
 function handleNavigateInvoice(direction) {
     const select = document.getElementById('invoice-period-select');
     if (!select || select.options.length <= 1) return;
@@ -781,8 +846,8 @@ function handleNavigateInvoice(direction) {
     let newIndex;
 
     if (direction === 'next') {
-        newIndex = Math.max(0, currentIndex - 1); // Faturas mais recentes vêm primeiro
-    } else { // 'prev'
+        newIndex = Math.max(0, currentIndex - 1);
+    } else {
         newIndex = Math.min(select.options.length - 1, currentIndex + 1);
     }
 
@@ -1245,7 +1310,7 @@ async function handleUpdateCreditCard(e) {
         name: form['edit-card-name'].value,
         closingDay: parseInt(form['edit-card-closing-day'].value),
         dueDay: parseInt(form['edit-card-due-day'].value),
-        limit: parseFloat(form['edit-card-limit'].value),
+        limit: parseFloat(form['card-limit'].value),
     };
 
     try {
