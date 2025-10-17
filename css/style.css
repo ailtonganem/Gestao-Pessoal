@@ -649,6 +649,57 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus {
     color: var(--text-color);
 }
+
+/* Estilos específicos para os modais de Configurações e Gerenciamento */
+#settings-modal .modal-content,
+#management-modal .modal-content {
+    max-width: 650px; /* Permite um pouco mais de espaço para as abas */
+}
+
+#settings-modal .modal-tabs,
+#management-modal .modal-tabs {
+    border-bottom: 1px solid var(--background-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0; /* Remove padding inferior para alinhar com a borda */
+    gap: 0; /* Remove gap entre botões */
+}
+
+#settings-modal .tab-link,
+#management-modal .tab-link {
+    flex: 1; /* Distribui o espaço igualmente entre as abas */
+    padding: 0.8rem 1rem;
+    margin-bottom: -1px; /* Alinha a borda inferior */
+    border-bottom: 3px solid transparent;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+#settings-modal .tab-link:hover,
+#management-modal .tab-link:hover {
+    color: var(--text-color);
+    border-bottom-color: var(--hover-color);
+}
+
+#settings-modal .tab-link.active,
+#management-modal .tab-link.active {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+}
+
+#settings-modal #settings-content,
+#management-modal #management-content {
+    text-align: left;
+}
+
+#settings-modal .tab-content,
+#management-modal .tab-content {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+#settings-modal .tab-content.active,
+#management-modal .tab-content.active {
+    display: block;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 /* --- FIM DA ALTERAÇÃO --- */
 
 
