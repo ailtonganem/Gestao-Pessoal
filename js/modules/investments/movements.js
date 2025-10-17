@@ -18,9 +18,11 @@ import {
     getDocs,
     query,
     orderBy,
-    // INÍCIO DA ALTERAÇÃO
     deleteDoc,
-    runTransaction
+    runTransaction,
+    // INÍCIO DA ALTERAÇÃO
+    collectionGroup,
+    where
     // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
@@ -181,7 +183,10 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             totalAmount: totalAmount,
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
             createdAt: serverTimestamp(),
-            transactionId: newTransactionRef.id
+            transactionId: newTransactionRef.id,
+            // INÍCIO DA ALTERAÇÃO: Adiciona userId para consulta de grupo
+            userId: userId
+            // FIM DA ALTERAÇÃO
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
@@ -211,6 +216,52 @@ export async function addProvento(portfolioId, assetId, proventoData) {
 }
 
 // INÍCIO DA ALTERAÇÃO
+/**
+ * Busca todos os movimentos do tipo 'provento' de um usuário.
+ * Utiliza uma consulta de grupo de coleção para buscar em todas as subcoleções 'movements'.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Array<object>>} Uma lista de objetos de provento.
+ */
+export async function getAllProventos(userId) {
+    try {
+        const movementsGroupRef = collectionGroup(db, 'movements');
+        const q = query(
+            movementsGroupRef,
+            where("type", "==", "provento"),
+            where("userId", "==", userId),
+            orderBy("date", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const proventos = [];
+
+        for (const doc of querySnapshot.docs) {
+            const data = doc.data();
+            // Para obter o ticker, precisamos acessar o documento pai (ativo)
+            const assetRef = doc.ref.parent.parent;
+            if (assetRef) {
+                const assetSnap = await getDoc(assetRef);
+                if (assetSnap.exists()) {
+                    data.ticker = assetSnap.data().ticker;
+                    data.assetName = assetSnap.data().name;
+                }
+            }
+            proventos.push({
+                id: doc.id,
+                ...data,
+                date: data.date.toDate()
+            });
+        }
+        return proventos;
+    } catch (error) {
+        console.error("Erro ao buscar todos os proventos:", error);
+        if (error.code === 'failed-precondition') {
+             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação.");
+        }
+        throw new Error("Não foi possível carregar os dados de proventos.");
+    }
+}
+// FIM DA ALTERAÇÃO
+
 /**
  * Exclui um movimento e recalcula a posição do ativo.
  * @param {string} portfolioId - ID da carteira.
@@ -250,12 +301,14 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
             transaction.delete(movementRef);
 
             // 4. Buscar TODOS os outros movimentos do ativo
+            // Esta consulta precisa ser executada fora da transação principal para evitar erros.
             const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
-            const movementsSnapshot = await getDocs(movementsQuery); // Precisa ser fora da transação
+            const movementsSnapshot = await getDocs(movementsQuery); 
             
             let allMovements = [];
             movementsSnapshot.forEach(doc => {
-                if (doc.id !== movementId) { // Garante que o movimento excluído não entre no recálculo
+                // Garante que o movimento que está sendo excluído não entre no recálculo
+                if (doc.id !== movementId) { 
                     allMovements.push(doc.data());
                 }
             });
@@ -293,4 +346,3 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
         throw new Error("Falha ao excluir a operação. Tente novamente.");
     }
 }
-// FIM DA ALTERAÇÃO
