@@ -625,13 +625,15 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button {
+/* --- INÍCIO DA ALTERAÇÃO --- */
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-management-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
 .close-button:hover, .close-button:focus,
 .close-card-modal-button:hover, .close-card-modal-button:focus,
 .close-settings-modal-button:hover, .close-settings-modal-button:focus,
+.close-management-modal-button:hover, .close-management-modal-button:focus,
 .close-edit-recurring-modal-button:hover, .close-edit-recurring-modal-button:focus,
 .close-edit-invoice-tx-modal-button:hover, .close-edit-invoice-tx-modal-button:focus,
 .close-pay-invoice-modal-button:hover, .close-pay-invoice-modal-button:focus,
@@ -647,6 +649,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus {
     color: var(--text-color);
 }
+/* --- FIM DA ALTERAÇÃO --- */
 
 
 /* Estilos para o seletor de tema e toggle switch */
