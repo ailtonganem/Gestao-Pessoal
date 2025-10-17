@@ -74,11 +74,14 @@ export function showInvestmentDashboardView() {
 /**
  * Exibe a visualização de gerenciamento de carteiras e ativos.
  */
-export function showPortfoliosManagementView() {
+// INÍCIO DA ALTERAÇÃO
+export async function showPortfoliosManagementView() {
     investmentDashboardView.style.display = 'none';
     portfoliosManagementView.style.display = 'block';
-    showPortfoliosView(); 
+    showPortfoliosView();
+    await loadAndRenderPortfolios(); // Garante que as carteiras sejam carregadas ao entrar na tela.
 }
+// FIM DA ALTERAÇÃO
 
 
 /**
@@ -115,9 +118,7 @@ export async function showMovementsView(assetId) {
         return;
     }
     
-    // INÍCIO DA ALTERAÇÃO
     state.setSelectedAssetForMovementsView(asset);
-    // FIM DA ALTERAÇÃO
     
     movementsAssetNameEl.textContent = `Movimentos - ${asset.ticker}`;
     assetsView.style.display = 'none';
@@ -126,7 +127,6 @@ export async function showMovementsView(assetId) {
     await loadAndRenderMovements(asset);
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Recarrega e renderiza a view de movimentos para o ativo atualmente selecionado.
  */
@@ -134,7 +134,6 @@ export async function refreshMovementsView() {
     const currentAsset = state.selectedAssetForMovementsView;
     if (!currentAsset) return;
 
-    // Recarrega a lista de ativos para obter os dados atualizados do ativo
     await loadAndRenderAssets(currentAsset.portfolioId);
     const updatedAsset = _currentPortfolioAssets.find(a => a.id === currentAsset.id);
 
@@ -142,11 +141,9 @@ export async function refreshMovementsView() {
         state.setSelectedAssetForMovementsView(updatedAsset);
         await loadAndRenderMovements(updatedAsset);
     } else {
-        // Se o ativo não for mais encontrado (caso extremo), volta para a lista de ativos
         showAssetsView(state.selectedPortfolioForAssetsView);
     }
 }
-// FIM DA ALTERAÇÃO
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -409,9 +406,7 @@ export async function loadAndRenderAssets(portfolioId) {
             } else {
                 asset.currentValue = asset.totalInvested;
             }
-            // INÍCIO DA ALTERAÇÃO
-            asset.portfolioId = portfolioId; // Garante que o ID da carteira está no objeto
-            // FIM DA ALTERAÇÃO
+            asset.portfolioId = portfolioId;
         });
 
         _currentPortfolioAssets = userAssets; 
@@ -502,7 +497,6 @@ function renderMovements(movementsToRender) {
                 break;
         }
 
-        // INÍCIO DA ALTERAÇÃO
         li.innerHTML = `
             <div style="flex-grow: 1;">
                 <span style="font-weight: 500;">${mov.date.toLocaleDateString('pt-BR')}</span>
@@ -514,7 +508,6 @@ function renderMovements(movementsToRender) {
                 <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir" ${!mov.transactionId ? 'disabled' : ''}>&times;</button>
             </div>
         `;
-        // FIM DA ALTERAÇÃO
         movementsListEl.appendChild(li);
     });
 }
