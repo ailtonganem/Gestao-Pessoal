@@ -1,17 +1,17 @@
 // js/services/brapi.js
 
 /**
- * Módulo de serviço para buscar cotações de ativos.
- * ATENÇÃO: A fonte de dados foi alterada para uma API que utiliza dados do Google Finance,
- * para garantir estabilidade e evitar a necessidade de uma chave de API (token).
+ * Módulo de serviço para interagir com a API da Brapi (https://brapi.dev/).
+ * Responsável por buscar cotações de ativos do mercado brasileiro.
  */
 
-// Este endpoint público não oficial costuma ser muito confiável e não exige chave.
-const API_URL_BASE = 'https://finance.google.com/finance/info?client=ig&q='; 
+import { brapiApiToken } from '../firebase-config.js'; // Importa o token de autenticação
+
+const API_BASE_URL = 'https://brapi.dev/api';
 
 /**
  * Busca as cotações mais recentes para uma lista de tickers.
- * @param {Array<string>} tickers - Um array de tickers de ativos (ex: ['PETR4', 'MGLU3', 'MXRF11']).
+ * @param {Array<string>} tickers - Um array de tickers de ativos (ex: ['PETR4', 'MGLU3']).
  * @returns {Promise<object>} Um objeto mapeando cada ticker ao seu preço atual. Ex: { "PETR4": 29.50, "MGLU3": 2.10 }.
  */
 export async function getQuotes(tickers) {
@@ -19,41 +19,41 @@ export async function getQuotes(tickers) {
         return {}; // Retorna um objeto vazio se nenhum ticker for fornecido.
     }
 
-    // O Google Finance usa o padrão "B3:TICKER" para o mercado brasileiro.
-    const symbols = tickers.map(ticker => `B3:${ticker}`).join(',');
+    // Verifica se o token foi configurado.
+    if (!brapiApiToken || brapiApiToken === "5yemombtoQBbWAQRzE3pS5") {
+        console.error("Token da Brapi API não configurado no arquivo firebase-config.js. As cotações não serão atualizadas.");
+        // Retorna um objeto vazio para não quebrar a aplicação.
+        return {};
+    }
 
-    // A API retorna um JSON envolto em um callback (JSONP), que o `fetch` pode ter dificuldade em processar.
-    // Usaremos um proxy para limpar a resposta e garantir que o navegador possa ler o JSON puro.
-    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`${API_URL_BASE}${symbols}`)}`;
+    // A API permite buscar múltiplos tickers de uma vez, separados por vírgula.
+    const tickerString = tickers.join(',');
+    // Adiciona o token como um parâmetro de consulta na URL.
+    const url = `${API_BASE_URL}/quote/${tickerString}?token=${brapiApiToken}`;
 
     try {
         const response = await fetch(url);
         if (!response.ok) {
+            // O erro 401 (Não autorizado) é comum se o token for inválido.
+            if (response.status === 401) {
+                 console.error("Erro de autenticação com a Brapi API. Verifique se o seu token está correto no arquivo firebase-config.js.");
+            }
             throw new Error(`A API de cotações respondeu com o status: ${response.status}`);
         }
 
-        const rawData = await response.json();
+        const data = await response.json();
         
-        // A resposta original vem como string: `// [ { ...dados } ]`
-        // 1. Remove os caracteres iniciais `//` e faz o parse.
-        const cleanJsonString = rawData.contents.trim().replace(/^\/\//, '').trim();
-        const quotesArray = JSON.parse(cleanJsonString);
-
-        if (!Array.isArray(quotesArray)) {
-            console.warn("Resposta da API de cotações em formato inesperado (não é um array):", rawData.contents);
+        // Verifica se a resposta contém os resultados esperados.
+        if (!data || !data.results) {
+            console.warn("Resposta da API de cotações em formato inesperado:", data);
             return {};
         }
 
-        const quotesMap = quotesArray.reduce((map, quote) => {
-            // Verifica se a cotação é válida e se tem a propriedade 'l_cur' (Last Price)
-            if (quote && quote.t && quote.l_cur) {
-                // Remove o prefixo "B3:" e obtém o preço como float
-                const originalTicker = quote.t.replace('B3:', '');
-                const price = parseFloat(quote.l_cur.replace(',', '.')); // Garante que o separador decimal seja o ponto
-
-                if (!isNaN(price) && price > 0) {
-                     map[originalTicker] = price;
-                }
+        // Transforma o array de resultados em um objeto de mapa para fácil acesso (ticker -> preço).
+        const quotesMap = data.results.reduce((map, quote) => {
+            // A API retorna 'error: true' para tickers não encontrados.
+            if (quote && quote.symbol && !quote.error && quote.regularMarketPrice) {
+                map[quote.symbol] = quote.regularMarketPrice;
             }
             return map;
         }, {});
@@ -61,7 +61,8 @@ export async function getQuotes(tickers) {
         return quotesMap;
 
     } catch (error) {
-        console.error("Erro ao buscar cotações do Google Finance API:", error);
+        console.error("Erro ao buscar cotações da Brapi API:", error);
+        // Em caso de erro, retorna um objeto vazio para não quebrar a aplicação.
         return {};
     }
 }
