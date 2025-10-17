@@ -307,14 +307,12 @@ export async function getAllInvestmentTransactions(userId) {
             const assetRef = docSnap.ref.parent.parent;
             if (assetRef) {
                 const assetSnap = await getDoc(assetRef);
-                // --- INÍCIO DA ALTERAÇÃO ---
                 const portfolioRef = assetRef.parent.parent;
                 if (assetSnap.exists()) {
                     data.ticker = assetSnap.data().ticker;
                     data.assetId = assetRef.id;
                     data.portfolioId = portfolioRef.id;
                 }
-                // --- FIM DA ALTERAÇÃO ---
             }
             transactions.push({
                 id: docSnap.id,
@@ -340,19 +338,24 @@ export async function getAllInvestmentTransactions(userId) {
  * @returns {Promise<void>}
  */
 export async function deleteMovementAndRecalculate(portfolioId, assetId, movementId) {
+    if (!portfolioId || !assetId || !movementId) {
+        throw new Error("IDs de carteira, ativo e movimento são necessários para a exclusão.");
+    }
+
     const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
     const movementRef = doc(assetRef, 'movements', movementId);
 
     try {
         await runTransaction(db, async (transaction) => {
-            // 1. Obter os dados do movimento a ser excluído
             const movementSnap = await transaction.get(movementRef);
             if (!movementSnap.exists()) {
                 throw new Error("Movimento não encontrado para exclusão.");
             }
             const movementData = movementSnap.data();
-            
-            // 2. Reverter a transação financeira associada
+
+            const assetSnap = await transaction.get(assetRef);
+
+            // Reverte a transação financeira associada (comum a ambos os casos)
             if (movementData.transactionId) {
                 const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
                 const financialTxSnap = await transaction.get(transactionRef);
@@ -367,52 +370,59 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
                 }
             }
             
-            // 3. Excluir o documento do movimento
+            // Exclui o documento do movimento (comum a ambos os casos)
             transaction.delete(movementRef);
 
-            // 4. Buscar TODOS os outros movimentos do ativo
-            // Esta consulta precisa ser executada fora da transação principal para evitar erros.
-            const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
-            const movementsSnapshot = await getDocs(movementsQuery); 
-            
-            let allMovements = [];
-            movementsSnapshot.forEach(doc => {
-                // Garante que o movimento que está sendo excluído não entre no recálculo
-                if (doc.id !== movementId) { 
-                    allMovements.push(doc.data());
+            // --- LÓGICA CONDICIONAL ---
+            if (assetSnap.exists()) {
+                // CASO 1: O ATIVO EXISTE -> Recalcula a posição
+                const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
+                // Importante: getDocs não pode ser usado dentro de transações.
+                // Esta operação agora é feita fora da transação, o que é um compromisso.
+                // A alternativa seria ler todos os movimentos individualmente com transaction.get(),
+                // o que é muito mais caro e complexo.
+                const movementsSnapshot = await getDocs(movementsQuery);
+                
+                let allMovements = [];
+                movementsSnapshot.forEach(doc => {
+                    if (doc.id !== movementId) { 
+                        allMovements.push(doc.data());
+                    }
+                });
+
+                let newQuantity = 0;
+                let newTotalInvested = 0;
+                let newAveragePrice = 0;
+
+                allMovements.forEach(mov => {
+                    if (mov.type === 'buy') {
+                        newQuantity += mov.quantity;
+                        newTotalInvested += mov.totalCost;
+                    } else if (mov.type === 'sell') {
+                        newTotalInvested -= mov.quantity * (newAveragePrice || 0);
+                        newQuantity -= mov.quantity;
+                    }
+                    newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+                });
+
+                if (newQuantity <= 0) {
+                    newTotalInvested = 0;
+                    newAveragePrice = 0;
                 }
-            });
 
-            // 5. Recalcular a posição do ativo do zero
-            let newQuantity = 0;
-            let newTotalInvested = 0;
-            let newAveragePrice = 0;
+                transaction.update(assetRef, {
+                    quantity: newQuantity,
+                    totalInvested: newTotalInvested,
+                    averagePrice: newAveragePrice
+                });
 
-            allMovements.forEach(mov => {
-                if (mov.type === 'buy') {
-                    newQuantity += mov.quantity;
-                    newTotalInvested += mov.totalCost;
-                } else if (mov.type === 'sell') {
-                    newTotalInvested -= mov.quantity * newAveragePrice; // Abate o custo pelo preço médio daquele momento
-                    newQuantity -= mov.quantity;
-                }
-                newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
-            });
-
-            if (newQuantity <= 0) {
-                newTotalInvested = 0;
-                newAveragePrice = 0;
-            }
-
-            // 6. Atualizar o documento do ativo com os valores recalculados
-            transaction.update(assetRef, {
-                quantity: newQuantity,
-                totalInvested: newTotalInvested,
-                averagePrice: newAveragePrice
-            });
+            } 
+            // CASO 2: O ATIVO NÃO EXISTE (ÓRFÃO)
+            // A transação financeira e o movimento já foram marcados para exclusão.
+            // Não há mais nada a fazer. A transação será concluída.
         });
     } catch (error) {
         console.error("Erro transacional ao excluir e recalcular movimento:", error);
-        throw new Error("Falha ao excluir a operação. Tente novamente.");
+        throw new Error("Falha ao excluir a operação. Verifique os dados e tente novamente.");
     }
 }
