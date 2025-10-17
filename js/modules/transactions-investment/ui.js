@@ -56,8 +56,8 @@ function renderTransactionsList(transactions) {
             <div class="numeric">${formatCurrency(tx.pricePerUnit)}</div>
             <div class="numeric">${formatCurrency(tx.totalCost)}</div>
             <div class="actions">
-                <button class="action-btn edit-btn" data-movement-id="${tx.id}" title="Editar (Em breve)">&#9998;</button>
-                <button class="action-btn delete-btn" data-movement-id="${tx.id}" title="Excluir (Em breve)">&times;</button>
+                <button class="action-btn edit-btn" data-movement-id="${tx.id}" title="Editar (Em breve)" disabled>&#9998;</button>
+                <button class="action-btn delete-btn" data-movement-id="${tx.id}" title="Excluir (Em breve)" disabled>&times;</button>
             </div>
         `;
         transactionsListEl.appendChild(li);
