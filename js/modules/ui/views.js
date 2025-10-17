@@ -12,21 +12,20 @@ const loginSection = document.getElementById('login-form');
 const registerSection = document.getElementById('register-form');
 const pendingApprovalSection = document.getElementById('pending-approval');
 
-// INÍCIO DA ALTERAÇÃO - Novos seletores para a arquitetura de "páginas"
 const applicationWrapper = document.getElementById('application-wrapper');
 const dashboardContainer = document.getElementById('dashboard-container');
 const investmentsContainer = document.getElementById('investments-container');
-const mainHeaderTitle = document.getElementById('main-header-title');
+// INÍCIO DA ALTERAÇÃO
+const proventosContainer = document.getElementById('proventos-container');
 // FIM DA ALTERAÇÃO
+const mainHeaderTitle = document.getElementById('main-header-title');
 
 
 /** Oculta todos os contêineres principais. */
 function hideAllViews() {
     loadingDiv.style.display = 'none';
     authContainer.style.display = 'none';
-    // INÍCIO DA ALTERAÇÃO
     applicationWrapper.style.display = 'none';
-    // FIM DA ALTERAÇÃO
 }
 
 /** Exibe a tela de carregamento. */
@@ -38,10 +37,8 @@ export function showLoading() {
 /** Exibe a tela principal da aplicação e, por padrão, a visão do Dashboard. */
 export function showApp() {
     hideAllViews();
-    // INÍCIO DA ALTERAÇÃO
     applicationWrapper.style.display = 'block';
     showDashboardView(); // Exibe o dashboard por padrão ao logar
-    // FIM DA ALTERAÇÃO
 }
 
 /** Exibe a tela de autenticação, com o formulário de login visível por padrão. */
@@ -76,13 +73,22 @@ export function toggleAuthForms(showRegister) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO - Novas funções para controlar a navegação entre "páginas"
+
+/** Oculta todas as "páginas" dentro do wrapper principal da aplicação. */
+function hideAllAppPages() {
+    dashboardContainer.style.display = 'none';
+    investmentsContainer.style.display = 'none';
+    // INÍCIO DA ALTERAÇÃO
+    proventosContainer.style.display = 'none';
+    // FIM DA ALTERAÇÃO
+}
+
 
 /**
  * Exibe a "página" do Dashboard.
  */
 export function showDashboardView() {
-    investmentsContainer.style.display = 'none';
+    hideAllAppPages();
     dashboardContainer.style.display = 'block';
     mainHeaderTitle.textContent = 'Dashboard';
 }
@@ -91,8 +97,18 @@ export function showDashboardView() {
  * Exibe a "página" de Investimentos.
  */
 export function showInvestmentsView() {
-    dashboardContainer.style.display = 'none';
+    hideAllAppPages();
     investmentsContainer.style.display = 'block';
     mainHeaderTitle.textContent = 'Meus Investimentos';
+}
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Exibe a "página" de Proventos.
+ */
+export function showProventosView() {
+    hideAllAppPages();
+    proventosContainer.style.display = 'block';
+    mainHeaderTitle.textContent = 'Proventos';
 }
 // FIM DA ALTERAÇÃO
