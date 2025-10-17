@@ -77,7 +77,7 @@ export function showInvestmentDashboardView() {
 export function showPortfoliosManagementView() {
     investmentDashboardView.style.display = 'none';
     portfoliosManagementView.style.display = 'block';
-    showPortfoliosView(); // Mostra a lista de carteiras por padrão
+    showPortfoliosView(); 
 }
 
 
@@ -88,7 +88,7 @@ export function showPortfoliosView() {
     portfoliosView.style.display = 'block';
     assetsView.style.display = 'none';
     movementsView.style.display = 'none';
-    state.setSelectedPortfolioForAssetsView(null); // Limpa a seleção ao voltar
+    state.setSelectedPortfolioForAssetsView(null); 
 }
 
 /**
@@ -115,12 +115,38 @@ export async function showMovementsView(assetId) {
         return;
     }
     
+    // INÍCIO DA ALTERAÇÃO
+    state.setSelectedAssetForMovementsView(asset);
+    // FIM DA ALTERAÇÃO
+    
     movementsAssetNameEl.textContent = `Movimentos - ${asset.ticker}`;
     assetsView.style.display = 'none';
     movementsView.style.display = 'block';
 
     await loadAndRenderMovements(asset);
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Recarrega e renderiza a view de movimentos para o ativo atualmente selecionado.
+ */
+export async function refreshMovementsView() {
+    const currentAsset = state.selectedAssetForMovementsView;
+    if (!currentAsset) return;
+
+    // Recarrega a lista de ativos para obter os dados atualizados do ativo
+    await loadAndRenderAssets(currentAsset.portfolioId);
+    const updatedAsset = _currentPortfolioAssets.find(a => a.id === currentAsset.id);
+
+    if (updatedAsset) {
+        state.setSelectedAssetForMovementsView(updatedAsset);
+        await loadAndRenderMovements(updatedAsset);
+    } else {
+        // Se o ativo não for mais encontrado (caso extremo), volta para a lista de ativos
+        showAssetsView(state.selectedPortfolioForAssetsView);
+    }
+}
+// FIM DA ALTERAÇÃO
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -383,6 +409,9 @@ export async function loadAndRenderAssets(portfolioId) {
             } else {
                 asset.currentValue = asset.totalInvested;
             }
+            // INÍCIO DA ALTERAÇÃO
+            asset.portfolioId = portfolioId; // Garante que o ID da carteira está no objeto
+            // FIM DA ALTERAÇÃO
         });
 
         _currentPortfolioAssets = userAssets; 
@@ -473,6 +502,7 @@ function renderMovements(movementsToRender) {
                 break;
         }
 
+        // INÍCIO DA ALTERAÇÃO
         li.innerHTML = `
             <div style="flex-grow: 1;">
                 <span style="font-weight: 500;">${mov.date.toLocaleDateString('pt-BR')}</span>
@@ -480,10 +510,11 @@ function renderMovements(movementsToRender) {
             </div>
             <div style="flex-grow: 1; text-align: right;">${details}</div>
             <div class="transaction-actions">
-                <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar">&#9998;</button>
-                <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir">&times;</button>
+                <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar" ${mov.type === 'provento' ? 'disabled' : ''}>&#9998;</button>
+                <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir" ${!mov.transactionId ? 'disabled' : ''}>&times;</button>
             </div>
         `;
+        // FIM DA ALTERAÇÃO
         movementsListEl.appendChild(li);
     });
 }
@@ -552,7 +583,6 @@ export function closeEditPortfolioModal() {
     editPortfolioModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function openEditAssetModal(assetId) {
     const asset = _currentPortfolioAssets.find(a => a.id === assetId);
     if (!asset) {
@@ -575,7 +605,6 @@ export function closeEditAssetModal() {
     document.getElementById('edit-asset-form').reset();
     editAssetModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
 
 export function openEditMovementModal(movementId) {
     showNotification("Funcionalidade de editar movimento pendente.", "info");
