@@ -234,13 +234,22 @@ export function closeEditCardModal() {
 
 // --- Funções de Gerenciamento do Modal de Divisão ---
 
+/**
+ * Limpa o array de divisões da transação atual.
+ * Esta função deve ser chamada para resetar o estado da divisão.
+ */
+export function clearSplits() {
+    // Esvazia o array sem criar uma nova referência, o que é seguro para imports.
+    _currentSplits.length = 0; 
+}
+
 export function openSplitModal(totalAmount, type) {
     if (isNaN(totalAmount) || totalAmount <= 0) {
         showNotification('Por favor, insira um valor de transação válido antes de dividir.', 'error');
         return;
     }
     totalSplitAmount = totalAmount;
-    _currentSplits = []; // Limpa divisões anteriores
+    clearSplits(); // Limpa divisões anteriores usando a nova função
     
     render.populateCategorySelects(type, splitCategorySelect);
     updateSplitSummary();
@@ -251,7 +260,7 @@ export function openSplitModal(totalAmount, type) {
 
 export function closeSplitModal() {
     splitTransactionModal.style.display = 'none';
-    _currentSplits = [];
+    clearSplits(); // Usa a nova função para limpar
     totalSplitAmount = 0;
 }
 
