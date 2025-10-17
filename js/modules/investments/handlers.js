@@ -19,15 +19,12 @@ import { formatCurrency } from '../ui/utils.js';
 const addPortfolioForm = document.getElementById('add-portfolio-form');
 const portfoliosList = document.getElementById('portfolios-list');
 const addAssetForm = document.getElementById('add-asset-form');
-const backToPortfoliosButton = document.getElementById('back-to-portfolios-button');
 const assetList = document.getElementById('asset-list');
 const closeMovementModalButton = document.querySelector('.close-asset-movement-modal-button');
 const addMovementForm = document.getElementById('add-movement-form');
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
 const closeProventoModalButton = document.querySelector('.close-provento-modal-button');
 const addProventoForm = document.getElementById('add-provento-form');
-const backToAssetsButton = document.getElementById('back-to-assets-button');
-const movementsList = document.getElementById('movements-list');
 const updateQuotesBtn = document.getElementById('update-quotes-btn');
 const closeUpdateQuotesModalButton = document.querySelector('.close-update-quotes-modal-button');
 const saveQuotesBtn = document.getElementById('save-quotes-btn');
@@ -46,7 +43,6 @@ export function initializeInvestmentEventListeners() {
     addPortfolioForm.addEventListener('submit', handleAddPortfolio);
     portfoliosList.addEventListener('click', handlePortfolioListActions);
     addAssetForm.addEventListener('submit', handleAddAsset);
-    backToPortfoliosButton.addEventListener('click', investmentsUI.showPortfoliosView);
     assetList.addEventListener('click', handleAssetListActions);
     closeMovementModalButton.addEventListener('click', investmentsUI.closeMovementModal);
     addMovementForm.addEventListener('submit', handleAddMovement);
@@ -57,10 +53,25 @@ export function initializeInvestmentEventListeners() {
     closeProventoModalButton.addEventListener('click', investmentsUI.closeProventoModal);
     addProventoForm.addEventListener('submit', handleAddProvento);
 
-    backToAssetsButton.addEventListener('click', (e) => {
+    document.getElementById('back-to-assets-from-detail-button').addEventListener('click', (e) => {
         e.preventDefault();
-        investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
+        if (state.selectedPortfolioForAssetsView) {
+            investmentsUI.showAssetsView(state.selectedPortfolioForAssetsView);
+        }
     });
+
+    const assetDetailView = document.getElementById('asset-detail-view');
+    assetDetailView.querySelector('.modal-tabs').addEventListener('click', (e) => {
+        if (e.target.matches('.tab-link')) {
+            const tabId = e.target.dataset.assetTab;
+            assetDetailView.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            assetDetailView.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+            assetDetailView.querySelector(`#${tabId}`).classList.add('active');
+            e.target.classList.add('active');
+        }
+    });
+    document.getElementById('add-asset-detail-provento-form').addEventListener('submit', handleAddProventoFromDetail);
+    document.getElementById('asset-detail-movements-list').addEventListener('click', handleMovementsListActions);
 
     document.querySelector('.close-edit-portfolio-modal-button').addEventListener('click', investmentsUI.closeEditPortfolioModal);
     document.querySelector('.close-edit-asset-modal-button').addEventListener('click', investmentsUI.closeEditAssetModal);
@@ -69,8 +80,6 @@ export function initializeInvestmentEventListeners() {
     editPortfolioForm.addEventListener('submit', handleUpdatePortfolio);
     editAssetForm.addEventListener('submit', handleUpdateAsset);
     editMovementForm.addEventListener('submit', handleUpdateMovement);
-
-    movementsList.addEventListener('click', handleMovementsListActions);
 
     updateQuotesBtn.addEventListener('click', investmentsUI.openUpdateQuotesModal);
     closeUpdateQuotesModalButton.addEventListener('click', investmentsUI.closeUpdateQuotesModal);
@@ -232,10 +241,7 @@ async function handleAssetListActions(e) {
         investmentsUI.openProventoModal(assetId);
     } else if (assetInfo) {
         const assetId = assetInfo.dataset.assetId;
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Corrigido: Chamando a nova função para a página de detalhes completa do ativo.
         investmentsUI.showAssetDetailView(assetId);
-        // --- FIM DA ALTERAÇÃO ---
     }
 }
 
@@ -414,9 +420,44 @@ async function handleMovementsListActions(e) {
     }
 }
 
+async function handleAddProventoFromDetail(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const currentAsset = state.selectedAssetForMovementsView;
+    if (!currentAsset) {
+        showNotification("Erro: Ativo não selecionado.", "error");
+        submitButton.disabled = false;
+        return;
+    }
+
+    const proventoData = {
+        proventoType: form['detail-provento-type'].value,
+        paymentDate: form['detail-provento-date'].value,
+        valuePerShare: parseFloat(form['detail-provento-value-per-share'].value),
+        accountId: form['detail-provento-account'].value,
+        userId: state.currentUser.uid,
+    };
+
+    try {
+        await movements.addProvento(currentAsset.portfolioId, currentAsset.id, proventoData);
+        showNotification("Provento registrado com sucesso!");
+        form.reset();
+        
+        await investmentsUI.refreshMovementsView();
+        await app.loadUserAccounts();
+
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
 /**
  * Handler para o botão "Salvar Cotações" do modal.
- * Coleta os dados do formulário, salva no banco de dados e atualiza a tela de ativos.
  */
 async function handleSaveQuotes() {
     saveQuotesBtn.disabled = true;
@@ -447,7 +488,6 @@ async function handleSaveQuotes() {
         showNotification("Cotações salvas com sucesso!");
         investmentsUI.closeUpdateQuotesModal();
 
-        // Recarrega a view de ativos para refletir as novas cotações
         if (state.selectedPortfolioForAssetsView) {
             await investmentsUI.loadAndRenderAssets(state.selectedPortfolioForAssetsView.id);
         }
