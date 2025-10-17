@@ -75,6 +75,9 @@
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
                 <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <a href="#" id="nav-management-button" class="header-icon-button" title="Gerenciamento Financeiro">📒</a>
+                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-settings-button" class="header-icon-button" title="Configurações">⚙️</a>
                 <a href="#" id="nav-logout-button" class="header-icon-button" title="Sair">🚪</a>
             </nav>
@@ -565,7 +568,6 @@
                         </section>
                     </div>
 
-                    <!-- INÍCIO DA ALTERAÇÃO -->
                     <!-- View de Detalhes do Ativo (NOVA VIEW) -->
                     <div id="asset-detail-view" style="display: none;">
                         <button id="back-to-assets-from-detail-button" class="button-secondary" style="margin-bottom: 1.5rem;">&larr; Voltar para Ativos</button>
@@ -675,7 +677,6 @@
                             </section>
                         </div>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                 </div>
             </main>
         </div>
@@ -932,28 +933,50 @@
         </div>
     </div>
 
+    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-settings-modal-button">&times;</span>
-            <h2>Configurações</h2>
-            <section id="theme-settings-section">
-                <h4>Aparência</h4>
-                <div class="form-control theme-switcher">
-                    <span>Modo Escuro</span>
-                    <label class="switch">
-                        <input type="checkbox" id="theme-toggle">
-                        <span class="slider round"></span>
-                    </label>
+            <h2>Configurações do Sistema</h2>
+            <div class="modal-tabs">
+                <button class="tab-link active" data-tab="theme-settings-tab">Aparência</button>
+                <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
+            </div>
+            <div id="settings-content">
+                <div id="theme-settings-tab" class="tab-content active">
+                    <section>
+                        <h3>Aparência</h3>
+                        <div class="form-control theme-switcher">
+                            <span>Modo Escuro</span>
+                            <label class="switch">
+                                <input type="checkbox" id="theme-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </section>
                 </div>
-            </section>
+                <div id="user-management-tab" class="tab-content">
+                    <section>
+                        <h3>Gerenciar Usuários</h3>
+                        <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
+                        <ul id="user-list"></ul>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="management-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-management-modal-button">&times;</span>
+            <h2>Gerenciamento Financeiro</h2>
             <div class="modal-tabs">
                 <button class="tab-link active" data-tab="account-management-tab">Minhas Contas</button>
                 <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
-                <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
             </div>
-            <div id="settings-content">
+            <div id="management-content">
                 <div id="account-management-tab" class="tab-content active">
                     <section>
                         <h3>Gerenciar Contas</h3>
@@ -1078,16 +1101,11 @@
                         <ul id="recurring-list"></ul>
                     </section>
                 </div>
-                <div id="user-management-tab" class="tab-content">
-                    <section>
-                        <h3>Gerenciar Usuários</h3>
-                        <p class="subtitle">Aprove ou gerencie o status dos usuários do sistema.</p>
-                        <ul id="user-list"></ul>
-                    </section>
-                </div>
             </div>
         </div>
     </div>
+    <!-- FIM DA ALTERAÇÃO -->
+
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
             <span class="close-edit-recurring-modal-button">&times;</span>
@@ -1400,7 +1418,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="update-quotes-modal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <span class="close-update-quotes-modal-button">&times;</span>
@@ -1416,7 +1433,6 @@
             </div>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
 </body>
 </html>
