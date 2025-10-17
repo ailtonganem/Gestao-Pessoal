@@ -72,6 +72,9 @@
             <nav class="header-buttons">
                 <a href="#" id="nav-dashboard-button" class="header-icon-button" title="Dashboard">📊</a>
                 <a href="#" id="nav-investments-button" class="header-icon-button" title="Meus Investimentos">📈</a>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
+                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
                 <a href="#" id="nav-settings-button" class="header-icon-button" title="Configurações">⚙️</a>
                 <a href="#" id="nav-logout-button" class="header-icon-button" title="Sair">🚪</a>
@@ -377,7 +380,7 @@
 
         <div id="investments-container" style="display: none;">
             <main>
-                <!-- Nova Visão do Dashboard de Investimentos -->
+                <!-- Visão do Dashboard de Investimentos -->
                 <div id="investment-dashboard-view">
                     <div class="investment-dashboard-header">
                         <h2>Visão Geral</h2>
@@ -496,7 +499,6 @@
                             </ul>
                         </section>
                         
-                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <section id="add-asset-form-section">
                             <h3>Registrar Novo Ativo (Primeira Compra)</h3>
                             <form id="add-asset-form">
@@ -548,7 +550,6 @@
                                 <button type="submit">Adicionar Ativo</button>
                             </form>
                         </section>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
 
                     <!-- View de Detalhes do Ativo e Movimentos -->
@@ -581,6 +582,43 @@
                 </div>
             </main>
         </div>
+
+        <!-- INÍCIO DA ALTERAÇÃO -->
+        <!-- Contêiner da Página de Proventos -->
+        <div id="proventos-container" style="display: none;">
+            <main>
+                <div class="proventos-header">
+                    <h2>Proventos</h2>
+                    <!-- Filtros e botões de ação podem ser adicionados aqui -->
+                </div>
+                
+                <section id="proventos-summary-cards" class="summary-section">
+                    <!-- Cards de resumo (Total Recebido, Últimos 12 Meses, etc.) serão renderizados aqui -->
+                    <div class="summary-card"><p>Carregando...</p></div>
+                    <div class="summary-card"><p>Carregando...</p></div>
+                    <div class="summary-card"><p>Carregando...</p></div>
+                </section>
+
+                <section class="investment-card full-width">
+                    <h3>Evolução Mensal dos Proventos</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="proventos-monthly-chart"></canvas>
+                    </div>
+                </section>
+
+                <section class="investment-card full-width">
+                    <h3>Ativos por Categoria de Provento</h3>
+                    <div class="proventos-filters-container filter-container">
+                        <!-- Filtros (Período, Categoria, etc.) serão renderizados aqui -->
+                    </div>
+                    <div id="proventos-asset-table">
+                        <!-- Tabela detalhada de proventos por ativo será renderizada aqui -->
+                        <p>Carregando dados dos ativos...</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
