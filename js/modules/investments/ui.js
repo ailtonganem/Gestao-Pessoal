@@ -17,6 +17,9 @@ import { getQuotes } from '../../services/brapi.js';
 
 // --- Variáveis de Estado do Módulo ---
 let _currentPortfolioAssets = [];
+// INÍCIO DA ALTERAÇÃO
+let _currentAssetMovements = [];
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const investmentDashboardView = document.getElementById('investment-dashboard-view');
@@ -44,12 +47,21 @@ const movementAssetIdInput = document.getElementById('movement-asset-id');
 const movementDateInput = document.getElementById('movement-date');
 const movementAccountSelect = document.getElementById('movement-account');
 
-// INÍCIO DA ALTERAÇÃO
 const proventoModal = document.getElementById('provento-modal');
 const proventoModalTitle = document.getElementById('provento-modal-title');
 const proventoAssetIdInput = document.getElementById('provento-asset-id');
 const proventoPaymentDateInput = document.getElementById('provento-payment-date');
 const proventoAccountSelect = document.getElementById('provento-account');
+
+// INÍCIO DA ALTERAÇÃO
+const movementsView = document.getElementById('movements-view');
+const movementsAssetNameEl = document.getElementById('movements-asset-name');
+const movementsListEl = document.getElementById('movements-list');
+
+// Modais de Edição
+const editPortfolioModal = document.getElementById('edit-portfolio-modal');
+const editAssetModal = document.getElementById('edit-asset-modal');
+const editMovementModal = document.getElementById('edit-movement-modal');
 // FIM DA ALTERAÇÃO
 
 
@@ -79,6 +91,9 @@ export function showPortfoliosManagementView() {
 export function showPortfoliosView() {
     portfoliosView.style.display = 'block';
     assetsView.style.display = 'none';
+    // INÍCIO DA ALTERAÇÃO
+    movementsView.style.display = 'none';
+    // FIM DA ALTERAÇÃO
     state.setSelectedPortfolioForAssetsView(null); // Limpa a seleção ao voltar
 }
 
@@ -87,12 +102,35 @@ export function showPortfoliosView() {
  * @param {object} portfolio - O objeto da carteira selecionada.
  */
 export async function showAssetsView(portfolio) {
-    state.setSelectedPortfolioForAssetsView(portfolio); // Guarda a carteira selecionada no estado
+    state.setSelectedPortfolioForAssetsView(portfolio); 
     assetsPortfolioNameEl.textContent = `Ativos - ${portfolio.name}`;
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
-    await loadAndRenderAssets(portfolio.id); // Carrega e exibe os ativos da carteira
+    // INÍCIO DA ALTERAÇÃO
+    movementsView.style.display = 'none';
+    // FIM DA ALTERAÇÃO
+    await loadAndRenderAssets(portfolio.id); 
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Exibe a visualização de detalhes e movimentos de um ativo específico.
+ * @param {string} assetId - O ID do ativo selecionado.
+ */
+export async function showMovementsView(assetId) {
+    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
+    if (!asset) {
+        showNotification("Ativo não encontrado.", "error");
+        return;
+    }
+    
+    movementsAssetNameEl.textContent = `Movimentos - ${asset.ticker}`;
+    assetsView.style.display = 'none';
+    movementsView.style.display = 'block';
+
+    await loadAndRenderMovements(asset);
+}
+// FIM DA ALTERAÇÃO
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -125,11 +163,9 @@ export async function updateInvestmentDashboard(portfolioId) {
             assetsToDisplay = await portfolios.getAllUserAssets(state.currentUser.uid);
         } else {
             assetsToDisplay = await assets.getAssets(portfolioId);
-            // Adiciona portfolioId aos ativos quando uma carteira específica é selecionada
             assetsToDisplay.forEach(asset => asset.portfolioId = portfolioId);
         }
 
-        // Buscar cotações e atualizar o valor de mercado dos ativos
         const tickers = assetsToDisplay.map(asset => asset.ticker);
         const quotes = await getQuotes(tickers);
 
@@ -141,18 +177,15 @@ export async function updateInvestmentDashboard(portfolioId) {
             }
         });
         
-        // Buscar e consolidar o histórico de movimentos
         const movementPromises = assetsToDisplay.map(async (asset) => {
             const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
-            // Adiciona o ticker a cada movimento para referência na renderização
             return assetMovements.map(m => ({ ...m, ticker: asset.ticker }));
         });
         
         const allMovementsNested = await Promise.all(movementPromises);
         const allMovementsFlat = allMovementsNested.flat();
-        allMovementsFlat.sort((a, b) => b.date - a.date); // Ordena do mais recente para o mais antigo
+        allMovementsFlat.sort((a, b) => b.date - a.date);
 
-        // --- Cálculos ---
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
         
         const composicaoData = assetsToDisplay.reduce((acc, asset) => {
@@ -173,12 +206,10 @@ export async function updateInvestmentDashboard(portfolioId) {
             history: allMovementsFlat,
         };
 
-        // --- Renderização ---
         renderPatrimonioCard(aggregatedData);
         renderComposicaoCard(aggregatedData);
         renderInvestmentHistory(aggregatedData);
         
-        // Renderiza os outros cards (ainda com placeholders)
         renderRentabilidadeCard({});
         renderCalendarioCard({});
         renderProventosCard({});
@@ -277,17 +308,17 @@ function renderInvestmentHistory(data) {
         switch(mov.type) {
             case 'buy':
                 typeLabel = 'Compra';
-                typeClass = 'buy'; // Usará a cor de sucesso (verde)
-                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span>`;
+                typeClass = 'buy';
+                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
                 break;
             case 'sell':
                 typeLabel = 'Venda';
-                typeClass = 'sell'; // Usará a cor de erro (vermelho)
-                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span>`;
+                typeClass = 'sell';
+                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
                 break;
             case 'provento':
                 typeLabel = mov.proventoType || 'Provento';
-                typeClass = 'revenue'; // Reuso de cor
+                typeClass = 'provento';
                 details = `<span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalAmount)}</span>`;
                 break;
         }
@@ -303,11 +334,8 @@ function renderInvestmentHistory(data) {
 }
 
 
-// --- Funções de Gerenciamento Legadas (agora dentro da tela de Gerenciamento) ---
+// --- Funções de Gerenciamento CRUD ---
 
-/**
- * Busca os dados das carteiras do Firestore e chama a função para renderizá-los.
- */
 export async function loadAndRenderPortfolios() {
     portfoliosListEl.innerHTML = '<li>Carregando carteiras...</li>';
     try {
@@ -320,10 +348,6 @@ export async function loadAndRenderPortfolios() {
     }
 }
 
-/**
- * Renderiza a lista de carteiras de investimento.
- * @param {Array<object>} portfoliosToRender - A lista de carteiras.
- */
 function renderPortfolios(portfoliosToRender) {
     portfoliosListEl.innerHTML = '';
 
@@ -355,10 +379,6 @@ function renderPortfolios(portfoliosToRender) {
     });
 }
 
-/**
- * Busca os dados dos ativos de uma carteira e chama a função para renderizá-los.
- * @param {string} portfolioId - O ID da carteira da qual carregar os ativos.
- */
 export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
@@ -383,10 +403,6 @@ export async function loadAndRenderAssets(portfolioId) {
     }
 }
 
-/**
- * Renderiza a lista de ativos de uma carteira.
- * @param {Array<object>} assetsToRender - A lista de ativos.
- */
 function renderAssets(assetsToRender) {
     assetListEl.innerHTML = '';
     if (assetsToRender.length === 0) {
@@ -397,10 +413,9 @@ function renderAssets(assetsToRender) {
     assetsToRender.forEach(asset => {
         const li = document.createElement('li');
         li.className = 'asset-item';
-
-        // INÍCIO DA ALTERAÇÃO
+        
         li.innerHTML = `
-            <div class="asset-info">
+            <div class="asset-info" data-asset-id="${asset.id}">
                 <span class="asset-ticker">${asset.ticker}</span>
                 <span class="asset-name">${asset.name}</span>
                 <small class="asset-type">${asset.type} - ${asset.broker || 'N/A'}</small>
@@ -416,16 +431,78 @@ function renderAssets(assetsToRender) {
                 <button class="action-btn delete-btn" data-asset-id="${asset.id}" title="Excluir Ativo">&times;</button>
             </div>
         `;
-        // FIM DA ALTERAÇÃO
         assetListEl.appendChild(li);
     });
 }
 
+// INÍCIO DA ALTERAÇÃO
+async function loadAndRenderMovements(asset) {
+    // Renderiza o resumo do ativo
+    const summaryEl = document.getElementById('asset-details-summary');
+    summaryEl.innerHTML = `
+        <div class="detail-item"><h4>Posição Atual</h4><p>${asset.quantity}</p></div>
+        <div class="detail-item"><h4>Preço Médio</h4><p>${formatCurrency(asset.averagePrice)}</p></div>
+        <div class="detail-item"><h4>Custo Total</h4><p>${formatCurrency(asset.totalInvested)}</p></div>
+        <div class="detail-item"><h4>Valor de Mercado</h4><p>${formatCurrency(asset.currentValue)}</p></div>
+    `;
 
-/**
- * Abre o modal para registrar uma nova operação (movimento) para um ativo.
- * @param {string} assetId - O ID do ativo para o qual o movimento será registrado.
- */
+    movementsListEl.innerHTML = '<li>Carregando movimentos...</li>';
+    try {
+        const movementsData = await movements.getMovements(asset.portfolioId, asset.id);
+        _currentAssetMovements = movementsData;
+        renderMovements(movementsData);
+    } catch(error) {
+        showNotification(error.message, 'error');
+        movementsListEl.innerHTML = '<li>Erro ao carregar movimentos.</li>';
+    }
+}
+
+function renderMovements(movementsToRender) {
+    movementsListEl.innerHTML = '';
+    if (movementsToRender.length === 0) {
+        movementsListEl.innerHTML = '<li>Nenhuma operação registrada para este ativo.</li>';
+        return;
+    }
+    movementsToRender.forEach(mov => {
+        const li = document.createElement('li');
+        li.className = 'movement-item';
+
+        // Lógica de exibição similar ao histórico consolidado
+        let typeLabel = '';
+        let typeClass = '';
+        let details = '';
+
+        switch(mov.type) {
+            case 'buy':
+            case 'sell':
+                typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
+                typeClass = mov.type;
+                details = `<span>${mov.quantity} un. @ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
+                break;
+            case 'provento':
+                typeLabel = mov.proventoType;
+                typeClass = 'provento';
+                details = `<span style="font-family: monospace;">${formatCurrency(mov.totalAmount)}</span>`;
+                break;
+        }
+
+        li.innerHTML = `
+            <div style="flex-grow: 1;">
+                <span style="font-weight: 500;">${mov.date.toLocaleDateString('pt-BR')}</span>
+                <span class="status-badge ${typeClass}" style="margin-left: 1rem;">${typeLabel}</span>
+            </div>
+            <div style="flex-grow: 1; text-align: right;">${details}</div>
+            <div class="transaction-actions">
+                <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar">&#9998;</button>
+                <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir">&times;</button>
+            </div>
+        `;
+        movementsListEl.appendChild(li);
+    });
+}
+// FIM DA ALTERAÇÃO
+
+
 export function openMovementModal(assetId) {
     const asset = _currentPortfolioAssets.find(a => a.id === assetId);
     if (!asset) {
@@ -442,19 +519,11 @@ export function openMovementModal(assetId) {
     movementModal.style.display = 'flex';
 }
 
-/**
- * Fecha o modal de registro de movimento.
- */
 export function closeMovementModal() {
     document.getElementById('add-movement-form').reset();
     movementModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO
-/**
- * Abre o modal para registrar um novo provento para um ativo.
- * @param {string} assetId - O ID do ativo para o qual o provento será registrado.
- */
 export function openProventoModal(assetId) {
     const asset = _currentPortfolioAssets.find(a => a.id === assetId);
     if (!asset) {
@@ -471,11 +540,50 @@ export function openProventoModal(assetId) {
     proventoModal.style.display = 'flex';
 }
 
-/**
- * Fecha o modal de registro de provento.
- */
 export function closeProventoModal() {
     document.getElementById('add-provento-form').reset();
     proventoModal.style.display = 'none';
+}
+
+// INÍCIO DA ALTERAÇÃO
+// --- Funções para Modais de Edição ---
+
+export function openEditPortfolioModal(portfolioId) {
+    const portfolio = state.userPortfolios.find(p => p.id === portfolioId);
+    if (!portfolio) {
+        showNotification("Carteira não encontrada.", "error");
+        return;
+    }
+    const form = document.getElementById('edit-portfolio-form');
+    form['edit-portfolio-id'].value = portfolio.id;
+    form['edit-portfolio-name'].value = portfolio.name;
+    form['edit-portfolio-description'].value = portfolio.description;
+
+    editPortfolioModal.style.display = 'flex';
+}
+
+export function closeEditPortfolioModal() {
+    document.getElementById('edit-portfolio-form').reset();
+    editPortfolioModal.style.display = 'none';
+}
+
+export function openEditAssetModal(assetId) {
+    // Lógica para abrir e preencher o modal de edição de ativo
+    showNotification("Funcionalidade de editar ativo pendente.", "info");
+}
+
+export function closeEditAssetModal() {
+    document.getElementById('edit-asset-form').reset();
+    editAssetModal.style.display = 'none';
+}
+
+export function openEditMovementModal(movementId) {
+    // Lógica para abrir e preencher o modal de edição de movimento
+    showNotification("Funcionalidade de editar movimento pendente.", "info");
+}
+
+export function closeEditMovementModal() {
+    document.getElementById('edit-movement-form').reset();
+    editMovementModal.style.display = 'none';
 }
 // FIM DA ALTERAÇÃO
