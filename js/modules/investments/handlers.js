@@ -7,7 +7,9 @@
 
 import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
+// INÍCIO DA ALTERAÇÃO
 import * as assets from './assets.js';
+// FIM DA ALTERAÇÃO
 import * as movements from './movements.js';
 import * as investmentsUI from './ui.js';
 import { showNotification } from '../ui/notifications.js';
@@ -131,8 +133,9 @@ async function handlePortfolioListActions(e) {
     }
 }
 
+// INÍCIO DA ALTERAÇÃO
 /**
- * Handler para o formulário de adicionar novo ativo.
+ * Handler para o formulário de adicionar novo ativo com sua primeira compra.
  */
 async function handleAddAsset(e) {
     e.preventDefault();
@@ -155,17 +158,27 @@ async function handleAddAsset(e) {
         broker: form['asset-broker'].value,
     };
 
+    const purchaseData = {
+        date: form['asset-initial-purchase-date'].value,
+        quantity: parseFloat(form['asset-initial-quantity'].value),
+        price: parseFloat(form['asset-initial-price'].value),
+        accountId: form['asset-initial-account'].value,
+        userId: state.currentUser.uid
+    };
+
     try {
-        await assets.addAsset(selectedPortfolio.id, assetData);
-        showNotification("Ativo adicionado com sucesso!");
+        await assets.addAssetWithInitialPurchase(selectedPortfolio.id, assetData, purchaseData);
+        showNotification("Ativo registrado com sucesso!");
         form.reset();
         await investmentsUI.loadAndRenderAssets(selectedPortfolio.id);
+        await loadUserAccounts(); // Recarrega contas para atualizar saldos
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
+// FIM DA ALTERAÇÃO
 
 
 /**
@@ -303,7 +316,6 @@ async function handleAddProvento(e) {
 
 // --- Handlers do CRUD de Investimentos ---
 
-// INÍCIO DA ALTERAÇÃO
 async function handleUpdatePortfolio(e) {
     e.preventDefault();
     const form = e.target;
@@ -392,4 +404,3 @@ async function handleMovementsListActions(e) {
         }
     }
 }
-// FIM DA ALTERAÇÃO
