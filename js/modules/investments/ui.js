@@ -29,8 +29,10 @@ const rentabilidadeCard = document.getElementById('rentabilidade-card');
 const composicaoCard = document.getElementById('composicao-card');
 const calendarioCard = document.getElementById('calendario-card');
 const patrimonioCard = document.getElementById('patrimonio-card');
-const proventosCard = document.getElementById('proventos-card');
-const altasBaixasCard = document.getElementById('altas-baixas-card');
+// INÍCIO DA ALTERAÇÃO
+const proventosMesCard = document.getElementById('proventos-mes-card');
+const resultadoMesCard = document.getElementById('resultado-mes-card');
+// FIM DA ALTERAÇÃO
 const investmentHistoryCard = document.getElementById('investment-history-card');
 
 const portfoliosView = document.getElementById('portfolios-view');
@@ -239,8 +241,8 @@ export async function updateInvestmentDashboard(portfolioId) {
         // (Placeholders para funcionalidades futuras)
         renderRentabilidadeCard({});
         renderCalendarioCard({});
-        renderProventosCard({});
-        renderAltasBaixasCard({});
+        renderProventosMesCard({});
+        renderResultadoMesCard({});
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -264,16 +266,18 @@ function renderPortfolioFilter(userPortfolios) {
 /**
  * Renderiza placeholders de "Carregando..." em todos os cards do dashboard.
  */
+// INÍCIO DA ALTERAÇÃO
 function renderLoadingPlaceholders() {
     rentabilidadeCard.querySelector('.chart-container').innerHTML = `<p>Carregando dados de rentabilidade...</p>`;
     composicaoCard.querySelector('.chart-container').innerHTML = `<p>Carregando composição...</p>`;
     calendarioCard.querySelector('#proventos-calendar').innerHTML = `<p>Carregando calendário...</p>`;
     patrimonioCard.querySelector('.chart-container').innerHTML = `<p>Carregando patrimônio...</p>`;
     document.getElementById('patrimonio-total-valor').textContent = '...';
-    proventosCard.querySelector('#proventos-summary').innerHTML = `<p>Carregando proventos...</p>`;
-    altasBaixasCard.querySelector('#altas-baixas-list').innerHTML = `<p>Carregando...</p>`;
+    proventosMesCard.querySelector('#proventos-mes-summary').innerHTML = `<p>Carregando...</p>`;
+    resultadoMesCard.querySelector('#resultado-mes-summary').innerHTML = `<p>Carregando...</p>`;
     investmentHistoryCard.querySelector('#investment-history-list').innerHTML = `<li>Carregando histórico...</li>`;
 }
+// FIM DA ALTERAÇÃO
 
 // --- Funções de Renderização dos Cards ---
 
@@ -309,13 +313,15 @@ function renderPatrimonioCard(data) {
     document.getElementById('patrimonio-total-valor').textContent = formatCurrency(data.totalPatrimonio || 0);
 }
 
-function renderProventosCard(data) {
-    proventosCard.querySelector('#proventos-summary').innerHTML = `<p>Funcionalidade de Proventos a ser implementada.</p>`;
+// INÍCIO DA ALTERAÇÃO
+function renderProventosMesCard(data) {
+    proventosMesCard.querySelector('#proventos-mes-summary').innerHTML = `<p id="proventos-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">${formatCurrency(0)}</p>`;
 }
 
-function renderAltasBaixasCard(data) {
-    altasBaixasCard.querySelector('#altas-baixas-list').innerHTML = `<p>Funcionalidade de Altas/Baixas a ser implementada.</p>`;
+function renderResultadoMesCard(data) {
+    resultadoMesCard.querySelector('#resultado-mes-summary').innerHTML = `<p id="resultado-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">${formatCurrency(0)}</p>`;
 }
+// FIM DA ALTERAÇÃO
 
 function renderInvestmentHistory(data) {
     const historyListEl = investmentHistoryCard.querySelector('#investment-history-list');
@@ -409,7 +415,6 @@ function renderPortfolios(portfoliosToRender) {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO
 export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
@@ -576,7 +581,6 @@ function renderMovements(movementsToRender) {
         movementsListEl.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 
 export function openMovementModal(assetId) {
