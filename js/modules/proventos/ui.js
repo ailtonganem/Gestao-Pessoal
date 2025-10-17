@@ -168,15 +168,15 @@ function renderSummaryCards(data) {
     `;
 }
 
+// INÍCIO DA ALTERAÇÃO
 /**
  * Renderiza o gráfico de evolução mensal.
  * @param {object} chartData - O objeto retornado por prepareMonthlyChartData.
  */
 function renderMonthlyChart(chartData) {
-    // TODO: Criar uma nova função em charts.js para este gráfico e chamá-la aqui.
-    // Por enquanto, apenas logamos os dados.
-    console.log("Dados para o gráfico mensal de proventos:", chartData);
+    charts.renderProventosMonthlyChart(chartData);
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza a tabela de proventos agrupados por ativo.
