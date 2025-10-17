@@ -19,6 +19,12 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 import { initializeInvestmentsModule } from './modules/investments/main.js';
+// INÍCIO DA ALTERAÇÃO
+import * as portfolios from './modules/investments/portfolios.js';
+import * as assets from './modules/investments/assets.js';
+import * as quotes from './modules/investments/quotes.js';
+import { formatCurrency } from './modules/ui/utils.js';
+// FIM DA ALTERAÇÃO
 
 
 import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
@@ -109,9 +115,7 @@ async function loadInitialData(userId) {
         loadUserAccounts(),
         loadUserBudgets(),
         loadUserDashboard(),
-        // INÍCIO DA ALTERAÇÃO
         loadUpcomingInvoices(),
-        // FIM DA ALTERAÇÃO
         analytics.getMonthlySummary(userId).then(charts.renderTrendsChart)
     ]);
 }
@@ -144,12 +148,70 @@ export async function loadUserDashboard() {
         state.setAllTransactions(userTransactions);
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(userTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
+        
+        // INÍCIO DA ALTERAÇÃO
+        // Calcula e atualiza o patrimônio em investimentos separadamente
+        await updateInvestmentEquitySummary(state.currentUser.uid);
+        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
+
+// INÍCIO DA ALTERAÇÃO
+/**
+ * Calcula o patrimônio total do usuário com base apenas nas carteiras "próprias".
+ * @param {string} userId O ID do usuário.
+ */
+async function updateInvestmentEquitySummary(userId) {
+    const totalInvestmentsBalanceEl = document.getElementById('total-investments-balance');
+    totalInvestmentsBalanceEl.textContent = 'Calculando...';
+
+    try {
+        // 1. Buscar todas as carteiras do usuário
+        const userPortfolios = await portfolios.getPortfolios(userId);
+        
+        // 2. Filtrar apenas as carteiras que são "próprias"
+        const ownPortfolios = userPortfolios.filter(p => p.ownershipType === 'own');
+
+        if (ownPortfolios.length === 0) {
+            totalInvestmentsBalanceEl.textContent = formatCurrency(0);
+            return;
+        }
+
+        // 3. Buscar todos os ativos dentro dessas carteiras
+        const assetPromises = ownPortfolios.map(p => assets.getAssets(p.id));
+        const nestedAssets = await Promise.all(assetPromises);
+        const ownAssets = nestedAssets.flat();
+
+        if (ownAssets.length === 0) {
+            totalInvestmentsBalanceEl.textContent = formatCurrency(0);
+            return;
+        }
+
+        // 4. Buscar as cotações salvas para esses ativos
+        const savedQuotes = await quotes.getSavedQuotes(userId);
+
+        // 5. Calcular o valor total de mercado (patrimônio)
+        let totalEquity = 0;
+        ownAssets.forEach(asset => {
+            const quote = savedQuotes[asset.ticker];
+            // Usa a cotação salva; se não existir, usa o preço médio como fallback
+            const price = quote && quote.currentPrice > 0 ? quote.currentPrice : asset.averagePrice;
+            totalEquity += asset.quantity * price;
+        });
+
+        totalInvestmentsBalanceEl.textContent = formatCurrency(totalEquity);
+
+    } catch (error) {
+        console.error("Erro ao calcular patrimônio de investimentos:", error);
+        totalInvestmentsBalanceEl.textContent = "Erro";
+        showNotification("Não foi possível calcular o patrimônio em investimentos.", "error");
+    }
+}
+// FIM DA ALTERAÇÃO
 
 /**
  * Busca a próxima página de transações e as anexa à lista existente no estado.
@@ -252,7 +314,6 @@ export async function loadUserBudgets() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /** Busca as faturas futuras e atualiza a UI. */
 export async function loadUpcomingInvoices() {
     if (!state.currentUser) return;
@@ -263,7 +324,6 @@ export async function loadUpcomingInvoices() {
         showNotification(error.message, 'error');
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Aplica os filtros e a ordenação da UI sobre a lista de transações e chama a renderização.
