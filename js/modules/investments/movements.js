@@ -304,16 +304,25 @@ export async function getAllInvestmentTransactions(userId) {
 
         for (const docSnap of querySnapshot.docs) {
             const data = docSnap.data();
-            const assetRef = docSnap.ref.parent.parent;
-            if (assetRef) {
+            const assetRef = docSnap.ref.parent.parent; // Referência ao documento do ativo
+            
+            // --- INÍCIO DA ALTERAÇÃO ---
+            // Garante que a referência ao ativo e sua carteira pai existam no caminho do documento
+            if (assetRef && assetRef.parent && assetRef.parent.parent) {
+                const portfolioRef = assetRef.parent.parent; // Referência ao documento da carteira
+                
+                // Atribui os IDs a partir do caminho da referência, existam os documentos ou não
+                data.assetId = assetRef.id;
+                data.portfolioId = portfolioRef.id;
+
+                // Tenta obter o ticker apenas se o documento do ativo ainda existir
                 const assetSnap = await getDoc(assetRef);
-                const portfolioRef = assetRef.parent.parent;
                 if (assetSnap.exists()) {
                     data.ticker = assetSnap.data().ticker;
-                    data.assetId = assetRef.id;
-                    data.portfolioId = portfolioRef.id;
                 }
             }
+            // --- FIM DA ALTERAÇÃO ---
+            
             transactions.push({
                 id: docSnap.id,
                 ...data,
@@ -330,6 +339,7 @@ export async function getAllInvestmentTransactions(userId) {
     }
 }
 
+
 /**
  * Exclui um movimento e recalcula a posição do ativo.
  * @param {string} portfolioId - ID da carteira.
@@ -338,33 +348,43 @@ export async function getAllInvestmentTransactions(userId) {
  * @returns {Promise<void>}
  */
 export async function deleteMovementAndRecalculate(portfolioId, assetId, movementId) {
-    // --- INÍCIO DA ALTERAÇÃO ---
-    // Checa se os IDs são válidos. Se não, trata como um movimento órfão.
-    if (!portfolioId || !assetId) {
-        console.warn(`Tentando excluir um movimento órfão (ID: ${movementId}). O ativo/carteira original pode ter sido excluído.`);
-        
-        // Usa uma consulta de grupo para encontrar o documento do movimento pelo seu ID único.
-        const movementsGroupRef = collectionGroup(db, 'movements');
-        const q = query(movementsGroupRef, where(documentId(), "==", movementId));
-        const querySnapshot = await getDocs(q);
+    const isOrphan = !portfolioId || !assetId;
 
-        if (querySnapshot.empty) {
-            throw new Error(`Movimento órfão com ID ${movementId} não foi encontrado. Pode já ter sido excluído.`);
+    try {
+        let movementRef;
+        let assetRef;
+
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Lida com a exclusão de movimentos órfãos e normais de forma separada
+        if (isOrphan) {
+            // Se for órfão, encontra o movimento usando uma consulta de grupo
+            const movementsGroupRef = collectionGroup(db, 'movements');
+            const q = query(movementsGroupRef, where(document.id(), "==", movementId));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) throw new Error(`Movimento órfão ${movementId} não encontrado.`);
+            movementRef = snapshot.docs[0].ref;
+        } else {
+            // Se for normal, constrói o caminho como antes
+            assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+            movementRef = doc(assetRef, 'movements', movementId);
         }
-        
-        const movementDoc = querySnapshot.docs[0];
-        const movementRef = movementDoc.ref;
-        const movementData = movementDoc.data();
 
-        // Inicia uma transação para garantir a atomicidade da exclusão e do estorno.
+        // ETAPA 1: Transação Atômica para Exclusão e Estorno
         await runTransaction(db, async (transaction) => {
-            // Reverte a transação financeira, se houver.
+            const movementSnap = await transaction.get(movementRef);
+            if (!movementSnap.exists()) {
+                throw new Error("Movimento não encontrado para exclusão.");
+            }
+            const movementData = movementSnap.data();
+
+            // Reverte a transação financeira associada, se houver
             if (movementData.transactionId) {
                 const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
                 const financialTxSnap = await transaction.get(transactionRef);
+
                 if (financialTxSnap.exists()) {
                     const financialTx = financialTxSnap.data();
-                    if (financialTx.accountId) {
+                    if(financialTx.accountId) {
                         const accountRef = doc(db, COLLECTIONS.ACCOUNTS, financialTx.accountId);
                         const amountToRevert = financialTx.type === 'expense' ? financialTx.amount : -financialTx.amount;
                         transaction.update(accountRef, { currentBalance: increment(amountToRevert) });
@@ -372,77 +392,50 @@ export async function deleteMovementAndRecalculate(portfolioId, assetId, movemen
                     transaction.delete(transactionRef);
                 }
             }
-            // Exclui o movimento órfão.
+            
+            // Exclui o documento do movimento
             transaction.delete(movementRef);
         });
-        // Como o ativo não existe, não há recálculo a ser feito.
-        return;
-    }
-    // --- FIM DA ALTERAÇÃO ---
 
-    // --- Fluxo normal para movimentos não-órfãos ---
-    const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
-    const movementRef = doc(assetRef, 'movements', movementId);
+        // ETAPA 2: Recálculo (apenas se não for órfão e o ativo ainda existir)
+        if (!isOrphan) {
+            const assetSnap = await getDoc(assetRef);
+            if (assetSnap.exists()) {
+                const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
+                const movementsSnapshot = await getDocs(movementsQuery);
+                
+                let allMovements = [];
+                movementsSnapshot.forEach(doc => allMovements.push(doc.data()));
 
-    try {
-        await runTransaction(db, async (transaction) => {
-            const movementSnap = await transaction.get(movementRef);
-            if (!movementSnap.exists()) {
-                throw new Error("Movimento não encontrado para exclusão.");
-            }
-            const movementData = movementSnap.data();
-            
-            if (movementData.transactionId) {
-                const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
-                const financialTxSnap = await transaction.get(transactionRef);
+                let newQuantity = 0;
+                let newTotalInvested = 0;
+                let newAveragePrice = 0;
 
-                if (financialTxSnap.exists()) {
-                    const financialTx = financialTxSnap.data();
-                    const accountRef = doc(db, COLLECTIONS.ACCOUNTS, financialTx.accountId);
-                    const amountToRevert = financialTx.type === 'expense' ? financialTx.amount : -financialTx.amount;
-                    
-                    transaction.update(accountRef, { currentBalance: increment(amountToRevert) });
-                    transaction.delete(transactionRef);
+                allMovements.forEach(mov => {
+                    if (mov.type === 'buy') {
+                        newQuantity += mov.quantity;
+                        newTotalInvested += mov.totalCost;
+                    } else if (mov.type === 'sell') {
+                        newTotalInvested -= mov.quantity * (newAveragePrice || 0);
+                        newQuantity -= mov.quantity;
+                    }
+                    newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+                });
+
+                if (newQuantity <= 0) {
+                    newTotalInvested = 0;
+                    newAveragePrice = 0;
+                    newQuantity = 0;
                 }
+
+                await updateDoc(assetRef, {
+                    quantity: newQuantity,
+                    totalInvested: newTotalInvested,
+                    averagePrice: newAveragePrice
+                });
             }
-            
-            transaction.delete(movementRef);
-        });
-        
-        // Após a transação ser bem-sucedida, recalcula a posição do ativo.
-        const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
-        const movementsSnapshot = await getDocs(movementsQuery);
-        
-        let allMovements = [];
-        movementsSnapshot.forEach(doc => allMovements.push(doc.data()));
-
-        let newQuantity = 0;
-        let newTotalInvested = 0;
-        let newAveragePrice = 0;
-
-        allMovements.forEach(mov => {
-            if (mov.type === 'buy') {
-                newQuantity += mov.quantity;
-                newTotalInvested += mov.totalCost;
-            } else if (mov.type === 'sell') {
-                newTotalInvested -= mov.quantity * (newAveragePrice || 0);
-                newQuantity -= mov.quantity;
-            }
-            newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
-        });
-
-        if (newQuantity <= 0) {
-            newTotalInvested = 0;
-            newAveragePrice = 0;
-            newQuantity = 0;
         }
-
-        await updateDoc(assetRef, {
-            quantity: newQuantity,
-            totalInvested: newTotalInvested,
-            averagePrice: newAveragePrice
-        });
-
+        // --- FIM DA ALTERAÇÃO ---
     } catch (error) {
         console.error("Erro ao excluir e recalcular movimento:", error);
         throw new Error("Falha ao excluir a operação. Verifique os dados e tente novamente.");
