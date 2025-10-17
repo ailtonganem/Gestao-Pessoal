@@ -17,9 +17,7 @@ import { getQuotes } from '../../services/brapi.js';
 
 // --- Variáveis de Estado do Módulo ---
 let _currentPortfolioAssets = [];
-// INÍCIO DA ALTERAÇÃO
 let _currentAssetMovements = [];
-// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const investmentDashboardView = document.getElementById('investment-dashboard-view');
@@ -53,7 +51,6 @@ const proventoAssetIdInput = document.getElementById('provento-asset-id');
 const proventoPaymentDateInput = document.getElementById('provento-payment-date');
 const proventoAccountSelect = document.getElementById('provento-account');
 
-// INÍCIO DA ALTERAÇÃO
 const movementsView = document.getElementById('movements-view');
 const movementsAssetNameEl = document.getElementById('movements-asset-name');
 const movementsListEl = document.getElementById('movements-list');
@@ -62,7 +59,6 @@ const movementsListEl = document.getElementById('movements-list');
 const editPortfolioModal = document.getElementById('edit-portfolio-modal');
 const editAssetModal = document.getElementById('edit-asset-modal');
 const editMovementModal = document.getElementById('edit-movement-modal');
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento de Views ---
@@ -91,9 +87,7 @@ export function showPortfoliosManagementView() {
 export function showPortfoliosView() {
     portfoliosView.style.display = 'block';
     assetsView.style.display = 'none';
-    // INÍCIO DA ALTERAÇÃO
     movementsView.style.display = 'none';
-    // FIM DA ALTERAÇÃO
     state.setSelectedPortfolioForAssetsView(null); // Limpa a seleção ao voltar
 }
 
@@ -106,13 +100,10 @@ export async function showAssetsView(portfolio) {
     assetsPortfolioNameEl.textContent = `Ativos - ${portfolio.name}`;
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
-    // INÍCIO DA ALTERAÇÃO
     movementsView.style.display = 'none';
-    // FIM DA ALTERAÇÃO
     await loadAndRenderAssets(portfolio.id); 
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Exibe a visualização de detalhes e movimentos de um ativo específico.
  * @param {string} assetId - O ID do ativo selecionado.
@@ -130,7 +121,6 @@ export async function showMovementsView(assetId) {
 
     await loadAndRenderMovements(asset);
 }
-// FIM DA ALTERAÇÃO
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -144,7 +134,7 @@ export async function loadInvestmentDashboard() {
         const userPortfolios = await portfolios.getPortfolios(state.currentUser.uid);
         state.setUserPortfolios(userPortfolios);
         renderPortfolioFilter(userPortfolios);
-        await updateInvestmentDashboard('all'); // Carrega a visão consolidada por padrão
+        await updateInvestmentDashboard('all');
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -309,12 +299,12 @@ function renderInvestmentHistory(data) {
             case 'buy':
                 typeLabel = 'Compra';
                 typeClass = 'buy';
-                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
+                details = `<span>${mov.quantity} un. @ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
                 break;
             case 'sell':
                 typeLabel = 'Venda';
                 typeClass = 'sell';
-                details = `<span>${mov.quantity} un.</span><span>@ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
+                details = `<span>${mov.quantity} un. @ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-weight: bold; font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
                 break;
             case 'provento':
                 typeLabel = mov.proventoType || 'Provento';
@@ -435,9 +425,7 @@ function renderAssets(assetsToRender) {
     });
 }
 
-// INÍCIO DA ALTERAÇÃO
 async function loadAndRenderMovements(asset) {
-    // Renderiza o resumo do ativo
     const summaryEl = document.getElementById('asset-details-summary');
     summaryEl.innerHTML = `
         <div class="detail-item"><h4>Posição Atual</h4><p>${asset.quantity}</p></div>
@@ -467,7 +455,6 @@ function renderMovements(movementsToRender) {
         const li = document.createElement('li');
         li.className = 'movement-item';
 
-        // Lógica de exibição similar ao histórico consolidado
         let typeLabel = '';
         let typeClass = '';
         let details = '';
@@ -500,7 +487,6 @@ function renderMovements(movementsToRender) {
         movementsListEl.appendChild(li);
     });
 }
-// FIM DA ALTERAÇÃO
 
 
 export function openMovementModal(assetId) {
@@ -545,7 +531,6 @@ export function closeProventoModal() {
     proventoModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO
 // --- Funções para Modais de Edição ---
 
 export function openEditPortfolioModal(portfolioId) {
@@ -567,18 +552,32 @@ export function closeEditPortfolioModal() {
     editPortfolioModal.style.display = 'none';
 }
 
+// INÍCIO DA ALTERAÇÃO
 export function openEditAssetModal(assetId) {
-    // Lógica para abrir e preencher o modal de edição de ativo
-    showNotification("Funcionalidade de editar ativo pendente.", "info");
+    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
+    if (!asset) {
+        showNotification("Ativo não encontrado.", "error");
+        return;
+    }
+
+    const form = document.getElementById('edit-asset-form');
+    form['edit-asset-id'].value = asset.id;
+    form['edit-asset-name'].value = asset.name;
+    form['edit-asset-ticker'].value = asset.ticker;
+    form['edit-asset-type'].value = asset.type;
+    form['edit-asset-class'].value = asset.assetClass;
+    form['edit-asset-broker'].value = asset.broker;
+
+    editAssetModal.style.display = 'flex';
 }
 
 export function closeEditAssetModal() {
     document.getElementById('edit-asset-form').reset();
     editAssetModal.style.display = 'none';
 }
+// FIM DA ALTERAÇÃO
 
 export function openEditMovementModal(movementId) {
-    // Lógica para abrir e preencher o modal de edição de movimento
     showNotification("Funcionalidade de editar movimento pendente.", "info");
 }
 
@@ -586,4 +585,3 @@ export function closeEditMovementModal() {
     document.getElementById('edit-movement-form').reset();
     editMovementModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
