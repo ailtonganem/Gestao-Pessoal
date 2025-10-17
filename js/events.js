@@ -143,12 +143,10 @@ export function initializeEventListeners() {
         modals.openCardModal();
     });
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('nav-management-button').addEventListener('click', (e) => {
         e.preventDefault();
         modals.openManagementModal();
     });
-    // --- FIM DA ALTERAÇÃO ---
 
     document.getElementById('nav-settings-button').addEventListener('click', (e) => {
         e.preventDefault();
@@ -491,7 +489,6 @@ export function initializeEventListeners() {
     });
     confirmSplitButton.addEventListener('click', handleConfirmSplit);
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.querySelector('.close-settings-modal-button').addEventListener('click', modals.closeSettingsModal);
     document.querySelector('.close-management-modal-button').addEventListener('click', modals.closeManagementModal);
     
@@ -509,6 +506,13 @@ export function initializeEventListeners() {
             const tabId = e.target.dataset.tab;
             modals.switchManagementTab(tabId);
         }
+    });
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    document.getElementById('save-dashboard-customization-button').addEventListener('click', () => {
+        app.saveDashboardVisibility();
+        showNotification("Preferências do dashboard salvas!", "success");
+        modals.closeSettingsModal();
     });
     // --- FIM DA ALTERAÇÃO ---
 
@@ -616,7 +620,6 @@ export function initializeEventListeners() {
     });
 
     document.body.addEventListener('click', (e) => {
-        // --- INÍCIO DA ALTERAÇÃO ---
         if (e.target.id === 'go-to-accounts') {
             e.preventDefault();
             modals.openManagementModal();
@@ -627,7 +630,6 @@ export function initializeEventListeners() {
             modals.openManagementModal();
             modals.switchManagementTab('budget-management-tab');
         }
-        // --- FIM DA ALTERAÇÃO ---
     });
     
     document.querySelector('.close-edit-recurring-modal-button').addEventListener('click', modals.closeEditRecurringModal);
