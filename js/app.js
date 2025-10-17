@@ -19,12 +19,13 @@ import * as recurring from './modules/recurring.js';
 import * as analytics from './modules/analytics.js';
 import * as accounts from './modules/accounts.js';
 import { initializeInvestmentsModule } from './modules/investments/main.js';
-// INÍCIO DA ALTERAÇÃO
 import * as portfolios from './modules/investments/portfolios.js';
 import * as assets from './modules/investments/assets.js';
 import * as quotes from './modules/investments/quotes.js';
-import { formatCurrency } from './modules/ui/utils.js';
+// INÍCIO DA ALTERAÇÃO
+import * as movements from './modules/investments/movements.js'; 
 // FIM DA ALTERAÇÃO
+import { formatCurrency } from './modules/ui/utils.js';
 
 
 import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
@@ -99,6 +100,11 @@ async function loadInitialData(userId) {
     const transferDateInput = document.getElementById('transfer-date');
     if(transferDateInput) transferDateInput.value = new Date().toISOString().split('T')[0];
 
+    // INÍCIO DA ALTERAÇÃO
+    // Executa a correção dos dados históricos.
+    await fixIncorrectThirdPartyTransactions(userId);
+    // FIM DA ALTERAÇÃO
+
     // Carrega os cartões PRIMEIRO, pois são necessários para processar as recorrências
     await loadUserCreditCards();
     
@@ -149,10 +155,7 @@ export async function loadUserDashboard() {
         state.setLastTransactionDoc(lastVisible);
         state.setHasMoreTransactions(userTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
         
-        // INÍCIO DA ALTERAÇÃO
-        // Calcula e atualiza o patrimônio em investimentos separadamente
         await updateInvestmentEquitySummary(state.currentUser.uid);
-        // FIM DA ALTERAÇÃO
 
         applyFiltersAndUpdateDashboard();
     } catch (error) {
@@ -160,7 +163,6 @@ export async function loadUserDashboard() {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Calcula o patrimônio total do usuário com base apenas nas carteiras "próprias".
  * @param {string} userId O ID do usuário.
@@ -170,10 +172,8 @@ async function updateInvestmentEquitySummary(userId) {
     totalInvestmentsBalanceEl.textContent = 'Calculando...';
 
     try {
-        // 1. Buscar todas as carteiras do usuário
         const userPortfolios = await portfolios.getPortfolios(userId);
         
-        // 2. Filtrar apenas as carteiras que são "próprias"
         const ownPortfolios = userPortfolios.filter(p => p.ownershipType === 'own');
 
         if (ownPortfolios.length === 0) {
@@ -181,7 +181,6 @@ async function updateInvestmentEquitySummary(userId) {
             return;
         }
 
-        // 3. Buscar todos os ativos dentro dessas carteiras
         const assetPromises = ownPortfolios.map(p => assets.getAssets(p.id));
         const nestedAssets = await Promise.all(assetPromises);
         const ownAssets = nestedAssets.flat();
@@ -191,14 +190,11 @@ async function updateInvestmentEquitySummary(userId) {
             return;
         }
 
-        // 4. Buscar as cotações salvas para esses ativos
         const savedQuotes = await quotes.getSavedQuotes(userId);
 
-        // 5. Calcular o valor total de mercado (patrimônio)
         let totalEquity = 0;
         ownAssets.forEach(asset => {
             const quote = savedQuotes[asset.ticker];
-            // Usa a cotação salva; se não existir, usa o preço médio como fallback
             const price = quote && quote.currentPrice > 0 ? quote.currentPrice : asset.averagePrice;
             totalEquity += asset.quantity * price;
         });
@@ -211,7 +207,6 @@ async function updateInvestmentEquitySummary(userId) {
         showNotification("Não foi possível calcular o patrimônio em investimentos.", "error");
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Busca a próxima página de transações e as anexa à lista existente no estado.
@@ -352,7 +347,7 @@ export function applyFiltersAndUpdateDashboard() {
             filtered.sort((a, b) => a.date - b.date);
             break;
         case 'amount_desc':
-            filtered.sort((a, b) => b.amount - a.amount);
+            filtered.sort((a, b) => b.amount - b.amount);
             break;
         case 'amount_asc':
             filtered.sort((a, b) => a.amount - b.amount);
@@ -489,6 +484,53 @@ function applyDashboardOrder() {
     });
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * FUNÇÃO DE CORREÇÃO: Encontra e exclui transações financeiras ligadas a carteiras de terceiros.
+ * Esta função é projetada para ser executada uma única vez para limpar dados inconsistentes.
+ * @param {string} userId - O ID do usuário logado.
+ */
+async function fixIncorrectThirdPartyTransactions(userId) {
+    console.log("Iniciando verificação de transações de terceiros...");
+    let transactionsCorrected = 0;
+    
+    try {
+        const userPortfolios = await portfolios.getPortfolios(userId);
+        const thirdPartyPortfolios = userPortfolios.filter(p => p.ownershipType === 'third-party');
+
+        if (thirdPartyPortfolios.length === 0) {
+            console.log("Nenhuma carteira de terceiros encontrada. Nenhuma correção necessária.");
+            return;
+        }
+
+        for (const portfolio of thirdPartyPortfolios) {
+            const portfolioAssets = await assets.getAssets(portfolio.id);
+            for (const asset of portfolioAssets) {
+                const assetMovements = await movements.getMovements(portfolio.id, asset.id);
+                const buyMovements = assetMovements.filter(m => m.type === 'buy' && m.transactionId);
+
+                for (const movement of buyMovements) {
+                    const wasFixed = await transactions.deleteInvestmentTransaction(movement.transactionId, true);
+                    if (wasFixed) {
+                        transactionsCorrected++;
+                    }
+                }
+            }
+        }
+
+        if (transactionsCorrected > 0) {
+            showNotification(`${transactionsCorrected} transação(ões) de investimento de terceiros foram corrigidas e estornadas das suas contas.`);
+            console.log(`Correção finalizada. ${transactionsCorrected} transações foram removidas.`);
+        } else {
+            console.log("Correção finalizada. Nenhuma transação incorreta encontrada.");
+        }
+
+    } catch (error) {
+        console.error("Ocorreu um erro durante o processo de correção de dados:", error);
+        showNotification("Erro ao tentar corrigir transações antigas.", "error");
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Inicia a aplicação ---
 initializeApp();
