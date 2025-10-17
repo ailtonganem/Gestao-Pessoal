@@ -27,6 +27,9 @@ import * as views from './modules/ui/views.js';
 import * as modals from './modules/ui/modals.js';
 import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
+// INÍCIO DA ALTERAÇÃO
+import * as proventosUI from './modules/proventos/ui.js';
+// FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
 const loginForm = document.querySelector('#login-form form');
@@ -127,8 +130,7 @@ export function initializeEventListeners() {
     document.getElementById('nav-proventos-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showProventosView();
-        // TODO: Chamar a função principal para carregar os dados da página de proventos
-        // await proventosUI.loadProventosPage(); 
+        await proventosUI.loadProventosPage(); 
     });
     // FIM DA ALTERAÇÃO
 
