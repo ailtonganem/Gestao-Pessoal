@@ -16,16 +16,14 @@ import * as charts from '../ui/charts.js';
 import { getQuotes } from '../../services/brapi.js';
 
 // --- Variáveis de Estado do Módulo ---
-let _currentPortfolioAssets = [];
+export let _currentPortfolioAssets = []; // INÍCIO DA ALTERAÇÃO - Exportado para ser acessível pelo handler
 let _currentAssetMovements = [];
 
 // --- Seleção de Elementos do DOM ---
 const investmentDashboardView = document.getElementById('investment-dashboard-view');
 const portfoliosManagementView = document.getElementById('portfolios-management-view');
 const portfolioFilterSelect = document.getElementById('portfolio-filter-select');
-// INÍCIO DA ALTERAÇÃO
 const investmentDashboardHeader = document.querySelector('.investment-dashboard-header .header-controls');
-// FIM DA ALTERAÇÃO
 
 // Cards do Dashboard
 const rentabilidadeCard = document.getElementById('rentabilidade-card');
@@ -157,11 +155,9 @@ export async function refreshMovementsView() {
 export async function loadInvestmentDashboard() {
     showInvestmentDashboardView();
     try {
-        // INÍCIO DA ALTERAÇÃO
         if (!document.getElementById('refresh-quotes-button')) {
             addRefreshButtonToDashboardHeader();
         }
-        // FIM DA ALTERAÇÃO
         const userPortfolios = await portfolios.getPortfolios(state.currentUser.uid);
         state.setUserPortfolios(userPortfolios);
         renderPortfolioFilter(userPortfolios);
@@ -191,10 +187,12 @@ export async function updateInvestmentDashboard(portfolioId) {
         const quotes = await getQuotes(tickers);
 
         assetsToDisplay.forEach(asset => {
-            // Se a cotação não for encontrada, mantemos o valor investido para evitar R$ 0,00
+            // INÍCIO DA ALTERAÇÃO
+            // Se a cotação não for encontrada, o valor de mercado é calculado com base no preço médio.
             const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
             asset.currentValue = currentPrice * asset.quantity;
             asset.currentPrice = currentPrice;
+            // FIM DA ALTERAÇÃO
         });
         
         const movementPromises = assetsToDisplay.map(async (asset) => {
@@ -249,14 +247,14 @@ export async function updateInvestmentDashboard(portfolioId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /** Adiciona o botão de atualização manual de cotações ao cabeçalho. */
 function addRefreshButtonToDashboardHeader() {
     const refreshButton = document.createElement('button');
     refreshButton.id = 'refresh-quotes-button';
     refreshButton.className = 'button-secondary';
     refreshButton.textContent = 'Atualizar Cotações';
-    refreshButton.title = 'Buscar cotações mais recentes no Google Finance';
+    refreshButton.title = 'Buscar cotações mais recentes';
+    refreshButton.style.display = 'none'; // Desativado por padrão
 
     refreshButton.addEventListener('click', async () => {
         refreshButton.disabled = true;
@@ -275,13 +273,11 @@ function addRefreshButtonToDashboardHeader() {
         }
     });
 
-    // Adiciona o botão ao lado dos controles do cabeçalho, antes do botão de gerenciar
     const manageButton = document.getElementById('go-to-portfolios-management-btn');
     if (manageButton && investmentDashboardHeader) {
         investmentDashboardHeader.insertBefore(refreshButton, manageButton);
     }
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Popula o select de filtro de carteiras.
@@ -463,11 +459,9 @@ export async function loadAndRenderAssets(portfolioId) {
         let portfolioTotalCost = 0;
 
         userAssets.forEach(asset => {
-            // Se a cotação não for encontrada, mantemos o valor investido para evitar R$ 0,00
             const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
-            asset.currentValue = currentPrice * asset.quantity;
             asset.currentPrice = currentPrice;
-            
+            asset.currentValue = asset.currentPrice * asset.quantity;
             asset.resultValue = asset.currentValue - asset.totalInvested;
             asset.resultPercent = asset.totalInvested > 0 ? (asset.resultValue / asset.totalInvested) * 100 : 0;
             
@@ -492,7 +486,7 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
     summarySection.innerHTML = `
         <div class="summary-card">
             <h3>Patrimônio Total</h3>
-            <p>${formatCurrency(portfolioTotalValue)}</p>
+            <p id="portfolio-total-value">${formatCurrency(portfolioTotalValue)}</p>
         </div>
         <div class="summary-card">
             <h3>Custo Total</h3>
@@ -500,7 +494,7 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
         </div>
         <div class="summary-card">
             <h3>Resultado</h3>
-            <p class="${resultClass}">${formatCurrency(portfolioResult)} (${portfolioResultPercent.toFixed(2)}%)</p>
+            <p class="${resultClass}" id="portfolio-result-container"><span id="portfolio-result-value">${formatCurrency(portfolioResult)}</span> (<span id="portfolio-result-percent">${portfolioResultPercent.toFixed(2)}</span>%)</p>
         </div>
     `;
 
@@ -522,7 +516,7 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
                 <span class="asset-ticker">${asset.ticker}</span>
                 <span class="asset-name">${asset.type}</span>
             </div>
-            <div class="numeric">
+            <div class="numeric" id="weight-${asset.id}">
                 <span>${weight.toFixed(2)}%</span>
             </div>
             <div class="numeric">
@@ -530,15 +524,23 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
                 <small class="sub-value">PM: ${formatCurrency(asset.averagePrice)}</small>
             </div>
             <div class="numeric">
-                <span>${formatCurrency(asset.currentPrice)}</span>
+                <input 
+                    type="number" 
+                    class="quote-input" 
+                    data-asset-id="${asset.id}" 
+                    value="${asset.currentPrice.toFixed(2)}" 
+                    step="0.01" 
+                    placeholder="Cotação" 
+                    style="width: 80px; text-align: right; padding: 0.2rem;"
+                >
             </div>
             <div class="numeric">
-                <span>${formatCurrency(asset.currentValue)}</span>
+                <span id="market-value-${asset.id}">${formatCurrency(asset.currentValue)}</span>
                 <small class="sub-value">Custo: ${formatCurrency(asset.totalInvested)}</small>
             </div>
             <div class="numeric">
-                <span class="result ${resultClass}">${formatCurrency(asset.resultValue)}</span>
-                <small class="sub-value result ${resultClass}">${asset.resultPercent.toFixed(2)}%</small>
+                <span class="result ${resultClass}" id="result-value-${asset.id}">${formatCurrency(asset.resultValue)}</span>
+                <small class="sub-value result ${resultClass}" id="result-percent-${asset.id}">${asset.resultPercent.toFixed(2)}%</small>
             </div>
             <div class="actions">
                 <button class="action-btn add-provento-btn" data-asset-id="${asset.id}" title="Registrar Provento">💲</button>
