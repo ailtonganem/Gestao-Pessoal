@@ -38,9 +38,7 @@ const loadMoreButton = document.getElementById('load-more-button');
 const transferFromAccountSelect = document.getElementById('transfer-from-account');
 const transferToAccountSelect = document.getElementById('transfer-to-account');
 const periodBalanceEl = document.getElementById('period-balance');
-// INÍCIO DA ALTERAÇÃO
 const upcomingInvoicesListEl = document.getElementById('upcoming-invoices-list');
-// FIM DA ALTERAÇÃO
 
 // Elementos do Modal de Faturas
 const invoiceTotalAmount = document.getElementById('invoice-total-amount');
@@ -229,12 +227,20 @@ export function populateAccountSelects() {
     const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
     const recurringAccountSelect = document.getElementById('recurring-account');
     const editRecurringAccountSelect = document.getElementById('edit-recurring-account');
+    // INÍCIO DA ALTERAÇÃO
+    const assetInitialAccountSelect = document.getElementById('asset-initial-account');
+    const movementAccountSelect = document.getElementById('movement-account');
+    const proventoAccountSelect = document.getElementById('provento-account');
+    // FIM DA ALTERAÇÃO
     
     const selects = [
         transactionAccountSelect, editTransactionAccountSelect, transferFromAccountSelect, 
         transferToAccountSelect, payInvoiceAccountSelect, advancePaymentAccountSelect,
         editTransferFromAccountSelect, editTransferToAccountSelect, recurringAccountSelect,
-        editRecurringAccountSelect
+        editRecurringAccountSelect, 
+        // INÍCIO DA ALTERAÇÃO
+        assetInitialAccountSelect, movementAccountSelect, proventoAccountSelect
+        // FIM DA ALTERAÇÃO
     ];
 
     selects.forEach(select => { if(select) select.innerHTML = ''; });
@@ -543,7 +549,6 @@ function renderAccountsSummaryList() {
     });
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Renderiza a lista de próximas faturas no dashboard.
  * @param {Array<object>} invoices - Lista de faturas a serem exibidas.
@@ -575,7 +580,6 @@ export function renderUpcomingInvoicesList(invoices) {
         upcomingInvoicesListEl.appendChild(li);
     });
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /** Renderiza as barras de progresso dos orçamentos no dashboard. */
 function renderBudgetProgress() {
