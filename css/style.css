@@ -374,13 +374,12 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 
 
 /* Estilos para as listas de Investimentos (Gerenciamento) */
-#portfolios-list, #asset-list {
+#portfolios-list, #asset-list, #movements-list {
     list-style: none;
     padding: 0;
-    margin-bottom: 2rem;
 }
 
-.portfolio-item, .asset-item {
+.portfolio-item {
     background-color: var(--container-bg-color);
     padding: 1rem;
     margin-bottom: 0.5rem;
@@ -392,59 +391,109 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.portfolio-item:hover, .asset-item:hover {
+.portfolio-item:hover {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     transform: translateY(-2px);
 }
 
-.portfolio-info, .asset-info {
+.portfolio-info {
     flex-grow: 1;
     cursor: pointer;
     text-align: left;
 }
-
-.portfolio-name, .asset-ticker {
+.portfolio-name {
     font-weight: bold;
     display: block;
     color: var(--primary-color);
 }
-
-.asset-name {
-    font-size: 0.9rem;
-    display: block;
-}
-
-.portfolio-description, .asset-type {
+.portfolio-description {
     font-size: 0.8rem;
     color: #7f8c8d;
 }
-
-.portfolio-summary, .asset-summary {
+.portfolio-summary {
     text-align: right;
     margin-left: 1rem;
 }
-
-.portfolio-value, .asset-value {
+.portfolio-value {
     font-weight: bold;
     font-size: 1.1rem;
     display: block;
     font-family: monospace;
 }
 
-.asset-quantity {
-    font-size: 0.8rem;
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para View de Ativos */
+#portfolio-summary-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.asset-table-header, .movement-table-header {
+    display: flex;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 0.5rem;
+}
+.asset-table-header .header-item, .movement-table-header .header-item {
+    flex: 1 1 0px;
+    text-align: left;
+}
+.asset-table-header .header-item.asset-info { flex-grow: 2; }
+.asset-table-header .header-item.numeric, .movement-table-header .header-item.numeric { text-align: right; }
+.asset-table-header .header-item.actions, .movement-table-header .header-item.actions {
+    flex-basis: 120px;
+    flex-grow: 0;
+    text-align: center;
+}
+
+.asset-item {
+    display: flex;
+    padding: 1rem;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+.asset-item:hover { background-color: var(--hover-color); }
+.asset-item > div {
+    flex: 1 1 0px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+.asset-item > div.asset-info { flex-grow: 2; cursor: pointer; }
+.asset-item > div.numeric { text-align: right; }
+.asset-item > div.actions {
+    flex-basis: 120px;
+    flex-grow: 0;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+.asset-ticker { font-weight: bold; }
+.asset-name { font-size: 0.8rem; color: #7f8c8d; }
+.asset-item .sub-value { font-size: 0.8rem; color: #7f8c8d; }
+.asset-item .result.positive { color: var(--success-color); }
+.asset-item .result.negative { color: var(--error-color); }
+
+/* Estilos para a View de Movimentos */
+.asset-header-details {
+    margin-bottom: 1.5rem;
+}
+.asset-header-details h2 {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+.asset-header-details p {
+    margin: 0.25rem 0 0 0;
+    font-size: 1rem;
     color: #7f8c8d;
 }
 
-.portfolio-actions, .asset-actions {
-    margin-top: 0.5rem;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-/* INÍCIO DA ALTERAÇÃO */
-/* Estilos para a View de Movimentos */
 #asset-details-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -467,26 +516,24 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     font-family: monospace;
 }
 
-#movements-list {
-    list-style: none;
-    padding: 0;
-}
 .movement-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0.8rem;
+    padding: 0.8rem 1rem;
     border-bottom: 1px solid var(--border-color);
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
 }
-.movement-item:last-child {
-    border-bottom: none;
+.movement-item:hover { background-color: var(--hover-color); }
+.movement-item > div {
+    flex: 1 1 0px;
+    text-align: left;
 }
-.movement-item:hover {
-    background-color: var(--hover-color);
+.movement-item > div.numeric { text-align: right; }
+.movement-item > div.actions {
+    flex-basis: 120px;
+    flex-grow: 0;
+    text-align: center;
 }
-/* FIM DA ALTERAÇÃO */
+/* --- FIM DA ALTERAÇÃO --- */
 
 /* Estilos para a lista de Próximas Faturas */
 #upcoming-invoices-list {
@@ -541,10 +588,11 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     background-color: var(--container-bg-color); padding: 2rem; border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); position: relative; width: 90%; max-width: 500px;
     animation: modalOpen 0.4s ease-out;
+    max-height: 90vh; /* Garante que o modal não ultrapasse a altura da tela */
+    overflow-y: auto; /* Adiciona scroll se o conteúdo for maior */
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-/* INÍCIO DA ALTERAÇÃO */
 .close-button, .close-card-modal-button, .close-settings-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
@@ -566,7 +614,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-edit-movement-modal-button:hover, .close-edit-movement-modal-button:focus {
     color: var(--text-color);
 }
-/* FIM DA ALTERAÇÃO */
 
 
 /* Estilos para o seletor de tema e toggle switch */
