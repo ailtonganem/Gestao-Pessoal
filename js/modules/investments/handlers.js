@@ -53,6 +53,13 @@ export function initializeInvestmentEventListeners() {
     closeProventoModalButton.addEventListener('click', investmentsUI.closeProventoModal);
     addProventoForm.addEventListener('submit', handleAddProvento);
 
+    // --- INÍCIO DA ALTERAÇÃO ---
+    document.getElementById('back-to-portfolios-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showPortfoliosView();
+    });
+    // --- FIM DA ALTERAÇÃO ---
+
     document.getElementById('back-to-assets-from-detail-button').addEventListener('click', (e) => {
         e.preventDefault();
         if (state.selectedPortfolioForAssetsView) {
