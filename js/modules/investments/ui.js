@@ -9,6 +9,9 @@ import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
 import * as movements from './movements.js';
+// INÍCIO DA ALTERAÇÃO
+import * as quotes from './quotes.js'; 
+// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency, formatDateToInput } from '../ui/utils.js';
 import { populateAccountSelects } from '../ui/render.js';
@@ -16,7 +19,7 @@ import * as charts from '../ui/charts.js';
 import { getQuotes } from '../../services/brapi.js';
 
 // --- Variáveis de Estado do Módulo ---
-export let _currentPortfolioAssets = []; // INÍCIO DA ALTERAÇÃO - Exportado para ser acessível pelo handler
+export let _currentPortfolioAssets = []; 
 let _currentAssetMovements = [];
 
 // --- Seleção de Elementos do DOM ---
@@ -64,6 +67,9 @@ const movementsListEl = document.getElementById('movements-list');
 const editPortfolioModal = document.getElementById('edit-portfolio-modal');
 const editAssetModal = document.getElementById('edit-asset-modal');
 const editMovementModal = document.getElementById('edit-movement-modal');
+// INÍCIO DA ALTERAÇÃO
+const updateQuotesModal = document.getElementById('update-quotes-modal');
+// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento de Views ---
@@ -83,7 +89,7 @@ export async function showPortfoliosManagementView() {
     investmentDashboardView.style.display = 'none';
     portfoliosManagementView.style.display = 'block';
     showPortfoliosView();
-    await loadAndRenderPortfolios(); // Garante que as carteiras sejam carregadas ao entrar na tela.
+    await loadAndRenderPortfolios(); 
 }
 
 
@@ -108,7 +114,6 @@ export async function showAssetsView(portfolio) {
     assetsView.style.display = 'block';
     movementsView.style.display = 'none';
 
-    // Controla a visibilidade do campo de conta com base no tipo de carteira
     const assetInitialAccountWrapper = document.getElementById('asset-initial-account-wrapper');
     const assetInitialAccountSelect = document.getElementById('asset-initial-account');
 
@@ -129,19 +134,14 @@ export async function showAssetsView(portfolio) {
 export async function refreshMovementsView() {
     const currentAsset = state.selectedAssetForMovementsView;
     if (!currentAsset) return;
-
-    // Recarrega todos os ativos da carteira para obter os dados atualizados
+    
     await loadAndRenderAssets(currentAsset.portfolioId);
-    // Encontra o ativo atualizado na lista recarregada
     const updatedAsset = _currentPortfolioAssets.find(a => a.id === currentAsset.id);
 
     if (updatedAsset) {
-        // Atualiza o estado global com o ativo atualizado
         state.setSelectedAssetForMovementsView(updatedAsset);
-        // Renderiza a tela de movimentos com os novos dados
         await loadAndRenderMovements(updatedAsset);
     } else {
-        // Se o ativo foi deletado (não encontrado), volta para a lista de ativos
         showAssetsView(state.selectedPortfolioForAssetsView);
     }
 }
@@ -187,12 +187,9 @@ export async function updateInvestmentDashboard(portfolioId) {
         const quotes = await getQuotes(tickers);
 
         assetsToDisplay.forEach(asset => {
-            // INÍCIO DA ALTERAÇÃO
-            // Se a cotação não for encontrada, o valor de mercado é calculado com base no preço médio.
             const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
             asset.currentValue = currentPrice * asset.quantity;
             asset.currentPrice = currentPrice;
-            // FIM DA ALTERAÇÃO
         });
         
         const movementPromises = assetsToDisplay.map(async (asset) => {
@@ -450,16 +447,18 @@ function renderPortfolios(portfoliosToRender) {
 export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
-        const userAssets = await assets.getAssets(portfolioId);
-
-        const tickers = userAssets.map(asset => asset.ticker);
-        const quotes = await getQuotes(tickers);
+        const [userAssets, savedQuotes] = await Promise.all([
+            assets.getAssets(portfolioId),
+            quotes.getSavedQuotes(state.currentUser.uid)
+        ]);
 
         let portfolioTotalValue = 0;
         let portfolioTotalCost = 0;
 
         userAssets.forEach(asset => {
-            const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
+            const savedQuote = savedQuotes[asset.ticker];
+            const currentPrice = savedQuote ? savedQuote.currentPrice : (asset.quantity > 0 ? asset.averagePrice : 0);
+            
             asset.currentPrice = currentPrice;
             asset.currentValue = asset.currentPrice * asset.quantity;
             asset.resultValue = asset.currentValue - asset.totalInvested;
@@ -524,15 +523,7 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
                 <small class="sub-value">PM: ${formatCurrency(asset.averagePrice)}</small>
             </div>
             <div class="numeric">
-                <input 
-                    type="number" 
-                    class="quote-input" 
-                    data-asset-id="${asset.id}" 
-                    value="${asset.currentPrice.toFixed(2)}" 
-                    step="0.01" 
-                    placeholder="Cotação" 
-                    style="width: 80px; text-align: right; padding: 0.2rem;"
-                >
+                <span>${formatCurrency(asset.currentPrice)}</span>
             </div>
             <div class="numeric">
                 <span id="market-value-${asset.id}">${formatCurrency(asset.currentValue)}</span>
@@ -634,7 +625,6 @@ export function openMovementModal(assetId) {
     movementAssetIdInput.value = assetId;
     movementDateInput.value = formatDateToInput(new Date());
 
-    // Controla a visibilidade do campo de conta com base no tipo de carteira
     const currentPortfolio = state.selectedPortfolioForAssetsView;
     if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
         movementAccountWrapper.style.display = 'none';
@@ -664,7 +654,6 @@ export function openProventoModal(assetId) {
     proventoAssetIdInput.value = assetId;
     proventoPaymentDateInput.value = formatDateToInput(new Date());
     
-    // Controla a visibilidade do campo de conta com base no tipo de carteira
     const currentPortfolio = state.selectedPortfolioForAssetsView;
     if (currentPortfolio && currentPortfolio.ownershipType === 'third-party') {
         proventoAccountWrapper.style.display = 'none';
@@ -735,3 +724,51 @@ export function closeEditMovementModal() {
     document.getElementById('edit-movement-form').reset();
     editMovementModal.style.display = 'none';
 }
+
+// INÍCIO DA ALTERAÇÃO
+export async function openUpdateQuotesModal() {
+    const listEl = document.getElementById('update-quotes-list');
+    listEl.innerHTML = '<li>Carregando ativos...</li>';
+    updateQuotesModal.style.display = 'flex';
+
+    try {
+        const allAssets = await portfolios.getAllUserAssets(state.currentUser.uid);
+        const savedQuotes = await quotes.getSavedQuotes(state.currentUser.uid);
+
+        // Remove duplicatas de tickers
+        const uniqueTickers = [...new Set(allAssets.map(a => a.ticker))];
+
+        if (uniqueTickers.length === 0) {
+            listEl.innerHTML = '<li>Nenhum ativo cadastrado para atualizar.</li>';
+            return;
+        }
+
+        listEl.innerHTML = '';
+        uniqueTickers.sort().forEach(ticker => {
+            const data = savedQuotes[ticker] || {};
+            const li = document.createElement('li');
+            li.className = 'quote-update-item';
+            li.innerHTML = `
+                <div class="ticker">${ticker}</div>
+                <div class="form-control">
+                    <label for="quote-${ticker}">Cotação (R$)</label>
+                    <input type="number" id="quote-${ticker}" data-ticker="${ticker}" data-field="currentPrice" step="0.01" value="${data.currentPrice || 0}">
+                </div>
+                <div class="form-control">
+                    <label for="dy-${ticker}">DY (%)</label>
+                    <input type="number" id="dy-${ticker}" data-ticker="${ticker}" data-field="dyPercent" step="0.01" value="${data.dyPercent || 0}">
+                </div>
+            `;
+            listEl.appendChild(li);
+        });
+
+    } catch(error) {
+        showNotification(error.message, 'error');
+        listEl.innerHTML = '<li>Erro ao carregar os ativos.</li>';
+    }
+}
+
+export function closeUpdateQuotesModal() {
+    updateQuotesModal.style.display = 'none';
+}
+// FIM DA ALTERAÇÃO
