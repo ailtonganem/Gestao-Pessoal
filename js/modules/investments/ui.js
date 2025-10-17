@@ -74,14 +74,12 @@ export function showInvestmentDashboardView() {
 /**
  * Exibe a visualização de gerenciamento de carteiras e ativos.
  */
-// INÍCIO DA ALTERAÇÃO
 export async function showPortfoliosManagementView() {
     investmentDashboardView.style.display = 'none';
     portfoliosManagementView.style.display = 'block';
     showPortfoliosView();
     await loadAndRenderPortfolios(); // Garante que as carteiras sejam carregadas ao entrar na tela.
 }
-// FIM DA ALTERAÇÃO
 
 
 /**
@@ -118,9 +116,16 @@ export async function showMovementsView(assetId) {
         return;
     }
     
+    // INÍCIO DA ALTERAÇÃO
+    // Adiciona a carteira ao objeto de ativo selecionado para referência futura
+    asset.portfolioId = state.selectedPortfolioForAssetsView.id;
     state.setSelectedAssetForMovementsView(asset);
     
-    movementsAssetNameEl.textContent = `Movimentos - ${asset.ticker}`;
+    const assetHeaderDetails = document.querySelector('.asset-header-details');
+    assetHeaderDetails.querySelector('h2').textContent = `${asset.ticker} - ${asset.name}`;
+    assetHeaderDetails.querySelector('p').textContent = `${asset.type} - ${asset.broker || 'N/A'}`;
+    // FIM DA ALTERAÇÃO
+    
     assetsView.style.display = 'none';
     movementsView.style.display = 'block';
 
@@ -141,6 +146,7 @@ export async function refreshMovementsView() {
         state.setSelectedAssetForMovementsView(updatedAsset);
         await loadAndRenderMovements(updatedAsset);
     } else {
+        // Se o ativo foi deletado (não encontrado), volta para a lista de ativos
         showAssetsView(state.selectedPortfolioForAssetsView);
     }
 }
@@ -176,6 +182,7 @@ export async function updateInvestmentDashboard(portfolioId) {
             assetsToDisplay = await portfolios.getAllUserAssets(state.currentUser.uid);
         } else {
             assetsToDisplay = await assets.getAssets(portfolioId);
+            // Garante que o ID da carteira esteja presente em cada ativo
             assetsToDisplay.forEach(asset => asset.portfolioId = portfolioId);
         }
 
@@ -186,10 +193,12 @@ export async function updateInvestmentDashboard(portfolioId) {
             if (quotes[asset.ticker]) {
                 asset.currentValue = quotes[asset.ticker] * asset.quantity;
             } else {
+                // Se não houver cotação, usa o valor investido como valor atual
                 asset.currentValue = asset.totalInvested;
             }
         });
         
+        // Busca os movimentos de todos os ativos para o histórico
         const movementPromises = assetsToDisplay.map(async (asset) => {
             const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
             return assetMovements.map(m => ({ ...m, ticker: asset.ticker }));
@@ -197,10 +206,11 @@ export async function updateInvestmentDashboard(portfolioId) {
         
         const allMovementsNested = await Promise.all(movementPromises);
         const allMovementsFlat = allMovementsNested.flat();
-        allMovementsFlat.sort((a, b) => b.date - a.date);
+        allMovementsFlat.sort((a, b) => b.date - a.date); // Ordena pela data mais recente
 
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
         
+        // Agrega dados para o gráfico de composição
         const composicaoData = assetsToDisplay.reduce((acc, asset) => {
             const key = asset.type || 'Outro';
             if (!acc[key]) {
@@ -219,10 +229,12 @@ export async function updateInvestmentDashboard(portfolioId) {
             history: allMovementsFlat,
         };
 
+        // Renderiza os cards do dashboard com os dados agregados
         renderPatrimonioCard(aggregatedData);
         renderComposicaoCard(aggregatedData);
         renderInvestmentHistory(aggregatedData);
         
+        // (Placeholders para funcionalidades futuras)
         renderRentabilidadeCard({});
         renderCalendarioCard({});
         renderProventosCard({});
@@ -264,18 +276,20 @@ function renderLoadingPlaceholders() {
 // --- Funções de Renderização dos Cards ---
 
 function renderRentabilidadeCard(data) {
+    const container = rentabilidadeCard.querySelector('.chart-container');
+    container.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.id = 'rentabilidade-chart';
-    rentabilidadeCard.querySelector('.chart-container').innerHTML = '';
-    rentabilidadeCard.querySelector('.chart-container').appendChild(canvas);
+    container.appendChild(canvas);
     charts.renderRentabilidadeChart(data.rentabilidade || {});
 }
 
 function renderComposicaoCard(data) {
+    const container = composicaoCard.querySelector('.chart-container');
+    container.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.id = 'composicao-chart';
-    composicaoCard.querySelector('.chart-container').innerHTML = '';
-    composicaoCard.querySelector('.chart-container').appendChild(canvas);
+    container.appendChild(canvas);
     charts.renderComposicaoChart(data.composicao || { labels: [], values: [] });
 }
 
@@ -284,10 +298,11 @@ function renderCalendarioCard(data) {
 }
 
 function renderPatrimonioCard(data) {
+    const container = patrimonioCard.querySelector('.chart-container');
+    container.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.id = 'patrimonio-chart';
-    patrimonioCard.querySelector('.chart-container').innerHTML = '';
-    patrimonioCard.querySelector('.chart-container').appendChild(canvas);
+    container.appendChild(canvas);
     charts.renderPatrimonioChart(data.patrimonioEvolucao || {});
     document.getElementById('patrimonio-total-valor').textContent = formatCurrency(data.totalPatrimonio || 0);
 }
@@ -392,6 +407,7 @@ function renderPortfolios(portfoliosToRender) {
     });
 }
 
+// INÍCIO DA ALTERAÇÃO
 export async function loadAndRenderAssets(portfolioId) {
     assetListEl.innerHTML = '<li>Carregando ativos...</li>';
     try {
@@ -400,27 +416,52 @@ export async function loadAndRenderAssets(portfolioId) {
         const tickers = userAssets.map(asset => asset.ticker);
         const quotes = await getQuotes(tickers);
 
+        let portfolioTotalValue = 0;
+        let portfolioTotalCost = 0;
+
         userAssets.forEach(asset => {
-            if (quotes[asset.ticker]) {
-                asset.currentValue = quotes[asset.ticker] * asset.quantity;
-            } else {
-                asset.currentValue = asset.totalInvested;
-            }
-            asset.portfolioId = portfolioId;
+            const quote = quotes[asset.ticker];
+            asset.currentPrice = quote || (asset.quantity > 0 ? asset.averagePrice : 0);
+            asset.currentValue = asset.currentPrice * asset.quantity;
+            asset.resultValue = asset.currentValue - asset.totalInvested;
+            asset.resultPercent = asset.totalInvested > 0 ? (asset.resultValue / asset.totalInvested) * 100 : 0;
+            
+            portfolioTotalValue += asset.currentValue;
+            portfolioTotalCost += asset.totalInvested;
         });
 
         _currentPortfolioAssets = userAssets; 
-        renderAssets(userAssets);
+        renderAssets(userAssets, portfolioTotalValue, portfolioTotalCost);
     } catch (error) {
         showNotification(error.message, 'error');
         assetListEl.innerHTML = '<li>Erro ao carregar ativos.</li>';
     }
 }
 
-function renderAssets(assetsToRender) {
+function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
+    const summarySection = document.getElementById('portfolio-summary-section');
+    const portfolioResult = portfolioTotalValue - portfolioTotalCost;
+    const portfolioResultPercent = portfolioTotalCost > 0 ? (portfolioResult / portfolioTotalCost) * 100 : 0;
+    const resultClass = portfolioResult >= 0 ? 'positive' : 'negative';
+
+    summarySection.innerHTML = `
+        <div class="summary-card">
+            <h3>Patrimônio Total</h3>
+            <p>${formatCurrency(portfolioTotalValue)}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Custo Total</h3>
+            <p>${formatCurrency(portfolioTotalCost)}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Resultado</h3>
+            <p class="${resultClass}">${formatCurrency(portfolioResult)} (${portfolioResultPercent.toFixed(2)}%)</p>
+        </div>
+    `;
+
     assetListEl.innerHTML = '';
     if (assetsToRender.length === 0) {
-        assetListEl.innerHTML = '<li>Nenhum ativo cadastrado. Adicione um no formulário abaixo.</li>';
+        assetListEl.innerHTML = '<li class="asset-item-empty">Nenhum ativo cadastrado. Adicione um no formulário abaixo.</li>';
         return;
     }
 
@@ -428,19 +469,35 @@ function renderAssets(assetsToRender) {
         const li = document.createElement('li');
         li.className = 'asset-item';
         
+        const weight = portfolioTotalValue > 0 ? (asset.currentValue / portfolioTotalValue) * 100 : 0;
+        const resultClass = asset.resultValue >= 0 ? 'positive' : 'negative';
+
         li.innerHTML = `
             <div class="asset-info" data-asset-id="${asset.id}">
                 <span class="asset-ticker">${asset.ticker}</span>
-                <span class="asset-name">${asset.name}</span>
-                <small class="asset-type">${asset.type} - ${asset.broker || 'N/A'}</small>
+                <span class="asset-name">${asset.type}</span>
             </div>
-            <div class="asset-summary">
-                <span class="asset-value">${formatCurrency(asset.currentValue)}</span>
-                <small class="asset-quantity">${asset.quantity} Cotas</small>
+            <div class="numeric">
+                <span>${weight.toFixed(2)}%</span>
             </div>
-            <div class="asset-actions">
+            <div class="numeric">
+                <span>${asset.quantity}</span>
+                <small class="sub-value">PM: ${formatCurrency(asset.averagePrice)}</small>
+            </div>
+            <div class="numeric">
+                <span>${formatCurrency(asset.currentPrice)}</span>
+            </div>
+            <div class="numeric">
+                <span>${formatCurrency(asset.currentValue)}</span>
+                <small class="sub-value">Custo: ${formatCurrency(asset.totalInvested)}</small>
+            </div>
+            <div class="numeric">
+                <span class="result ${resultClass}">${formatCurrency(asset.resultValue)}</span>
+                <small class="sub-value result ${resultClass}">${asset.resultPercent.toFixed(2)}%</small>
+            </div>
+            <div class="actions">
                 <button class="action-btn add-provento-btn" data-asset-id="${asset.id}" title="Registrar Provento">💲</button>
-                <button class="action-btn add-movement-btn" data-asset-id="${asset.id}" title="Adicionar Movimento (Compra/Venda)">➕</button>
+                <button class="action-btn add-movement-btn" data-asset-id="${asset.id}" title="Adicionar Movimento">➕</button>
                 <button class="action-btn edit-btn" data-asset-id="${asset.id}" title="Editar Ativo">&#9998;</button>
                 <button class="action-btn delete-btn" data-asset-id="${asset.id}" title="Excluir Ativo">&times;</button>
             </div>
@@ -472,7 +529,7 @@ async function loadAndRenderMovements(asset) {
 function renderMovements(movementsToRender) {
     movementsListEl.innerHTML = '';
     if (movementsToRender.length === 0) {
-        movementsListEl.innerHTML = '<li>Nenhuma operação registrada para este ativo.</li>';
+        movementsListEl.innerHTML = '<li class="movement-item-empty">Nenhuma operação registrada para este ativo.</li>';
         return;
     }
     movementsToRender.forEach(mov => {
@@ -481,29 +538,35 @@ function renderMovements(movementsToRender) {
 
         let typeLabel = '';
         let typeClass = '';
-        let details = '';
+        let quantity = '';
+        let price = '';
+        let total = '';
 
         switch(mov.type) {
             case 'buy':
             case 'sell':
                 typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
                 typeClass = mov.type;
-                details = `<span>${mov.quantity} un. @ ${formatCurrency(mov.pricePerUnit)}</span> <span style="font-family: monospace;">${formatCurrency(mov.totalCost)}</span>`;
+                quantity = mov.quantity;
+                price = formatCurrency(mov.pricePerUnit);
+                total = formatCurrency(mov.totalCost);
                 break;
             case 'provento':
                 typeLabel = mov.proventoType;
                 typeClass = 'provento';
-                details = `<span style="font-family: monospace;">${formatCurrency(mov.totalAmount)}</span>`;
+                quantity = '-';
+                price = '-';
+                total = formatCurrency(mov.totalAmount);
                 break;
         }
 
         li.innerHTML = `
-            <div style="flex-grow: 1;">
-                <span style="font-weight: 500;">${mov.date.toLocaleDateString('pt-BR')}</span>
-                <span class="status-badge ${typeClass}" style="margin-left: 1rem;">${typeLabel}</span>
-            </div>
-            <div style="flex-grow: 1; text-align: right;">${details}</div>
-            <div class="transaction-actions">
+            <div>${mov.date.toLocaleDateString('pt-BR')}</div>
+            <div><span class="status-badge ${typeClass}">${typeLabel}</span></div>
+            <div class="numeric">${quantity}</div>
+            <div class="numeric">${price}</div>
+            <div class="numeric">${total}</div>
+            <div class="actions">
                 <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar" ${mov.type === 'provento' ? 'disabled' : ''}>&#9998;</button>
                 <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir" ${!mov.transactionId ? 'disabled' : ''}>&times;</button>
             </div>
@@ -511,6 +574,7 @@ function renderMovements(movementsToRender) {
         movementsListEl.appendChild(li);
     });
 }
+// FIM DA ALTERAÇÃO
 
 
 export function openMovementModal(assetId) {
