@@ -18,8 +18,9 @@ export const COLLECTIONS = {
     BUDGETS: 'budgets',
     RECURRING_TRANSACTIONS: 'recurringTransactions',
     DESCRIPTIONS: 'descriptions', // Subcoleção dentro de users
+    INVESTMENT_PORTFOLIOS: 'investment_portfolios',
     // INÍCIO DA ALTERAÇÃO
-    INVESTMENT_PORTFOLIOS: 'investment_portfolios'
+    ASSET_QUOTES: 'asset_quotes' // Subcoleção dentro de users
     // FIM DA ALTERAÇÃO
 };
 
