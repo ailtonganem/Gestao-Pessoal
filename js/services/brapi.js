@@ -1,13 +1,16 @@
 // js/services/brapi.js
 
 /**
- * Módulo de serviço para interagir com a API da Brapi (https://brapi.dev/).
- * Responsável por buscar cotações de ativos do mercado brasileiro.
+ * Módulo de serviço para buscar cotações de ativos.
+ * ATENÇÃO: A fonte de dados foi alterada para uma API pública mais estável
+ * que não requer chave de autenticação.
  */
 
-import { brapiApiToken } from '../firebase-config.js'; // Importa o token de autenticação
+// Este endpoint é mais estável e formata a resposta como JSON de forma consistente.
+const API_BASE_URL = 'https://query2.finance.yahoo.com/v1/finance/screener';
 
-const API_BASE_URL = 'https://brapi.dev/api';
+// Usamos um proxy para contornar problemas de CORS.
+const CORS_PROXY = 'https://api.allorigins.win/get?url=';
 
 /**
  * Busca as cotações mais recentes para uma lista de tickers.
@@ -16,44 +19,36 @@ const API_BASE_URL = 'https://brapi.dev/api';
  */
 export async function getQuotes(tickers) {
     if (!tickers || tickers.length === 0) {
-        return {}; // Retorna um objeto vazio se nenhum ticker for fornecido.
-    }
-
-    // Verifica se o token foi configurado.
-    if (!brapiApiToken || brapiApiToken === "5yemombtoQBbWAQRzE3pS5") {
-        console.error("Token da Brapi API não configurado no arquivo firebase-config.js. As cotações não serão atualizadas.");
-        // Retorna um objeto vazio para não quebrar a aplicação.
         return {};
     }
 
-    // A API permite buscar múltiplos tickers de uma vez, separados por vírgula.
-    const tickerString = tickers.join(',');
-    // Adiciona o token como um parâmetro de consulta na URL.
-    const url = `${API_BASE_URL}/quote/${tickerString}?token=${brapiApiToken}`;
+    // A API do Yahoo Finance requer o sufixo ".SA" para ações brasileiras.
+    const tickersWithSuffix = tickers.map(ticker => `${ticker}.SA`);
+    const tickerString = tickersWithSuffix.join(',');
+
+    // A URL para esta API é mais complexa, mas mais confiável.
+    const screenerUrl = `${API_BASE_URL}?crumb=4KKSb22bYgU&lang=en-US&region=US&formatted=true&corsDomain=finance.yahoo.com&quotes=${tickerString}`;
+    const url = `${CORS_PROXY}${encodeURIComponent(screenerUrl)}`;
 
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            // O erro 401 (Não autorizado) é comum se o token for inválido.
-            if (response.status === 401) {
-                 console.error("Erro de autenticação com a Brapi API. Verifique se o seu token está correto no arquivo firebase-config.js.");
-            }
             throw new Error(`A API de cotações respondeu com o status: ${response.status}`);
         }
 
         const data = await response.json();
-        
-        // Verifica se a resposta contém os resultados esperados.
-        if (!data || !data.results) {
-            console.warn("Resposta da API de cotações em formato inesperado:", data);
+        const yahooData = JSON.parse(data.contents);
+
+        if (!yahooData || !yahooData.finance || !yahooData.finance.result || !yahooData.finance.result[0] || !yahooData.finance.result[0].quotes) {
+            console.warn("Resposta da API de cotações em formato inesperado:", yahooData);
             return {};
         }
 
-        // Transforma o array de resultados em um objeto de mapa para fácil acesso (ticker -> preço).
-        const quotesMap = data.results.reduce((map, quote) => {
-            // A API retorna 'error: true' para tickers não encontrados.
-            if (quote && quote.symbol && !quote.error && quote.regularMarketPrice) {
-                map[quote.symbol] = quote.regularMarketPrice;
+        const quotesArray = yahooData.finance.result[0].quotes;
+        const quotesMap = quotesArray.reduce((map, quote) => {
+            if (quote && quote.symbol && quote.regularMarketPrice) {
+                const originalTicker = quote.symbol.replace('.SA', '');
+                map[originalTicker] = quote.regularMarketPrice;
             }
             return map;
         }, {});
@@ -61,8 +56,7 @@ export async function getQuotes(tickers) {
         return quotesMap;
 
     } catch (error) {
-        console.error("Erro ao buscar cotações da Brapi API:", error);
-        // Em caso de erro, retorna um objeto vazio para não quebrar a aplicação.
+        console.error("Erro ao buscar cotações da nova API:", error);
         return {};
     }
 }
