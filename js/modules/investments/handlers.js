@@ -10,9 +10,7 @@ import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
 import * as movements from './movements.js';
 import * as investmentsUI from './ui.js';
-// INÍCIO DA ALTERAÇÃO
 import * as quotes from './quotes.js';
-// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { loadUserDashboard, loadUserAccounts } from '../../app.js';
 import { formatCurrency } from '../ui/utils.js';
@@ -30,11 +28,10 @@ const closeProventoModalButton = document.querySelector('.close-provento-modal-b
 const addProventoForm = document.getElementById('add-provento-form');
 const backToAssetsButton = document.getElementById('back-to-assets-button');
 const movementsList = document.getElementById('movements-list');
-// INÍCIO DA ALTERAÇÃO
 const updateQuotesBtn = document.getElementById('update-quotes-btn');
 const closeUpdateQuotesModalButton = document.querySelector('.close-update-quotes-modal-button');
 const saveQuotesBtn = document.getElementById('save-quotes-btn');
-// FIM DA ALTERAÇÃO
+
 
 // Formulários de Edição de Investimentos
 const editPortfolioForm = document.getElementById('edit-portfolio-form');
@@ -75,11 +72,9 @@ export function initializeInvestmentEventListeners() {
 
     movementsList.addEventListener('click', handleMovementsListActions);
 
-    // INÍCIO DA ALTERAÇÃO
     updateQuotesBtn.addEventListener('click', investmentsUI.openUpdateQuotesModal);
     closeUpdateQuotesModalButton.addEventListener('click', investmentsUI.closeUpdateQuotesModal);
     saveQuotesBtn.addEventListener('click', handleSaveQuotes);
-    // FIM DA ALTERAÇÃO
 }
 
 // --- Funções "Handler" ---
@@ -237,7 +232,10 @@ async function handleAssetListActions(e) {
         investmentsUI.openProventoModal(assetId);
     } else if (assetInfo) {
         const assetId = assetInfo.dataset.assetId;
-        investmentsUI.showMovementsView(assetId);
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Corrigido: Chamando a nova função para a página de detalhes completa do ativo.
+        investmentsUI.showAssetDetailView(assetId);
+        // --- FIM DA ALTERAÇÃO ---
     }
 }
 
@@ -416,7 +414,6 @@ async function handleMovementsListActions(e) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Handler para o botão "Salvar Cotações" do modal.
  * Coleta os dados do formulário, salva no banco de dados e atualiza a tela de ativos.
@@ -462,4 +459,3 @@ async function handleSaveQuotes() {
         saveQuotesBtn.textContent = 'Salvar Cotações';
     }
 }
-// FIM DA ALTERAÇÃO
