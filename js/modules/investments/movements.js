@@ -44,19 +44,25 @@ export async function addMovement(portfolioId, assetId, movementData) {
         const { type, quantity, price, date, accountId } = movementData;
         const totalCost = quantity * price;
 
-        // 1. Preparar o documento do novo movimento
+        // INÍCIO DA ALTERAÇÃO
+        // 1. Preparar a criação da transação financeira para obter seu ID
+        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+        
+        // 2. Preparar o documento do novo movimento, incluindo o ID da transação
         const newMovementData = {
             type,
             quantity,
             pricePerUnit: price,
             totalCost,
             date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            transactionId: newTransactionRef.id // Vínculo com a transação financeira
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
+        // FIM DA ALTERAÇÃO
 
-        // 2. Calcular os novos valores para o ativo
+        // 3. Calcular os novos valores para o ativo
         let newQuantity, newTotalInvested, newAveragePrice;
 
         if (type === 'buy') {
@@ -64,7 +70,7 @@ export async function addMovement(portfolioId, assetId, movementData) {
             newTotalInvested = currentAsset.totalInvested + totalCost;
             newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
             
-            // 2a. Atualiza o total investido na carteira
+            // 3a. Atualiza o total investido na carteira
             batch.update(portfolioRef, { totalInvested: increment(totalCost) });
 
         } else { // 'sell'
@@ -80,11 +86,11 @@ export async function addMovement(portfolioId, assetId, movementData) {
                 newAveragePrice = 0;
             }
 
-            // 2b. Atualiza o total investido na carteira
+            // 3b. Atualiza o total investido na carteira
             batch.update(portfolioRef, { totalInvested: increment(-(quantity * currentAsset.averagePrice)) });
         }
         
-        // 3. Preparar a atualização do ativo
+        // 4. Preparar a atualização do ativo
         const assetUpdateData = {
             quantity: newQuantity,
             totalInvested: newTotalInvested,
@@ -92,7 +98,7 @@ export async function addMovement(portfolioId, assetId, movementData) {
         };
         batch.update(assetRef, assetUpdateData);
 
-        // 4. Preparar a criação da transação financeira correspondente
+        // 5. Preparar os dados da transação financeira correspondente
         const transactionType = type === 'buy' ? 'expense' : 'revenue';
         const transactionDescription = type === 'buy' ? `Compra de ${currentAsset.ticker}` : `Venda de ${currentAsset.ticker}`;
         
@@ -107,15 +113,14 @@ export async function addMovement(portfolioId, assetId, movementData) {
             accountId: accountId,
             createdAt: serverTimestamp()
         };
-        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
         batch.set(newTransactionRef, transactionData);
 
-        // 5. Atualizar o saldo da conta selecionada
+        // 6. Atualizar o saldo da conta selecionada
         const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
         const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
         batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
         
-        // 6. Executar todas as operações
+        // 7. Executar todas as operações
         await batch.commit();
 
     } catch (error) {
@@ -155,7 +160,6 @@ export async function getMovements(portfolioId, assetId) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Adiciona um provento a um ativo e cria a transação de receita correspondente.
  * @param {string} portfolioId - O ID da carteira.
@@ -178,18 +182,24 @@ export async function addProvento(portfolioId, assetId, proventoData) {
 
         const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
 
-        // 1. Registra o provento como um tipo de 'movimento' para o histórico do ativo
+        // INÍCIO DA ALTERAÇÃO
+        // 1. Preparar a transação de receita para obter seu ID
+        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+
+        // 2. Registra o provento como um tipo de 'movimento', incluindo o ID da transação
         const newMovementData = {
             type: 'provento',
             proventoType: proventoType,
             totalAmount: totalAmount,
             date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            transactionId: newTransactionRef.id // Vínculo com a transação financeira
         };
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
+        // FIM DA ALTERAÇÃO
 
-        // 2. Cria a transação de receita correspondente
+        // 3. Prepara os dados da transação de receita correspondente
         const transactionData = {
             description: `${proventoType} de ${currentAsset.ticker}`,
             amount: totalAmount,
@@ -201,14 +211,13 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             accountId: accountId,
             createdAt: serverTimestamp()
         };
-        const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
         batch.set(newTransactionRef, transactionData);
 
-        // 3. Atualiza o saldo da conta de destino
+        // 4. Atualiza o saldo da conta de destino
         const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
         batch.update(accountRef, { currentBalance: increment(totalAmount) });
         
-        // 4. Executa todas as operações
+        // 5. Executa todas as operações
         await batch.commit();
 
     } catch (error) {
@@ -216,4 +225,3 @@ export async function addProvento(portfolioId, assetId, proventoData) {
         throw new Error("Não foi possível salvar o registro do provento.");
     }
 }
-// FIM DA ALTERAÇÃO
