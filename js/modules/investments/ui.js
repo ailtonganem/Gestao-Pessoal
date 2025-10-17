@@ -29,10 +29,8 @@ const rentabilidadeCard = document.getElementById('rentabilidade-card');
 const composicaoCard = document.getElementById('composicao-card');
 const calendarioCard = document.getElementById('calendario-card');
 const patrimonioCard = document.getElementById('patrimonio-card');
-// INÍCIO DA ALTERAÇÃO
 const proventosMesCard = document.getElementById('proventos-mes-card');
 const resultadoMesCard = document.getElementById('resultado-mes-card');
-// FIM DA ALTERAÇÃO
 const investmentHistoryCard = document.getElementById('investment-history-card');
 
 const portfoliosView = document.getElementById('portfolios-view');
@@ -177,6 +175,7 @@ export async function loadInvestmentDashboard() {
  * Atualiza todos os componentes do dashboard com base na carteira selecionada.
  * @param {string} portfolioId - O ID da carteira a ser exibida, ou 'all' para consolidado.
  */
+// INÍCIO DA ALTERAÇÃO
 export async function updateInvestmentDashboard(portfolioId) {
     renderLoadingPlaceholders();
 
@@ -186,7 +185,6 @@ export async function updateInvestmentDashboard(portfolioId) {
             assetsToDisplay = await portfolios.getAllUserAssets(state.currentUser.uid);
         } else {
             assetsToDisplay = await assets.getAssets(portfolioId);
-            // Garante que o ID da carteira esteja presente em cada ativo
             assetsToDisplay.forEach(asset => asset.portfolioId = portfolioId);
         }
 
@@ -197,57 +195,62 @@ export async function updateInvestmentDashboard(portfolioId) {
             if (quotes[asset.ticker]) {
                 asset.currentValue = quotes[asset.ticker] * asset.quantity;
             } else {
-                // Se não houver cotação, usa o valor investido como valor atual
                 asset.currentValue = asset.totalInvested;
             }
         });
         
-        // Busca os movimentos de todos os ativos para o histórico
         const movementPromises = assetsToDisplay.map(async (asset) => {
             const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
-            return assetMovements.map(m => ({ ...m, ticker: asset.ticker }));
+            return assetMovements.map(m => ({ ...m, ticker: asset.ticker, averagePriceOnSell: asset.averagePrice }));
         });
         
         const allMovementsNested = await Promise.all(movementPromises);
         const allMovementsFlat = allMovementsNested.flat();
-        allMovementsFlat.sort((a, b) => b.date - a.date); // Ordena pela data mais recente
+        allMovementsFlat.sort((a, b) => b.date - a.date);
+
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
         
-        // Agrega dados para o gráfico de composição
         const composicaoData = assetsToDisplay.reduce((acc, asset) => {
             const key = asset.type || 'Outro';
-            if (!acc[key]) {
-                acc[key] = 0;
-            }
+            if (!acc[key]) acc[key] = 0;
             acc[key] += asset.currentValue || 0;
             return acc;
         }, {});
 
+        const proventosMes = allMovementsFlat
+            .filter(m => m.type === 'provento' && m.date.getMonth() === currentMonth && m.date.getFullYear() === currentYear)
+            .reduce((sum, m) => sum + m.totalAmount, 0);
+
+        const resultadoMes = allMovementsFlat
+            .filter(m => m.type === 'sell' && m.date.getMonth() === currentMonth && m.date.getFullYear() === currentYear)
+            .reduce((sum, m) => sum + (m.totalCost - (m.quantity * m.averagePriceOnSell)), 0);
+
         const aggregatedData = {
             totalPatrimonio,
-            composicao: {
-                labels: Object.keys(composicaoData),
-                values: Object.values(composicaoData)
-            },
+            composicao: { labels: Object.keys(composicaoData), values: Object.values(composicaoData) },
             history: allMovementsFlat,
+            proventosMes,
+            resultadoMes
         };
 
-        // Renderiza os cards do dashboard com os dados agregados
         renderPatrimonioCard(aggregatedData);
         renderComposicaoCard(aggregatedData);
         renderInvestmentHistory(aggregatedData);
+        renderProventosMesCard(aggregatedData);
+        renderResultadoMesCard(aggregatedData);
         
-        // (Placeholders para funcionalidades futuras)
         renderRentabilidadeCard({});
         renderCalendarioCard({});
-        renderProventosMesCard({});
-        renderResultadoMesCard({});
 
     } catch (error) {
         showNotification(error.message, 'error');
     }
 }
+// FIM DA ALTERAÇÃO
 
 /**
  * Popula o select de filtro de carteiras.
@@ -266,7 +269,6 @@ function renderPortfolioFilter(userPortfolios) {
 /**
  * Renderiza placeholders de "Carregando..." em todos os cards do dashboard.
  */
-// INÍCIO DA ALTERAÇÃO
 function renderLoadingPlaceholders() {
     rentabilidadeCard.querySelector('.chart-container').innerHTML = `<p>Carregando dados de rentabilidade...</p>`;
     composicaoCard.querySelector('.chart-container').innerHTML = `<p>Carregando composição...</p>`;
@@ -277,7 +279,6 @@ function renderLoadingPlaceholders() {
     resultadoMesCard.querySelector('#resultado-mes-summary').innerHTML = `<p>Carregando...</p>`;
     investmentHistoryCard.querySelector('#investment-history-list').innerHTML = `<li>Carregando histórico...</li>`;
 }
-// FIM DA ALTERAÇÃO
 
 // --- Funções de Renderização dos Cards ---
 
@@ -315,11 +316,15 @@ function renderPatrimonioCard(data) {
 
 // INÍCIO DA ALTERAÇÃO
 function renderProventosMesCard(data) {
-    proventosMesCard.querySelector('#proventos-mes-summary').innerHTML = `<p id="proventos-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">${formatCurrency(0)}</p>`;
+    const valueEl = proventosMesCard.querySelector('#proventos-mes-total');
+    valueEl.textContent = formatCurrency(data.proventosMes || 0);
 }
 
 function renderResultadoMesCard(data) {
-    resultadoMesCard.querySelector('#resultado-mes-summary').innerHTML = `<p id="resultado-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">${formatCurrency(0)}</p>`;
+    const valueEl = resultadoMesCard.querySelector('#resultado-mes-total');
+    const value = data.resultadoMes || 0;
+    valueEl.textContent = formatCurrency(value);
+    valueEl.style.color = value >= 0 ? 'var(--success-color)' : 'var(--error-color)';
 }
 // FIM DA ALTERAÇÃO
 
