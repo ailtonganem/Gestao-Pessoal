@@ -1,36 +1,67 @@
-// Importa as funções necessárias do SDK do Firebase que vamos usar.
-// Estamos usando os URLs do CDN oficial do Firebase para importar como módulos ES6.
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// js/services/brapi.js
 
-// SUBSTITUA TODO O BLOCO ABAIXO PELO CÓDIGO QUE VOCÊ COPIOU DO CONSOLE DO FIREBASE.
-// O seu código terá valores reais no lugar de "COLE_SUA_API_KEY_AQUI", etc.
-const firebaseConfig = {
-  apiKey: "AIzaSyBqFoSqX-DQKkp8ovKcnQaXvFyXGXm5c74",
-  authDomain: "gestao-pessoal-27a6e.firebaseapp.com",
-  projectId: "gestao-pessoal-27a6e",
-  storageBucket: "gestao-pessoal-27a6e.firebasestorage.app",
-  messagingSenderId: "541609699147",
-  appId: "1:541609699147:web:c0dbaf8862e2c0c4796ace"
-};
+/**
+ * Módulo de serviço para buscar cotações de ativos.
+ * ATENÇÃO: A fonte de dados foi alterada para uma API que utiliza dados do Google Finance,
+ * para garantir estabilidade e evitar a necessidade de uma chave de API (token).
+ */
 
-// --- INÍCIO DA ALTERAÇÃO ---
-// Adicione seu token da Brapi API aqui.
-// Você pode obter um token gratuito em https://brapi.dev/
-// IMPORTANTE: Adicione este arquivo (firebase-config.js) ao seu .gitignore para não expor suas chaves!
-const brapiApiToken = "5yemombtoQBbWAQRzE3pS5I";
-// --- FIM DA ALTERAÇÃO ---
+// Este endpoint público não oficial costuma ser muito confiável e não exige chave.
+const API_URL_BASE = 'https://finance.google.com/finance/info?client=ig&q='; 
 
+/**
+ * Busca as cotações mais recentes para uma lista de tickers.
+ * @param {Array<string>} tickers - Um array de tickers de ativos (ex: ['PETR4', 'MGLU3', 'MXRF11']).
+ * @returns {Promise<object>} Um objeto mapeando cada ticker ao seu preço atual. Ex: { "PETR4": 29.50, "MGLU3": 2.10 }.
+ */
+export async function getQuotes(tickers) {
+    if (!tickers || tickers.length === 0) {
+        return {}; // Retorna um objeto vazio se nenhum ticker for fornecido.
+    }
 
-// Inicializa o Firebase com as configurações fornecidas.
-const app = initializeApp(firebaseConfig);
+    // O Google Finance usa o padrão "B3:TICKER" para o mercado brasileiro.
+    const symbols = tickers.map(ticker => `B3:${ticker}`).join(',');
 
-// Inicializa o serviço de Autenticação do Firebase e o torna disponível para uso.
-const auth = getAuth(app);
+    // A API retorna um JSON envolto em um callback (JSONP), que o `fetch` pode ter dificuldade em processar.
+    // Usaremos um proxy para limpar a resposta e garantir que o navegador possa ler o JSON puro.
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`${API_URL_BASE}${symbols}`)}`;
 
-// Inicializa o serviço do Cloud Firestore e o torna disponível para uso.
-const db = getFirestore(app);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`A API de cotações respondeu com o status: ${response.status}`);
+        }
 
-// Exporta as instâncias dos serviços que serão usados em outros módulos da aplicação.
-export { auth, db, brapiApiToken };
+        const rawData = await response.json();
+        
+        // A resposta original vem como string: `// [ { ...dados } ]`
+        // 1. Remove os caracteres iniciais `//` e faz o parse.
+        const cleanJsonString = rawData.contents.trim().replace(/^\/\//, '').trim();
+        const quotesArray = JSON.parse(cleanJsonString);
+
+        if (!Array.isArray(quotesArray)) {
+            console.warn("Resposta da API de cotações em formato inesperado (não é um array):", rawData.contents);
+            return {};
+        }
+
+        const quotesMap = quotesArray.reduce((map, quote) => {
+            // Verifica se a cotação é válida e se tem a propriedade 'l_cur' (Last Price)
+            if (quote && quote.t && quote.l_cur) {
+                // Remove o prefixo "B3:" e obtém o preço como float
+                const originalTicker = quote.t.replace('B3:', '');
+                const price = parseFloat(quote.l_cur.replace(',', '.')); // Garante que o separador decimal seja o ponto
+
+                if (!isNaN(price) && price > 0) {
+                     map[originalTicker] = price;
+                }
+            }
+            return map;
+        }, {});
+
+        return quotesMap;
+
+    } catch (error) {
+        console.error("Erro ao buscar cotações do Google Finance API:", error);
+        return {};
+    }
+}
