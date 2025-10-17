@@ -422,7 +422,6 @@
                             </div>
                              <p id="patrimonio-total-valor" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
                         </div>
-                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <div class="investment-card" id="proventos-mes-card">
                             <h3>Proventos no Mês</h3>
                             <div id="proventos-mes-summary">
@@ -435,7 +434,6 @@
                                  <p id="resultado-mes-total" style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">R$ 0,00</p>
                             </div>
                         </div>
-                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
 
                     <div class="investment-card full-width" id="investment-history-card">
@@ -458,6 +456,7 @@
                             <p class="subtitle">Selecione uma carteira para ver os ativos ou crie uma nova abaixo.</p>
                             <ul id="portfolios-list"></ul>
                         </section>
+                        <!-- INÍCIO DA ALTERAÇÃO -->
                         <section id="add-portfolio-form-section">
                             <h3>Criar Nova Carteira</h3>
                             <form id="add-portfolio-form">
@@ -469,9 +468,19 @@
                                     <label for="portfolio-description">Descrição (opcional)</label>
                                     <input type="text" id="portfolio-description" placeholder="Ex: Foco em dividendos e longo prazo">
                                 </div>
+                                <div class="form-control">
+                                    <label>Tipo de Carteira</label>
+                                    <div class="radio-container">
+                                        <input type="radio" id="portfolio-type-own" name="portfolio-type" value="own" required checked>
+                                        <label for="portfolio-type-own">Própria (impacta meu patrimônio)</label>
+                                        <input type="radio" id="portfolio-type-third" name="portfolio-type" value="third-party">
+                                        <label for="portfolio-type-third">De Terceiro (apenas para gestão)</label>
+                                    </div>
+                                </div>
                                 <button type="submit">Criar Carteira</button>
                             </form>
                         </section>
+                        <!-- FIM DA ALTERAÇÃO -->
                     </div>
         
                     <!-- View de Lista de Ativos -->
@@ -542,7 +551,7 @@
                                     <label for="asset-initial-price">Preço por Unidade (R$)</label>
                                     <input type="number" id="asset-initial-price" step="any" placeholder="25.50" required>
                                 </div>
-                                <div class="form-control">
+                                <div class="form-control" id="asset-initial-account-wrapper">
                                     <label for="asset-initial-account">Conta para Débito</label>
                                     <select id="asset-initial-account" required></select>
                                 </div>
@@ -1171,7 +1180,7 @@
                     <label for="movement-price">Preço por Unidade (R$)</label>
                     <input type="number" id="movement-price" placeholder="25.50" step="any" required>
                 </div>
-                <div class="form-control">
+                <div class="form-control" id="movement-account-wrapper">
                     <label for="movement-account">Conta para Débito/Crédito</label>
                     <select id="movement-account" required></select>
                 </div>
@@ -1202,7 +1211,7 @@
                     <label for="provento-total-amount">Valor Total Recebido (R$)</label>
                     <input type="number" id="provento-total-amount" placeholder="150.00" step="any" required>
                 </div>
-                <div class="form-control">
+                <div class="form-control" id="provento-account-wrapper">
                     <label for="provento-account">Conta de Destino</label>
                     <select id="provento-account" required></select>
                 </div>
