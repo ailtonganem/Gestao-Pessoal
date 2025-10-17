@@ -11,9 +11,7 @@ import { showNotification } from './notifications.js';
 import { getInvoices, getInvoiceTransactions } from '../invoices.js';
 import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
-// INÍCIO DA ALTERAÇÃO
 import * as charts from './charts.js';
-// FIM DA ALTERAÇÃO
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
@@ -23,6 +21,9 @@ export let _currentSplits = []; // Armazena os itens da divisão da transação
 const editModal = document.getElementById('edit-modal');
 const creditCardModal = document.getElementById('credit-card-modal');
 const settingsModal = document.getElementById('settings-modal');
+// --- INÍCIO DA ALTERAÇÃO ---
+const managementModal = document.getElementById('management-modal');
+// --- FIM DA ALTERAÇÃO ---
 const editRecurringModal = document.getElementById('edit-recurring-modal');
 const editInvoiceTxModal = document.getElementById('edit-invoice-transaction-modal');
 const payInvoiceModal = document.getElementById('pay-invoice-modal');
@@ -113,10 +114,8 @@ export function openEditModal(transaction) {
     render.populateCategorySelects(transaction.type, editTransactionCategorySelect);
     editTransactionCategorySelect.value = transaction.category;
 
-    // INÍCIO DA ALTERAÇÃO
     const tagsString = (transaction.tags || []).join(', ');
     document.getElementById('edit-transaction-tags').value = tagsString;
-    // FIM DA ALTERAÇÃO
 
     editPaymentMethodSelect.value = transaction.paymentMethod;
 
@@ -150,7 +149,6 @@ export function openEditRecurringModal(recurringTx) {
     render.populateCategorySelects(recurringTx.type, editRecurringCategorySelect);
     editRecurringCategorySelect.value = recurringTx.category;
 
-    // INÍCIO DA ALTERAÇÃO
     const paymentMethodSelect = document.getElementById('edit-recurring-payment-method');
     const accountWrapper = document.getElementById('edit-recurring-account-wrapper');
     const cardWrapper = document.getElementById('edit-recurring-card-wrapper');
@@ -168,7 +166,6 @@ export function openEditRecurringModal(recurringTx) {
         cardWrapper.style.display = 'none';
         if (recurringTx.accountId) accountSelect.value = recurringTx.accountId;
     }
-    // FIM DA ALTERAÇÃO
 
     editRecurringModal.style.display = 'flex';
 }
@@ -340,7 +337,6 @@ export async function loadAndDisplayInvoices(card) {
     }
 }
 
-// INÍCIO DA ALTERAÇÃO
 export async function displayInvoiceDetails(invoice) {
     render.renderInvoiceSummary(invoice);
     payInvoiceButton.disabled = invoice.status !== 'closed';
@@ -350,42 +346,53 @@ export async function displayInvoiceDetails(invoice) {
         const transactions = await getInvoiceTransactions(invoice.id);
         _currentInvoiceTransactions = transactions;
         render.renderInvoiceTransactionsList(transactions);
-        // Chama a renderização do novo gráfico
         charts.renderInvoiceSpendingChart(transactions);
     } catch (error) {
         showNotification(error.message, 'error');
         _currentInvoiceTransactions = [];
         render.renderInvoiceTransactionsList([{ description: 'Erro ao carregar.', amount: '' }]);
-        // Limpa o gráfico em caso de erro
         charts.renderInvoiceSpendingChart([]);
     }
 }
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento do Modal de Configurações ---
 
+// --- INÍCIO DA ALTERAÇÃO ---
 export async function openSettingsModal() {
     if (!state.currentUser) return;
 
-    document.getElementById('recurring-list').innerHTML = '<li>Carregando...</li>';
     if (state.currentUserProfile.role === 'admin') {
+        adminTabButton.style.display = 'block';
         document.getElementById('user-list').innerHTML = '<li>Carregando...</li>';
+        try {
+            const users = await getAllUsers();
+            render.renderUserList(users);
+        } catch (error) {
+            showNotification(error.message, 'error');
+        }
+    } else {
+        adminTabButton.style.display = 'none';
     }
 
+    switchTab('theme-settings-tab', settingsModal);
     settingsModal.style.display = 'flex';
+}
+
+export function closeSettingsModal() {
+    settingsModal.style.display = 'none';
+}
+
+export async function openManagementModal() {
+    if (!state.currentUser) return;
+
+    document.getElementById('recurring-list').innerHTML = '<li>Carregando...</li>';
+    managementModal.style.display = 'flex';
     
     try {
         const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
         state.setUserRecurringTransactions(recurringTxs);
         render.renderRecurringList();
-
-        if (state.currentUserProfile.role === 'admin') {
-            adminTabButton.style.display = 'block';
-            const users = await getAllUsers();
-            render.renderUserList(users);
-        }
-
         render.renderBudgetList();
         render.renderAccountList();
     } catch (error) {
@@ -393,21 +400,32 @@ export async function openSettingsModal() {
     }
 }
 
-export function closeSettingsModal() {
-    settingsModal.style.display = 'none';
+export function closeManagementModal() {
+    managementModal.style.display = 'none';
 }
 
 /**
- * Alterna a visibilidade das abas no modal de configurações.
+ * Alterna a visibilidade das abas em um modal específico.
  * @param {string} tabId - O ID do conteúdo da aba a ser exibida.
+ * @param {HTMLElement} modalElement - O elemento do modal que contém as abas.
  */
-export function switchSettingsTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+function switchTab(tabId, modalElement) {
+    modalElement.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    modalElement.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
 
-    document.getElementById(tabId).classList.add('active');
-    document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
+    modalElement.querySelector(`#${tabId}`).classList.add('active');
+    modalElement.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
 }
+
+export function switchSettingsTab(tabId) {
+    switchTab(tabId, settingsModal);
+}
+
+export function switchManagementTab(tabId) {
+    switchTab(tabId, managementModal);
+}
+// --- FIM DA ALTERAÇÃO ---
+
 
 // --- Funções para o modal de pagamento de fatura ---
 
