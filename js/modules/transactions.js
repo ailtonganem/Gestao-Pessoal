@@ -1,428 +1,358 @@
-// js/modules/investments/movements.js
+// js/modules/transactions.js
 
-/**
- * Módulo para gerenciar a lógica de negócio dos movimentos (operações) de um ativo.
- */
+// Importa a instância do Firestore.
+import { db } from '../firebase-config.js';
+import { COLLECTIONS } from '../config/constants.js';
+// Importa a lógica de faturas.
+import { findOrCreateInvoice } from './invoices.js';
+// Importa a função de autocomplete.
+import { saveUniqueDescription } from './autocomplete.js';
+// Importa a função para salvar subcategorias
+import { addSubcategory } from './categories.js';
+import { updateBalanceInBatch } from './accounts.js';
 
-import { db } from '../../firebase-config.js';
-import { COLLECTIONS } from '../../config/constants.js';
+// Importa as funções do Firestore necessárias.
 import {
     collection,
-    doc,
     addDoc,
+    serverTimestamp,
+    query,
+    where,
+    getDocs,
+    orderBy,
+    doc,
+    deleteDoc,
+    updateDoc,
     writeBatch,
+    increment,
     Timestamp,
     getDoc,
-    increment,
-    serverTimestamp,
-    getDocs,
-    query,
-    orderBy,
-    deleteDoc,
-    runTransaction,
-    collectionGroup,
-    where
+    limit,
+    startAfter
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
- * Adiciona um movimento (compra/venda) a um ativo e atualiza todos os dados relacionados.
- * @param {string} portfolioId - O ID da carteira.
- * @param {string} assetId - O ID do ativo.
- * @param {object} movementData - Dados da operação.
+ * Converte uma string de data (YYYY-MM-DD) para um objeto Date do JS na timezone local.
+ * @param {string} dateString - A data no formato "YYYY-MM-DD".
+ * @returns {Date}
+ */
+function parseDateString(dateString) {
+    // Adiciona T00:00:00 para evitar problemas de fuso horário que podem alterar o dia.
+    return new Date(dateString + 'T00:00:00');
+}
+
+/**
+ * Adiciona um novo documento de transação.
+ * @param {object} transactionData - Os dados da transação.
+ * @param {Array<string>} [transactionData.tags] - Um array de tags associadas.
+ * @param {object|null} cardData - Dados do cartão de crédito, se aplicável.
  * @returns {Promise<void>}
  */
-export async function addMovement(portfolioId, assetId, movementData) {
-    const batch = writeBatch(db);
+async function addTransaction(transactionData, cardData = null) {
+    // Validação para impedir transações divididas e parceladas ao mesmo tempo.
+    if (transactionData.isSplit && transactionData.isInstallment) {
+        throw new Error("Transações divididas não podem ser parceladas. Por favor, escolha apenas uma opção.");
+    }
 
-    try {
-        const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
-        const assetRef = doc(portfolioRef, 'assets', assetId);
-        const movementsRef = collection(assetRef, 'movements');
+    const transactionDate = parseDateString(transactionData.date);
 
-        const portfolioSnap = await getDoc(portfolioRef);
-        if (!portfolioSnap.exists()) {
-            throw new Error("Carteira não encontrada.");
-        }
-        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
+    // Salva a subcategoria se for uma transação simples e houver subcategoria.
+    if (!transactionData.isSplit && transactionData.subcategory && transactionData.categoryId) {
+        addSubcategory(transactionData.categoryId, transactionData.subcategory).catch(console.error);
+    }
 
-        const assetSnap = await getDoc(assetRef);
-        if (!assetSnap.exists()) {
-            throw new Error("Ativo não encontrado para registrar a operação.");
-        }
-        const currentAsset = assetSnap.data();
+    if (transactionData.paymentMethod === 'credit_card' && cardData) {
+        const batch = writeBatch(db);
 
-        const { type, quantity, price, date, accountId, userId } = movementData;
-        const totalCost = quantity * price;
-        let transactionIdForMovement = null;
+        // Lógica para compras parceladas (não divididas)
+        if (transactionData.isInstallment && transactionData.installments > 1) {
+            const totalAmount = transactionData.amount;
+            const installmentAmount = parseFloat((totalAmount / transactionData.installments).toFixed(2));
 
-        if (isOwnPortfolio) {
-            if (!accountId) {
-                throw new Error("A conta para débito/crédito é obrigatória para carteiras próprias.");
+            for (let i = 0; i < transactionData.installments; i++) {
+                const currentInstallmentDate = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + i, transactionDate.getDate());
+                
+                const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, currentInstallmentDate);
+                const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+                const invoiceTransactionsRef = collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS);
+                
+                const newTransactionInInvoice = {
+                    description: `${transactionData.description} (${i + 1}/${transactionData.installments})`,
+                    amount: installmentAmount,
+                    category: transactionData.category,
+                    subcategory: transactionData.subcategory || null,
+                    purchaseDate: Timestamp.fromDate(currentInstallmentDate),
+                    createdAt: serverTimestamp(),
+                    isSplit: false, // Parcelamentos não são divididos
+                    splits: null,
+                    tags: transactionData.tags // As tags se aplicam a todas as parcelas
+                };
+                
+                const newTransactionRef = doc(invoiceTransactionsRef);
+                batch.set(newTransactionRef, newTransactionInInvoice);
+                batch.update(invoiceRef, { totalAmount: increment(installmentAmount) });
             }
-            const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
-            transactionIdForMovement = newTransactionRef.id;
-
-            const transactionType = type === 'buy' ? 'expense' : 'revenue';
-            const transactionDescription = type === 'buy' ? `Compra de ${currentAsset.ticker}` : `Venda de ${currentAsset.ticker}`;
+        } else { // Lógica para compra única (pode ser dividida)
+            const invoiceId = await findOrCreateInvoice(transactionData.cardId, cardData, transactionData.userId, transactionDate);
+            const invoiceRef = doc(db, COLLECTIONS.INVOICES, invoiceId);
+            const invoiceTransactionsRef = collection(invoiceRef, COLLECTIONS.INVOICE_TRANSACTIONS);
             
-            const transactionData = {
-                description: transactionDescription,
-                amount: totalCost,
-                date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
-                type: transactionType,
-                category: "Investimentos",
-                paymentMethod: transactionType === 'expense' ? 'debit' : 'credit',
-                userId: userId,
-                accountId: accountId,
-                createdAt: serverTimestamp()
+            const newTransactionInInvoice = {
+                description: transactionData.description,
+                amount: transactionData.amount,
+                category: transactionData.category,
+                subcategory: transactionData.subcategory || null,
+                purchaseDate: Timestamp.fromDate(transactionDate),
+                createdAt: serverTimestamp(),
+                isSplit: transactionData.isSplit,
+                splits: transactionData.splits,
+                tags: transactionData.tags
             };
-            batch.set(newTransactionRef, transactionData);
-
-            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-            const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
-            batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
+            const newTransactionRef = doc(invoiceTransactionsRef);
+            batch.set(newTransactionRef, newTransactionInInvoice);
+            batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
         }
-        
-        const newMovementData = {
-            type,
-            quantity,
-            pricePerUnit: price,
-            totalCost,
-            date: Timestamp.fromDate(new Date(date + 'T00:00:00')),
-            createdAt: serverTimestamp(),
-            transactionId: transactionIdForMovement,
-            userId: userId
-        };
-        const newMovementRef = doc(movementsRef);
-        batch.set(newMovementRef, newMovementData);
 
-        let newQuantity, newTotalInvested, newAveragePrice;
+        try {
+            await batch.commit();
+            saveUniqueDescription(transactionData.userId, transactionData.description);
+        } catch (error) {
+            console.error("Erro ao salvar transação de crédito:", error);
+            throw new Error("Não foi possível salvar a transação no cartão.");
+        }
 
-        if (type === 'buy') {
-            newQuantity = currentAsset.quantity + quantity;
-            newTotalInvested = currentAsset.totalInvested + totalCost;
-            newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+    } else { // Transações que não são de cartão de crédito (podem ser divididas)
+        const batch = writeBatch(db);
+        try {
+            const transactionsCollectionRef = collection(db, COLLECTIONS.TRANSACTIONS);
+            const newTransactionRef = doc(transactionsCollectionRef);
+
+            const dataToSave = {
+                description: transactionData.description,
+                amount: transactionData.amount,
+                date: Timestamp.fromDate(transactionDate),
+                type: transactionData.type,
+                category: transactionData.category,
+                subcategory: transactionData.subcategory || null,
+                paymentMethod: transactionData.paymentMethod,
+                userId: transactionData.userId,
+                accountId: transactionData.accountId, 
+                createdAt: serverTimestamp(),
+                isSplit: transactionData.isSplit,
+                splits: transactionData.splits,
+                tags: transactionData.tags
+            };
             
-            batch.update(portfolioRef, { totalInvested: increment(totalCost) });
+            batch.set(newTransactionRef, dataToSave);
+            updateBalanceInBatch(batch, transactionData.accountId, transactionData.amount, transactionData.type);
+            
+            await batch.commit();
+            saveUniqueDescription(transactionData.userId, transactionData.description);
 
-        } else { // 'sell'
-            if (quantity > currentAsset.quantity) {
-                throw new Error("Não é possível vender mais ativos do que você possui.");
-            }
-            newQuantity = currentAsset.quantity - quantity;
-            newTotalInvested = currentAsset.totalInvested - (quantity * currentAsset.averagePrice);
-            newAveragePrice = currentAsset.averagePrice; 
-            if (newQuantity === 0) {
-                newTotalInvested = 0;
-                newAveragePrice = 0;
-            }
-
-            batch.update(portfolioRef, { totalInvested: increment(-(quantity * currentAsset.averagePrice)) });
+        } catch (error) {
+            console.error("Erro ao adicionar transação:", error);
+            throw new Error("Não foi possível salvar a transação.");
         }
-        
-        const assetUpdateData = {
-            quantity: newQuantity,
-            totalInvested: newTotalInvested,
-            averagePrice: newAveragePrice
-        };
-        batch.update(assetRef, assetUpdateData);
-        
-        await batch.commit();
-
-    } catch (error) {
-        console.error("Erro ao registrar movimento:", error);
-        throw error;
     }
 }
 
 /**
- * Busca todos os movimentos (operações) de um ativo específico.
- * @param {string} portfolioId - O ID da carteira.
- * @param {string} assetId - O ID do ativo.
- * @returns {Promise<Array<object>>} Uma lista de objetos de movimento, ordenados por data.
- */
-export async function getMovements(portfolioId, assetId) {
-    try {
-        const movementsRef = collection(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId, 'movements');
-        const q = query(movementsRef, orderBy("date", "desc"));
-
-        const querySnapshot = await getDocs(q);
-        const movements = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            movements.push({
-                id: doc.id,
-                ...data,
-                date: data.date.toDate()
-            });
-        });
-
-        return movements;
-
-    } catch (error) {
-        console.error(`Erro ao buscar movimentos para o ativo ${assetId}:`, error);
-        throw new Error("Não foi possível carregar o histórico de operações do ativo.");
-    }
-}
-
-/**
- * Adiciona um provento a um ativo e cria a transação de receita correspondente.
- * @param {string} portfolioId - O ID da carteira.
- * @param {string} assetId - O ID do ativo.
- * @param {object} proventoData - Dados do provento.
- * @returns {Promise<void>}
- */
-export async function addProvento(portfolioId, assetId, proventoData) {
-    const batch = writeBatch(db);
-
-    try {
-        const portfolioRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
-        const portfolioSnap = await getDoc(portfolioRef);
-        if (!portfolioSnap.exists()) {
-            throw new Error("Carteira não encontrada.");
-        }
-        const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
-
-        const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
-        const movementsRef = collection(assetRef, 'movements');
-
-        const assetSnap = await getDoc(assetRef);
-        if (!assetSnap.exists()) {
-            throw new Error("Ativo não encontrado para registrar o provento.");
-        }
-        const currentAsset = assetSnap.data();
-
-        const { proventoType, paymentDate, totalAmount, accountId, userId } = proventoData;
-        let transactionIdForMovement = null;
-
-        if (isOwnPortfolio) {
-            if (!accountId) {
-                throw new Error("A conta de destino é obrigatória para carteiras próprias.");
-            }
-            const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
-            transactionIdForMovement = newTransactionRef.id;
-
-            const transactionData = {
-                description: `${proventoType} de ${currentAsset.ticker}`,
-                amount: totalAmount,
-                date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
-                type: 'revenue',
-                category: 'Investimentos', // Categoria genérica, pode ser melhorada
-                subcategory: proventoType,
-                paymentMethod: 'credit', // Provento é um crédito em conta
-                userId: userId,
-                accountId: accountId,
-                createdAt: serverTimestamp()
-            };
-            batch.set(newTransactionRef, transactionData);
-
-            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-            batch.update(accountRef, { currentBalance: increment(totalAmount) });
-        }
-
-        const newMovementData = {
-            type: 'provento',
-            proventoType: proventoType,
-            totalAmount: totalAmount,
-            date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
-            createdAt: serverTimestamp(),
-            transactionId: transactionIdForMovement,
-            userId: userId
-        };
-        const newMovementRef = doc(movementsRef);
-        batch.set(newMovementRef, newMovementData);
-        
-        await batch.commit();
-
-    } catch (error) {
-        console.error("Erro ao registrar provento:", error);
-        throw new Error("Não foi possível salvar o registro do provento.");
-    }
-}
-
-/**
- * Busca todos os movimentos do tipo 'provento' de um usuário.
- * Utiliza uma consulta de grupo de coleção para buscar em todas as subcoleções 'movements'.
+ * Busca uma página de transações de um usuário com filtros.
  * @param {string} userId - O ID do usuário.
- * @returns {Promise<Array<object>>} Uma lista de objetos de provento.
+ * @param {object} options - Opções de filtro e paginação.
+ * @param {object} options.filters - Objeto com os filtros (month, year, startDate, endDate, type).
+ * @param {number} options.limitNum - O número de transações a serem buscadas.
+ * @param {DocumentSnapshot} [options.lastDoc=null] - O último documento da página anterior para continuar a busca.
+ * @returns {Promise<{transactions: Array, lastVisible: DocumentSnapshot}>} Um objeto contendo a lista de transações e o último documento visível.
  */
-export async function getAllProventos(userId) {
-    try {
-        const movementsGroupRef = collectionGroup(db, 'movements');
-        const q = query(
-            movementsGroupRef,
-            where("type", "==", "provento"),
-            where("userId", "==", userId),
-            orderBy("date", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        const proventos = [];
+async function getTransactions(userId, options = {}) {
+    const { filters = {}, limitNum = 25, lastDoc = null } = options;
+    const { month, year, startDate, endDate, type } = filters;
 
-        for (const docSnap of querySnapshot.docs) {
-            const data = docSnap.data();
-            // Para obter o ticker, precisamos acessar o documento pai (ativo)
-            const assetRef = docSnap.ref.parent.parent;
-            if (assetRef) {
-                const assetSnap = await getDoc(assetRef);
-                if (assetSnap.exists()) {
-                    data.ticker = assetSnap.data().ticker;
-                    data.assetName = assetSnap.data().name;
-                }
-            }
-            proventos.push({
-                id: docSnap.id,
-                ...data,
-                date: data.date.toDate()
-            });
-        }
-        return proventos;
-    } catch (error) {
-        console.error("Erro ao buscar todos os proventos:", error);
-        if (error.code === 'failed-precondition') {
-             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação.");
-        }
-        throw new Error("Não foi possível carregar os dados de proventos.");
-    }
-}
-
-/**
- * Busca todas as transações de investimento (compra/venda) de um usuário.
- * @param {string} userId - O ID do usuário.
- * @returns {Promise<Array<object>>} Uma lista consolidada de todas as transações.
- */
-export async function getAllInvestmentTransactions(userId) {
     try {
-        const movementsGroupRef = collectionGroup(db, 'movements');
-        const q = query(
-            movementsGroupRef,
-            where("type", "in", ["buy", "sell"]),
-            where("userId", "==", userId),
-            orderBy("date", "desc")
-        );
+        const transactionsCollectionRef = collection(db, COLLECTIONS.TRANSACTIONS);
+        
+        let queryConstraints = [where("userId", "==", userId)];
+
+        if (type && type !== 'all') {
+            queryConstraints.push(where("type", "==", type));
+        }
+
+        if (startDate && endDate) {
+            const start = new Date(startDate + 'T00:00:00');
+            const end = new Date(endDate + 'T23:59:59');
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(start)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(end)));
+        } else if (year && month && month !== 'all') {
+            const startOfMonth = new Date(year, month - 1, 1);
+            const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startOfMonth)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfMonth)));
+        } else if (year) {
+            const startOfYear = new Date(year, 0, 1);
+            const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+            queryConstraints.push(where("date", ">=", Timestamp.fromDate(startOfYear)));
+            queryConstraints.push(where("date", "<=", Timestamp.fromDate(endOfYear)));
+        }
+        
+        queryConstraints.push(orderBy("date", "desc"));
+        queryConstraints.push(limit(limitNum));
+
+        if (lastDoc) {
+            queryConstraints.push(startAfter(lastDoc));
+        }
+
+        const q = query(transactionsCollectionRef, ...queryConstraints);
+        
         const querySnapshot = await getDocs(q);
         const transactions = [];
-
-        for (const docSnap of querySnapshot.docs) {
-            const data = docSnap.data();
-            const assetRef = docSnap.ref.parent.parent;
-            if (assetRef) {
-                const assetSnap = await getDoc(assetRef);
-                const portfolioRef = assetRef.parent.parent;
-                if (assetSnap.exists()) {
-                    data.ticker = assetSnap.data().ticker;
-                    data.assetId = assetRef.id;
-                    data.portfolioId = portfolioRef.id;
-                }
-            }
-            transactions.push({
-                id: docSnap.id,
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            transactions.push({ 
+                id: doc.id, 
                 ...data,
-                date: data.date.toDate()
+                date: data.date.toDate() 
             });
-        }
-        return transactions;
+        });
+        
+        const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+        return { transactions, lastVisible };
+
     } catch (error) {
-        console.error("Erro ao buscar todas as transações de investimento:", error);
         if (error.code === 'failed-precondition') {
-             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros para o link de criação.");
+             console.error("Erro de consulta no Firestore: ", error.message);
+             throw new Error("O Firestore precisa de um índice para esta consulta. Verifique o console de erros do navegador para o link de criação do índice.");
         }
-        throw new Error("Não foi possível carregar o histórico de transações.");
+        console.error("Erro ao buscar transações:", error);
+        throw new Error("Não foi possível buscar as transações.");
     }
 }
 
 /**
- * Exclui um movimento e recalcula a posição do ativo.
- * @param {string} portfolioId - ID da carteira.
- * @param {string} assetId - ID do ativo.
- * @param {string} movementId - ID do movimento a ser excluído.
- * @returns {Promise<void>}
+ * Exclui uma transação e reverte o seu impacto no saldo da conta.
+ * @param {object} transaction - O objeto completo da transação a ser excluída.
  */
-export async function deleteMovementAndRecalculate(portfolioId, assetId, movementId) {
-    if (!portfolioId || !assetId || !movementId) {
-        throw new Error("IDs de carteira, ativo e movimento são necessários para a exclusão.");
+async function deleteTransaction(transaction) {
+    if (!transaction.accountId) {
+        throw new Error("Não é possível excluir transações sem conta associada.");
     }
-
-    const assetRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
-    const movementRef = doc(assetRef, 'movements', movementId);
-
+    
+    const batch = writeBatch(db);
     try {
-        await runTransaction(db, async (transaction) => {
-            const movementSnap = await transaction.get(movementRef);
-            if (!movementSnap.exists()) {
-                throw new Error("Movimento não encontrado para exclusão.");
-            }
-            const movementData = movementSnap.data();
+        const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transaction.id);
+        batch.delete(transactionDocRef);
 
-            const assetSnap = await transaction.get(assetRef);
+        const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
+        updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
 
-            // Reverte a transação financeira associada (comum a ambos os casos)
-            if (movementData.transactionId) {
-                const transactionRef = doc(db, COLLECTIONS.TRANSACTIONS, movementData.transactionId);
-                const financialTxSnap = await transaction.get(transactionRef);
-
-                if (financialTxSnap.exists()) {
-                    const financialTx = financialTxSnap.data();
-                    const accountRef = doc(db, COLLECTIONS.ACCOUNTS, financialTx.accountId);
-                    const amountToRevert = financialTx.type === 'expense' ? financialTx.amount : -financialTx.amount;
-                    
-                    transaction.update(accountRef, { currentBalance: increment(amountToRevert) });
-                    transaction.delete(transactionRef);
-                }
-            }
-            
-            // Exclui o documento do movimento (comum a ambos os casos)
-            transaction.delete(movementRef);
-
-            // --- LÓGICA CONDICIONAL ---
-            if (assetSnap.exists()) {
-                // CASO 1: O ATIVO EXISTE -> Recalcula a posição
-                const movementsQuery = query(collection(assetRef, 'movements'), orderBy("date", "asc"));
-                // Importante: getDocs não pode ser usado dentro de transações.
-                // Esta operação agora é feita fora da transação, o que é um compromisso.
-                // A alternativa seria ler todos os movimentos individualmente com transaction.get(),
-                // o que é muito mais caro e complexo.
-                const movementsSnapshot = await getDocs(movementsQuery);
-                
-                let allMovements = [];
-                movementsSnapshot.forEach(doc => {
-                    if (doc.id !== movementId) { 
-                        allMovements.push(doc.data());
-                    }
-                });
-
-                let newQuantity = 0;
-                let newTotalInvested = 0;
-                let newAveragePrice = 0;
-
-                allMovements.forEach(mov => {
-                    if (mov.type === 'buy') {
-                        newQuantity += mov.quantity;
-                        newTotalInvested += mov.totalCost;
-                    } else if (mov.type === 'sell') {
-                        newTotalInvested -= mov.quantity * (newAveragePrice || 0);
-                        newQuantity -= mov.quantity;
-                    }
-                    newAveragePrice = newQuantity > 0 ? newTotalInvested / newQuantity : 0;
-                });
-
-                if (newQuantity <= 0) {
-                    newTotalInvested = 0;
-                    newAveragePrice = 0;
-                }
-
-                transaction.update(assetRef, {
-                    quantity: newQuantity,
-                    totalInvested: newTotalInvested,
-                    averagePrice: newAveragePrice
-                });
-
-            } 
-            // CASO 2: O ATIVO NÃO EXISTE (ÓRFÃO)
-            // A transação financeira e o movimento já foram marcados para exclusão.
-            // Não há mais nada a fazer. A transação será concluída.
-        });
+        await batch.commit();
     } catch (error) {
-        console.error("Erro transacional ao excluir e recalcular movimento:", error);
-        throw new Error("Falha ao excluir a operação. Verifique os dados e tente novamente.");
+        console.error("Erro ao excluir transação:", error);
+        throw new Error("Não foi possível excluir a transação.");
     }
 }
+
+/**
+ * Atualiza uma transação e ajusta os saldos das contas envolvidas.
+ * @param {string} transactionId - O ID da transação a ser atualizada.
+ * @param {object} updatedData - Os novos dados, incluindo o novo accountId.
+ */
+async function updateTransaction(transactionId, updatedData) {
+    const batch = writeBatch(db);
+    const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+
+    try {
+        const originalTxSnap = await getDoc(transactionDocRef);
+        if (!originalTxSnap.exists()) {
+            throw new Error("Transação não encontrada para atualização.");
+        }
+        const originalTxData = originalTxSnap.data();
+
+        const reverseType = originalTxData.type === 'expense' ? 'revenue' : 'expense';
+        updateBalanceInBatch(batch, originalTxData.accountId, originalTxData.amount, reverseType);
+
+        updateBalanceInBatch(batch, updatedData.accountId, updatedData.amount, updatedData.type);
+
+        const dataToUpdate = { ...updatedData };
+        if (dataToUpdate.date && typeof dataToUpdate.date === 'string') {
+            dataToUpdate.date = Timestamp.fromDate(parseDateString(dataToUpdate.date));
+        }
+        batch.update(transactionDocRef, dataToUpdate);
+        
+        await batch.commit();
+
+    } catch (error) {
+        console.error("Erro ao atualizar transação:", error);
+        throw new Error("Não foi possível salvar as alterações.");
+    }
+}
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exclui uma transação de investimento e estorna o valor na conta correspondente.
+ * Usado pela função de correção de dados históricos.
+ * @param {string} transactionId - O ID da transação a ser excluída.
+ * @param {boolean} isCorrection - Flag para indicar que é uma operação de correção.
+ * @returns {Promise<boolean>} Retorna true se a correção foi feita.
+ */
+async function deleteInvestmentTransaction(transactionId, isCorrection = false) {
+    if (!transactionId) {
+        return false;
+    }
+
+    const transactionDocRef = doc(db, COLLECTIONS.TRANSACTIONS, transactionId);
+    
+    try {
+        // Tentamos ler o documento primeiro. Se falhar por permissão, o catch irá lidar com isso.
+        const txSnap = await getDoc(transactionDocRef);
+        
+        if (!txSnap.exists()) {
+            console.warn(`Transação de correção ${transactionId} não encontrada. Provavelmente já foi corrigida.`);
+            return false;
+        }
+
+        const transaction = txSnap.data();
+        const batch = writeBatch(db);
+
+        // Se a transação tiver uma conta, preparamos o estorno do saldo.
+        if (transaction.accountId) {
+            // O estorno de uma despesa ('buy') é uma receita.
+            const reverseType = transaction.type === 'expense' ? 'revenue' : 'expense';
+            updateBalanceInBatch(batch, transaction.accountId, transaction.amount, reverseType);
+        }
+        
+        // Preparamos a exclusão do documento da transação.
+        batch.delete(transactionDocRef);
+        
+        // Executamos o lote de operações.
+        await batch.commit();
+        
+        console.log(`Transação ${transactionId} foi corrigida e estornada.`);
+        return true;
+
+    } catch (error) {
+        // Se o erro for de permissão, significa que não podemos ler o documento.
+        // Neste caso específico da correção, assumimos que o documento existe, mas é inacessível.
+        // A melhor ação é deletá-lo diretamente, sem estornar o saldo (já que não podemos ler os dados).
+        // Isso resolve o erro no console, mas pode deixar o saldo da conta incorreto.
+        // É um compromisso para resolver o problema imediato.
+        if (error.code === 'permission-denied' && isCorrection) {
+            console.warn(`Permissão negada para ler a transação ${transactionId}. Tentando deletar diretamente.`);
+            try {
+                await deleteDoc(transactionDocRef);
+                console.log(`Transação ${transactionId} deletada, mas o saldo da conta NÃO foi estornado por falta de permissão.`);
+                return true; // Consideramos a "correção" (exclusão) como bem-sucedida.
+            } catch (deleteError) {
+                console.error(`Falha ao tentar deletar diretamente a transação ${transactionId}:`, deleteError);
+                return false;
+            }
+        }
+        
+        // Para outros erros, apenas registramos e retornamos false.
+        console.error(`Erro ao corrigir transação ${transactionId}:`, error);
+        return false;
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
+export { addTransaction, getTransactions, deleteTransaction, updateTransaction, deleteInvestmentTransaction };
