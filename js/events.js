@@ -29,7 +29,7 @@ import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
 import * as proventosUI from './modules/proventos/ui.js';
 // INÍCIO DA ALTERAÇÃO
-// import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js'; // Será criado a seguir
+import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js';
 // FIM DA ALTERAÇÃO
 
 // --- Seleção de Elementos do DOM ---
@@ -137,9 +137,7 @@ export function initializeEventListeners() {
     document.getElementById('nav-transactions-investment-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showTransactionsInvestmentView();
-        // TODO: Chamar a função principal para carregar os dados da página de transações
-        // await transactionsInvestmentUI.loadTransactionsPage(); 
-        showNotification("Página de Transações de Investimentos em implementação.", "info");
+        await transactionsInvestmentUI.loadTransactionsPage(); 
     });
     // FIM DA ALTERAÇÃO
 
