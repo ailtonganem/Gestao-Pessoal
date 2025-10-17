@@ -124,7 +124,7 @@ export async function deletePortfolio(portfolioId) {
 }
 
 /**
- * Busca todos os ativos de todas as carteiras PRÓPRIAS de um usuário.
+ * Busca todos os ativos de todas as carteiras de um usuário.
  * @param {string} userId - O ID do usuário.
  * @returns {Promise<Array<object>>} Uma lista consolidada de todos os ativos do usuário,
  *                                  com cada ativo contendo a propriedade 'portfolioId'.
@@ -133,11 +133,10 @@ export async function getAllUserAssets(userId) {
     try {
         const allUserPortfolios = await getPortfolios(userId);
         
-        // Filtra para incluir apenas carteiras próprias no cálculo consolidado
-        const ownPortfolios = allUserPortfolios.filter(p => p.ownershipType === 'own');
-
-        // Mapeia cada carteira para uma promessa que busca seus ativos
-        const allAssetsPromises = ownPortfolios.map(async (p) => {
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Mapeia cada carteira para uma promessa que busca seus ativos,
+        // sem filtrar por tipo de carteira.
+        const allAssetsPromises = allUserPortfolios.map(async (p) => {
             const assets = await getAssets(p.id);
             // Adiciona o ID da carteira a cada ativo antes de retornar
             return assets.map(asset => ({
@@ -145,6 +144,7 @@ export async function getAllUserAssets(userId) {
                 portfolioId: p.id 
             }));
         });
+        // --- FIM DA ALTERAÇÃO ---
 
         const assetsByPortfolio = await Promise.all(allAssetsPromises);
         
