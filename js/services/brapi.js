@@ -41,10 +41,23 @@ export async function getQuotes(tickers) {
         // Precisamos extrair e converter essa string JSON para um objeto.
         const yahooData = JSON.parse(data.contents);
         
-        if (!yahooData || !yahooData.quoteResponse || !yahooData.quoteResponse.result) {
-            console.warn("Resposta da API de cotações em formato inesperado:", yahooData);
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Verificação robusta para a estrutura da resposta e para erros internos da API.
+        if (!yahooData || !yahooData.quoteResponse) {
+            console.warn("Resposta da API de cotações em formato inesperado (sem quoteResponse):", yahooData);
             return {};
         }
+
+        if (yahooData.quoteResponse.error) {
+            console.error("Erro retornado pela API de cotações:", yahooData.quoteResponse.error.description || yahooData.quoteResponse.error);
+            return {};
+        }
+
+        if (!yahooData.quoteResponse.result) {
+            console.warn("Resposta da API de cotações em formato inesperado (sem result):", yahooData);
+            return {};
+        }
+        // --- FIM DA ALTERAÇÃO ---
 
         // Transforma o array de resultados em um objeto de mapa para fácil acesso (ticker -> preço).
         const quotesMap = yahooData.quoteResponse.result.reduce((map, quote) => {
