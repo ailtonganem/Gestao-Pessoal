@@ -9,9 +9,7 @@ import * as state from '../state.js';
 import * as portfolios from './portfolios.js';
 import * as assets from './assets.js';
 import * as movements from './movements.js';
-// INÍCIO DA ALTERAÇÃO
 import * as quotes from './quotes.js'; 
-// FIM DA ALTERAÇÃO
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency, formatDateToInput } from '../ui/utils.js';
 import { populateAccountSelects } from '../ui/render.js';
@@ -59,17 +57,15 @@ const proventoPaymentDateInput = document.getElementById('provento-payment-date'
 const proventoAccountSelect = document.getElementById('provento-account');
 const proventoAccountWrapper = document.getElementById('provento-account-wrapper');
 
-const movementsView = document.getElementById('movements-view');
-const movementsAssetNameEl = document.getElementById('movements-asset-name');
-const movementsListEl = document.getElementById('movements-list');
+// --- INÍCIO DA ALTERAÇÃO ---
+const assetDetailView = document.getElementById('asset-detail-view');
+// --- FIM DA ALTERAÇÃO ---
 
 // Modais de Edição
 const editPortfolioModal = document.getElementById('edit-portfolio-modal');
 const editAssetModal = document.getElementById('edit-asset-modal');
 const editMovementModal = document.getElementById('edit-movement-modal');
-// INÍCIO DA ALTERAÇÃO
 const updateQuotesModal = document.getElementById('update-quotes-modal');
-// FIM DA ALTERAÇÃO
 
 
 // --- Funções de Gerenciamento de Views ---
@@ -99,7 +95,7 @@ export async function showPortfoliosManagementView() {
 export function showPortfoliosView() {
     portfoliosView.style.display = 'block';
     assetsView.style.display = 'none';
-    movementsView.style.display = 'none';
+    assetDetailView.style.display = 'none';
     state.setSelectedPortfolioForAssetsView(null); 
 }
 
@@ -112,7 +108,7 @@ export async function showAssetsView(portfolio) {
     assetsPortfolioNameEl.textContent = `Ativos - ${portfolio.name}`;
     portfoliosView.style.display = 'none';
     assetsView.style.display = 'block';
-    movementsView.style.display = 'none';
+    assetDetailView.style.display = 'none';
 
     const assetInitialAccountWrapper = document.getElementById('asset-initial-account-wrapper');
     const assetInitialAccountSelect = document.getElementById('asset-initial-account');
@@ -140,11 +136,56 @@ export async function refreshMovementsView() {
 
     if (updatedAsset) {
         state.setSelectedAssetForMovementsView(updatedAsset);
-        await loadAndRenderMovements(updatedAsset);
+        await showAssetDetailView(updatedAsset.id);
     } else {
         showAssetsView(state.selectedPortfolioForAssetsView);
     }
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exibe a nova página de detalhes completa para um ativo específico.
+ * @param {string} assetId - O ID do ativo a ser exibido.
+ */
+export async function showAssetDetailView(assetId) {
+    const asset = _currentPortfolioAssets.find(a => a.id === assetId);
+    const portfolio = state.selectedPortfolioForAssetsView;
+
+    if (!asset || !portfolio) {
+        showNotification("Não foi possível encontrar o ativo ou a carteira.", "error");
+        showAssetsView(portfolio);
+        return;
+    }
+
+    state.setSelectedAssetForMovementsView(asset);
+
+    // Esconde as outras views
+    portfoliosView.style.display = 'none';
+    assetsView.style.display = 'none';
+    assetDetailView.style.display = 'block';
+
+    // Preenche placeholders de "carregando"
+    renderAssetDetailPlaceholders(asset.ticker, asset.name);
+
+    try {
+        const [assetMovements, savedQuotes] = await Promise.all([
+            movements.getMovements(portfolio.id, asset.id),
+            quotes.getSavedQuotes(state.currentUser.uid)
+        ]);
+        
+        _currentAssetMovements = assetMovements;
+        const currentQuote = savedQuotes[asset.ticker]?.currentPrice || asset.averagePrice;
+        
+        renderAssetDetailSummaryCards(asset, assetMovements, currentQuote);
+        renderAssetStaticInfo(asset);
+        renderAssetDetailOperations(assetMovements.filter(m => m.type === 'buy' || m.type === 'sell'));
+        renderAssetDetailProventos(assetMovements.filter(m => m.type === 'provento'), asset.averagePrice);
+
+    } catch (error) {
+        showNotification(error.message, "error");
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -544,75 +585,121 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
     });
 }
 
-async function loadAndRenderMovements(asset) {
-    const summaryEl = document.getElementById('asset-details-summary');
-    summaryEl.innerHTML = `
-        <div class="detail-item"><h4>Posição Atual</h4><p>${asset.quantity}</p></div>
-        <div class="detail-item"><h4>Preço Médio</h4><p>${formatCurrency(asset.averagePrice)}</p></div>
-        <div class="detail-item"><h4>Custo Total</h4><p>${formatCurrency(asset.totalInvested)}</p></div>
-        <div class="detail-item"><h4>Valor de Mercado</h4><p>${formatCurrency(asset.currentValue)}</p></div>
-    `;
-
-    movementsListEl.innerHTML = '<li>Carregando movimentos...</li>';
-    try {
-        const movementsData = await movements.getMovements(asset.portfolioId, asset.id);
-        _currentAssetMovements = movementsData;
-        renderMovements(movementsData);
-    } catch(error) {
-        showNotification(error.message, 'error');
-        movementsListEl.innerHTML = '<li>Erro ao carregar movimentos.</li>';
-    }
+// --- INÍCIO DA ALTERAÇÃO ---
+function renderAssetDetailPlaceholders(ticker, name) {
+    document.getElementById('detail-asset-ticker').textContent = ticker;
+    document.getElementById('detail-asset-name').textContent = name;
+    
+    document.getElementById('detail-asset-quantity').textContent = '...';
+    document.getElementById('detail-asset-avg-price').textContent = '...';
+    document.getElementById('detail-asset-market-value').textContent = '...';
+    document.getElementById('detail-asset-current-price').textContent = '...';
+    document.getElementById('detail-asset-total-result').textContent = '...';
+    document.getElementById('detail-asset-total-result-percent').textContent = '...';
+    document.getElementById('detail-asset-yoc').textContent = '...';
+    document.getElementById('detail-asset-total-proventos').textContent = '...';
+    
+    document.getElementById('asset-detail-movements-list').innerHTML = '<li>Carregando operações...</li>';
+    document.getElementById('asset-detail-proventos-list').innerHTML = '<li>Carregando proventos...</li>';
 }
 
-function renderMovements(movementsToRender) {
-    movementsListEl.innerHTML = '';
-    if (movementsToRender.length === 0) {
-        movementsListEl.innerHTML = '<li class="movement-item-empty">Nenhuma operação registrada para este ativo.</li>';
+function renderAssetDetailSummaryCards(asset, allMovements, currentPrice) {
+    const marketValue = asset.quantity * currentPrice;
+    const totalResult = marketValue - asset.totalInvested;
+    const totalResultPercent = asset.totalInvested > 0 ? (totalResult / asset.totalInvested) * 100 : 0;
+    const proventos = allMovements.filter(m => m.type === 'provento');
+    const totalProventos = proventos.reduce((sum, p) => sum + p.totalAmount, 0);
+
+    // Cálculo do Yield on Cost (YOC)
+    const yoc = (asset.totalInvested > 0) ? (totalProventos / asset.totalInvested) * 100 : 0;
+    
+    document.getElementById('detail-asset-quantity').textContent = asset.quantity;
+    document.getElementById('detail-asset-avg-price').textContent = formatCurrency(asset.averagePrice);
+    document.getElementById('detail-asset-market-value').textContent = formatCurrency(marketValue);
+    document.getElementById('detail-asset-current-price').textContent = formatCurrency(currentPrice);
+    
+    const resultEl = document.getElementById('detail-asset-total-result');
+    const resultPercentEl = document.getElementById('detail-asset-total-result-percent');
+    resultEl.textContent = formatCurrency(totalResult);
+    resultPercentEl.textContent = `${totalResultPercent.toFixed(2)}%`;
+    resultEl.parentElement.className = totalResult >= 0 ? 'positive' : 'negative';
+    
+    document.getElementById('detail-asset-yoc').textContent = `${yoc.toFixed(2)}%`;
+    document.getElementById('detail-asset-total-proventos').textContent = formatCurrency(totalProventos);
+}
+
+function renderAssetStaticInfo(asset) {
+    document.getElementById('detail-asset-type').textContent = asset.type || '--';
+    document.getElementById('detail-asset-class').textContent = asset.assetClass || '--';
+    document.getElementById('detail-asset-broker').textContent = asset.broker || '--';
+    document.getElementById('detail-asset-total-cost').textContent = formatCurrency(asset.totalInvested);
+}
+
+function renderAssetDetailOperations(operations) {
+    const listEl = document.getElementById('asset-detail-movements-list');
+    listEl.innerHTML = '';
+
+    if (operations.length === 0) {
+        listEl.innerHTML = '<li class="movement-item-empty">Nenhuma operação de compra ou venda registrada.</li>';
         return;
     }
-    movementsToRender.forEach(mov => {
+    
+    operations.sort((a,b) => b.date - a.date).forEach(mov => {
         const li = document.createElement('li');
         li.className = 'movement-item';
-
-        let typeLabel = '';
-        let typeClass = '';
-        let quantity = '';
-        let price = '';
-        let total = '';
-
-        switch(mov.type) {
-            case 'buy':
-            case 'sell':
-                typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
-                typeClass = mov.type;
-                quantity = mov.quantity;
-                price = formatCurrency(mov.pricePerUnit);
-                total = formatCurrency(mov.totalCost);
-                break;
-            case 'provento':
-                typeLabel = mov.proventoType;
-                typeClass = 'provento';
-                quantity = '-';
-                price = '-';
-                total = formatCurrency(mov.totalAmount);
-                break;
-        }
+        const typeLabel = mov.type === 'buy' ? 'Compra' : 'Venda';
+        const typeClass = mov.type;
 
         li.innerHTML = `
             <div>${mov.date.toLocaleDateString('pt-BR')}</div>
             <div><span class="status-badge ${typeClass}">${typeLabel}</span></div>
-            <div class="numeric">${quantity}</div>
-            <div class="numeric">${price}</div>
-            <div class="numeric">${total}</div>
+            <div class="numeric">${mov.quantity}</div>
+            <div class="numeric">${formatCurrency(mov.pricePerUnit)}</div>
+            <div class="numeric">${formatCurrency(mov.totalCost)}</div>
             <div class="actions">
-                <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar" ${mov.type === 'provento' ? 'disabled' : ''}>&#9998;</button>
-                <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir" ${!mov.transactionId ? 'disabled' : ''}>&times;</button>
+                <button class="action-btn edit-btn" data-movement-id="${mov.id}" title="Editar" disabled>&#9998;</button>
+                <button class="action-btn delete-btn" data-movement-id="${mov.id}" title="Excluir">&times;</button>
             </div>
         `;
-        movementsListEl.appendChild(li);
+        listEl.appendChild(li);
     });
 }
 
+function renderAssetDetailProventos(proventos, averagePrice) {
+    const containerEl = document.getElementById('asset-detail-proventos-list');
+    containerEl.innerHTML = '';
+    
+    if (proventos.length === 0) {
+        containerEl.innerHTML = '<p style="text-align:center; color: #7f8c8d;">Nenhum provento registrado.</p>';
+        return;
+    }
+
+    let tableHtml = `
+        <div class="movement-table-header">
+            <div class="header-item">Data</div>
+            <div class="header-item">Tipo</div>
+            <div class="header-item numeric">Valor Total</div>
+            <div class="header-item numeric">Valor por Cota</div>
+        </div>
+        <ul style="list-style: none; padding: 0;">
+    `;
+
+    proventos.sort((a,b) => b.date - a.date).forEach(p => {
+        const valuePerShare = p.quantityOnDate > 0 ? p.totalAmount / p.quantityOnDate : 0;
+        tableHtml += `
+            <li class="movement-item">
+                <div>${p.date.toLocaleDateString('pt-BR')}</div>
+                <div>${p.proventoType}</div>
+                <div class="numeric">${formatCurrency(p.totalAmount)}</div>
+                <div class="numeric">${formatCurrency(valuePerShare)}</div>
+            </li>
+        `;
+    });
+
+    tableHtml += '</ul>';
+    containerEl.innerHTML = tableHtml;
+}
+// --- FIM DA ALTERAÇÃO ---
 
 export function openMovementModal(assetId) {
     const asset = _currentPortfolioAssets.find(a => a.id === assetId);
@@ -725,7 +812,7 @@ export function closeEditMovementModal() {
     editMovementModal.style.display = 'none';
 }
 
-// INÍCIO DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
 export async function openUpdateQuotesModal() {
     const listEl = document.getElementById('update-quotes-list');
     listEl.innerHTML = '<li>Carregando ativos...</li>';
@@ -735,7 +822,6 @@ export async function openUpdateQuotesModal() {
         const allAssets = await portfolios.getAllUserAssets(state.currentUser.uid);
         const savedQuotes = await quotes.getSavedQuotes(state.currentUser.uid);
 
-        // Remove duplicatas de tickers
         const uniqueTickers = [...new Set(allAssets.map(a => a.ticker))];
 
         if (uniqueTickers.length === 0) {
@@ -748,15 +834,12 @@ export async function openUpdateQuotesModal() {
             const data = savedQuotes[ticker] || {};
             const li = document.createElement('li');
             li.className = 'quote-update-item';
+            // Removido o campo de DY (%)
             li.innerHTML = `
                 <div class="ticker">${ticker}</div>
-                <div class="form-control">
-                    <label for="quote-${ticker}">Cotação (R$)</label>
+                <div class="form-control" style="grid-column: span 2;">
+                    <label for="quote-${ticker}">Cotação Atual (R$)</label>
                     <input type="number" id="quote-${ticker}" data-ticker="${ticker}" data-field="currentPrice" step="0.01" value="${data.currentPrice || 0}">
-                </div>
-                <div class="form-control">
-                    <label for="dy-${ticker}">DY (%)</label>
-                    <input type="number" id="dy-${ticker}" data-ticker="${ticker}" data-field="dyPercent" step="0.01" value="${data.dyPercent || 0}">
                 </div>
             `;
             listEl.appendChild(li);
@@ -771,4 +854,4 @@ export async function openUpdateQuotesModal() {
 export function closeUpdateQuotesModal() {
     updateQuotesModal.style.display = 'none';
 }
-// FIM DA ALTERAÇÃO
+// --- FIM DA ALTERAÇÃO ---
