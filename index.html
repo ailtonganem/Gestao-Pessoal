@@ -72,8 +72,9 @@
             <nav class="header-buttons">
                 <a href="#" id="nav-dashboard-button" class="header-icon-button" title="Dashboard">📊</a>
                 <a href="#" id="nav-investments-button" class="header-icon-button" title="Meus Investimentos">📈</a>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
                 <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
                 <a href="#" id="nav-settings-button" class="header-icon-button" title="Configurações">⚙️</a>
@@ -583,7 +584,6 @@
             </main>
         </div>
 
-        <!-- INÍCIO DA ALTERAÇÃO -->
         <!-- Contêiner da Página de Proventos -->
         <div id="proventos-container" style="display: none;">
             <main>
@@ -614,6 +614,36 @@
                     <div id="proventos-asset-table">
                         <!-- Tabela detalhada de proventos por ativo será renderizada aqui -->
                         <p>Carregando dados dos ativos...</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+        
+        <!-- INÍCIO DA ALTERAÇÃO -->
+        <!-- Contêiner da Página de Transações de Investimentos -->
+        <div id="transactions-investment-container" style="display: none;">
+            <main>
+                <div class="transactions-investment-header">
+                    <h2>Transações de Investimentos</h2>
+                </div>
+                
+                <section class="investment-card full-width">
+                    <div class="transactions-investment-filters filter-container">
+                        <!-- Filtros (Busca, Tipo, Corretora, Período) serão renderizados aqui -->
+                    </div>
+                    <div id="transactions-investment-table">
+                        <div class="movement-table-header">
+                            <div class="header-item">Data</div>
+                            <div class="header-item">Ativo</div>
+                            <div class="header-item">Ordem</div>
+                            <div class="header-item numeric">Quantidade</div>
+                            <div class="header-item numeric">Preço Unit.</div>
+                            <div class="header-item numeric">Total</div>
+                            <div class="header-item actions">Ações</div>
+                        </div>
+                        <ul id="transactions-investment-list" style="list-style: none; padding: 0;">
+                            <!-- Lista de transações será renderizada aqui -->
+                        </ul>
                     </div>
                 </section>
             </main>
