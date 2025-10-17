@@ -42,6 +42,11 @@ function renderTransactionsList(transactions) {
     transactions.forEach(tx => {
         const li = document.createElement('li');
         li.className = 'movement-item'; // Reutiliza o estilo dos itens de movimento
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Adiciona os IDs necessários para a função de exclusão
+        li.dataset.portfolioId = tx.portfolioId;
+        li.dataset.assetId = tx.assetId;
+        // --- FIM DA ALTERAÇÃO ---
 
         const typeLabel = tx.type === 'buy' ? 'Compra' : 'Venda';
         const typeClass = tx.type;
@@ -57,7 +62,7 @@ function renderTransactionsList(transactions) {
             <div class="numeric">${formatCurrency(tx.totalCost)}</div>
             <div class="actions">
                 <button class="action-btn edit-btn" data-movement-id="${tx.id}" title="Editar (Em breve)" disabled>&#9998;</button>
-                <button class="action-btn delete-btn" data-movement-id="${tx.id}" title="Excluir (Em breve)" disabled>&times;</button>
+                <button class="action-btn delete-btn" data-movement-id="${tx.id}" title="Excluir Operação">&times;</button>
             </div>
         `;
         transactionsListEl.appendChild(li);
