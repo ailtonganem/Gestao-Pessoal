@@ -15,7 +15,10 @@ import {
     Timestamp,
     orderBy,
     doc,
-    deleteDoc
+    deleteDoc,
+    // INÍCIO DA ALTERAÇÃO
+    updateDoc
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -87,6 +90,26 @@ export async function getAssets(portfolioId) {
 }
 
 // INÍCIO DA ALTERAÇÃO
+/**
+ * Atualiza os dados de um ativo.
+ * @param {string} portfolioId - O ID da carteira pai.
+ * @param {string} assetId - O ID do ativo a ser atualizado.
+ * @param {object} updatedData - Os novos dados do ativo.
+ * @returns {Promise<void>}
+ */
+export async function updateAsset(portfolioId, assetId, updatedData) {
+    if (!portfolioId || !assetId) {
+        throw new Error("ID da carteira e do ativo são obrigatórios para a atualização.");
+    }
+    try {
+        const assetDocRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId, 'assets', assetId);
+        await updateDoc(assetDocRef, updatedData);
+    } catch (error) {
+        console.error("Erro ao atualizar ativo:", error);
+        throw new Error("Não foi possível salvar as alterações do ativo.");
+    }
+}
+// FIM DA ALTERAÇÃO
 
 /**
  * Exclui um ativo de uma carteira específica.
@@ -106,4 +129,3 @@ export async function deleteAsset(portfolioId, assetId) {
         throw new Error("Não foi possível excluir o ativo.");
     }
 }
-// FIM DA ALTERAÇÃO
