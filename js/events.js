@@ -887,7 +887,7 @@ function handleConfirmSplit() {
 
 function resetSplitState() {
     isTransactionSplit = false;
-    modals._currentSplits = [];
+    modals.clearSplits(); // INÍCIO DA ALTERAÇÃO - Usa a nova função para limpar
     const categorySelect = document.getElementById('transaction-category');
     const categoryWrapper = document.getElementById('category-control-wrapper');
     categorySelect.disabled = false;
@@ -1310,7 +1310,7 @@ async function handleUpdateCreditCard(e) {
         name: form['edit-card-name'].value,
         closingDay: parseInt(form['edit-card-closing-day'].value),
         dueDay: parseInt(form['edit-card-due-day'].value),
-        limit: parseFloat(form['card-limit'].value),
+        limit: parseFloat(form['edit-card-limit'].value),
     };
 
     try {
