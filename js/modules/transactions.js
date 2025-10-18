@@ -28,7 +28,10 @@ import {
     Timestamp,
     getDoc,
     limit,
-    startAfter
+    startAfter,
+    // INÍCIO DA ALTERAÇÃO
+    collectionGroup
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -85,7 +88,9 @@ async function addTransaction(transactionData, cardData = null) {
                     createdAt: serverTimestamp(),
                     isSplit: false, // Parcelamentos não são divididos
                     splits: null,
-                    tags: transactionData.tags // As tags se aplicam a todas as parcelas
+                    tags: transactionData.tags, // As tags se aplicam a todas as parcelas
+                    cardId: transactionData.cardId, // Adiciona o ID do cartão para referência
+                    userId: transactionData.userId
                 };
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
@@ -106,7 +111,9 @@ async function addTransaction(transactionData, cardData = null) {
                 createdAt: serverTimestamp(),
                 isSplit: transactionData.isSplit,
                 splits: transactionData.splits,
-                tags: transactionData.tags
+                tags: transactionData.tags,
+                cardId: transactionData.cardId, // Adiciona o ID do cartão para referência
+                userId: transactionData.userId
             };
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
@@ -287,7 +294,6 @@ async function updateTransaction(transactionId, updatedData) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Exclui uma transação de investimento e estorna o valor na conta correspondente.
  * Usado pela função de correção de dados históricos.
@@ -351,6 +357,98 @@ async function deleteInvestmentTransaction(transactionId, isCorrection = false) 
         // Para outros erros, apenas registramos e retornamos false.
         console.error(`Erro ao corrigir transação ${transactionId}:`, error);
         return false;
+    }
+}
+
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Busca e unifica transações diretas e de cartão de crédito para um usuário, com filtros e paginação.
+ * @param {string} userId - O ID do usuário.
+ * @param {object} options - Opções de filtro e paginação.
+ * @returns {Promise<{transactions: Array, lastVisible: DocumentSnapshot|null}>} Objeto com transações e referência de paginação.
+ */
+export async function getUnifiedTransactions(userId, options = {}) {
+    const { filters = {}, limitNum = 25, page = 1 } = options;
+    const { month, year, startDate, endDate, type } = filters;
+
+    let start, end;
+
+    // Define o intervalo de datas com base nos filtros
+    if (startDate && endDate) {
+        start = new Date(startDate + 'T00:00:00');
+        end = new Date(endDate + 'T23:59:59');
+    } else if (year && month && month !== 'all') {
+        start = new Date(year, month - 1, 1);
+        end = new Date(year, month, 0, 23, 59, 59);
+    } else if (year) {
+        start = new Date(year, 0, 1);
+        end = new Date(year, 11, 31, 23, 59, 59);
+    } else {
+        // Se nenhum período for definido, busca os últimos 3 meses como padrão
+        end = new Date();
+        start = new Date();
+        start.setMonth(start.getMonth() - 3);
+    }
+
+    try {
+        // 1. Busca transações diretas (PIX, débito, etc.)
+        const directTransactionsQuery = query(
+            collection(db, COLLECTIONS.TRANSACTIONS),
+            where("userId", "==", userId),
+            where("date", ">=", Timestamp.fromDate(start)),
+            where("date", "<=", Timestamp.fromDate(end))
+        );
+        const directDocs = await getDocs(directTransactionsQuery);
+        let unifiedList = directDocs.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date.toDate(),
+            source: 'account' // Identificador de origem
+        }));
+
+        // 2. Busca transações de cartão de crédito
+        const creditCardTransactionsQuery = query(
+            collectionGroup(db, COLLECTIONS.INVOICE_TRANSACTIONS),
+            where("userId", "==", userId),
+            where("purchaseDate", ">=", Timestamp.fromDate(start)),
+            where("purchaseDate", "<=", Timestamp.fromDate(end))
+        );
+        const creditCardDocs = await getDocs(creditCardTransactionsQuery);
+        creditCardDocs.forEach(doc => {
+            const data = doc.data();
+            unifiedList.push({
+                id: doc.id,
+                ...data,
+                date: data.purchaseDate.toDate(),
+                amount: data.amount,
+                type: 'expense', // Lançamento de cartão é sempre despesa
+                paymentMethod: 'credit_card',
+                source: 'credit_card', // Identificador de origem
+                invoiceRef: doc.ref.parent.parent.path // Guarda a referência da fatura
+            });
+        });
+        
+        // 3. Aplica filtros adicionais na lista unificada
+        if (type && type !== 'all') {
+            unifiedList = unifiedList.filter(t => t.type === type);
+        }
+        
+        // 4. Ordena a lista unificada pela data (mais recente primeiro)
+        unifiedList.sort((a, b) => b.date - a.date);
+
+        // 5. Aplica paginação
+        const startIndex = (page - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedTransactions = unifiedList.slice(startIndex, endIndex);
+
+        const hasMore = endIndex < unifiedList.length;
+
+        return { transactions: paginatedTransactions, hasMore };
+
+    } catch (error) {
+        console.error("Erro ao buscar transações unificadas:", error);
+        throw new Error("Não foi possível buscar o histórico unificado.");
     }
 }
 // --- FIM DA ALTERAÇÃO ---
