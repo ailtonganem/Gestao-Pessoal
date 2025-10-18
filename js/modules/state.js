@@ -20,9 +20,7 @@ export let userRecurringTransactions = [];
 export let userAccounts = [];
 export let userPortfolios = []; // Armazena as carteiras de investimento do usuário
 export let investmentAccounts = []; // Armazena as contas de investimento separadamente
-// --- INÍCIO DA ALTERAÇÃO ---
 export let userDebts = []; // Armazena as dívidas do usuário
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Estado da Interface (UI State) ---
@@ -35,6 +33,9 @@ export let rentabilidadeChart = null; // Instância do gráfico de rentabilidade
 export let composicaoChart = null; // Instância do gráfico de composição da carteira
 export let patrimonioChart = null; // Instância do gráfico de evolução do patrimônio
 export let proventosMonthlyChart = null; // Instância do gráfico mensal de proventos
+// --- INÍCIO DA ALTERAÇÃO ---
+export let debtEvolutionChart = null; // Instância do gráfico de evolução de dívidas
+// --- FIM DA ALTERAÇÃO ---
 export let lastTransactionDoc = null; // Armazena o último documento da página de transações
 export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
 export let selectedPortfolioForAssetsView = null; // Armazena a carteira selecionada para visualização de ativos
@@ -87,11 +88,9 @@ export function setInvestmentAccounts(accounts) {
     investmentAccounts = accounts;
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 export function setUserDebts(debts) {
     userDebts = debts;
 }
-// --- FIM DA ALTERAÇÃO ---
 
 export function setUserPortfolios(portfolios) {
     userPortfolios = portfolios;
@@ -143,6 +142,12 @@ export function setPatrimonioChart(chartInstance) {
 export function setProventosMonthlyChart(chartInstance) {
     proventosMonthlyChart = chartInstance;
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+export function setDebtEvolutionChart(chartInstance) {
+    debtEvolutionChart = chartInstance;
+}
+// --- FIM DA ALTERAÇÃO ---
 
 export function setSelectedAssetForMovementsView(asset) {
     selectedAssetForMovementsView = asset;
