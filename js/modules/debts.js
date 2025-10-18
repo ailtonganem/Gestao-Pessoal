@@ -93,7 +93,6 @@ async function payDebtInstallment(debt, paymentDetails) {
         const { accountId, paymentDate } = paymentDetails;
         const installmentAmount = debt.installmentAmount;
 
-        // 1. Cria a transação de despesa correspondente ao pagamento, apenas se o método for 'Débito em Conta'.
         if (debt.paymentMethod === 'account_debit') {
             if (!accountId) {
                 throw new Error("Uma conta de pagamento deve ser selecionada para este tipo de dívida.");
@@ -115,11 +114,9 @@ async function payDebtInstallment(debt, paymentDetails) {
             };
             batch.set(newTransactionRef, paymentTransactionData);
             
-            // 2. Debita o valor do saldo da conta selecionada
             updateBalanceInBatch(batch, accountId, installmentAmount, 'expense');
         }
 
-        // 3. Atualiza os valores pagos na dívida
         const debtRef = doc(db, COLLECTIONS.DEBTS, debt.id);
         const newAmountPaid = (debt.amountPaid || 0) + installmentAmount;
         const newInstallmentsPaid = (debt.installmentsPaid || 0) + 1;
@@ -129,14 +126,11 @@ async function payDebtInstallment(debt, paymentDetails) {
             installmentsPaid: increment(1)
         };
 
-        // 4. Verifica se a dívida foi quitada e atualiza o status
         if (newInstallmentsPaid >= debt.totalInstallments || newAmountPaid >= debt.totalAmount) {
             debtUpdateData.status = 'paid';
         }
 
         batch.update(debtRef, debtUpdateData);
-
-        // 5. Executa todas as operações atomicamente
         await batch.commit();
 
     } catch (error) {
@@ -145,4 +139,47 @@ async function payDebtInstallment(debt, paymentDetails) {
     }
 }
 
-export { addDebt, getDebts, payDebtInstallment };
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Calcula a evolução do saldo devedor total nos últimos 12 meses.
+ * @param {string} userId - O ID do usuário.
+ * @param {Array<object>} allUserTransactions - Todas as transações do usuário para evitar nova busca.
+ * @returns {Promise<object>} Objeto com labels e data para o gráfico.
+ */
+async function getDebtEvolutionData(userId, allUserTransactions) {
+    try {
+        const allDebts = await getDebts(userId);
+        const debtPayments = allUserTransactions.filter(t => t.description.startsWith('Pagamento Parcela -'));
+
+        const labels = [];
+        const data = [];
+        const today = new Date();
+
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const monthLabel = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+            labels.push(monthLabel);
+            
+            const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+
+            const totalDebtPrincipal = allDebts
+                .filter(d => d.contractDate <= endOfMonth)
+                .reduce((sum, d) => sum + d.totalAmount, 0);
+
+            const totalPaidUpToMonth = debtPayments
+                .filter(p => p.date <= endOfMonth)
+                .reduce((sum, p) => sum + p.amount, 0);
+
+            const balance = totalDebtPrincipal - totalPaidUpToMonth;
+            data.push(balance > 0 ? balance : 0);
+        }
+
+        return { labels, data };
+    } catch (error) {
+        console.error("Erro ao calcular evolução da dívida:", error);
+        throw new Error("Não foi possível gerar os dados para o gráfico de evolução.");
+    }
+}
+
+export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData };
+// --- FIM DA ALTERAÇÃO ---
