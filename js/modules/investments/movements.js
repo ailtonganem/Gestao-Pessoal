@@ -25,6 +25,29 @@ import {
     updateDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Busca a conta de investimento associada a uma carteira.
+ * @param {string} portfolioId - O ID da carteira.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<object|null>} O documento da conta ou null se não for encontrada.
+ */
+async function getInvestmentAccountForPortfolio(portfolioId, userId) {
+    const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+    const q = query(
+        accountsRef,
+        where("userId", "==", userId),
+        where("portfolioId", "==", portfolioId),
+        where("type", "==", "investment")
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+    }
+    return null;
+}
+// --- FIM DA ALTERAÇÃO ---
+
 /**
  * Adiciona um movimento (compra/venda) a um ativo e atualiza todos os dados relacionados.
  * @param {string} portfolioId - O ID da carteira.
@@ -55,9 +78,20 @@ export async function addMovement(portfolioId, assetId, movementData) {
         const { type, quantity, price, date, accountId, userId } = movementData;
         const totalCost = quantity * price;
         let transactionIdForMovement = null;
+        let finalAccountId = accountId; // Conta a ser usada para a transação financeira
 
         if (isOwnPortfolio) {
-            if (!accountId) {
+            // --- INÍCIO DA ALTERAÇÃO ---
+            if (type === 'sell') {
+                const investmentAccount = await getInvestmentAccountForPortfolio(portfolioId, userId);
+                if (!investmentAccount) {
+                    throw new Error("Conta de investimento para esta carteira não foi encontrada.");
+                }
+                finalAccountId = investmentAccount.id;
+            }
+            // --- FIM DA ALTERAÇÃO ---
+
+            if (!finalAccountId) {
                 throw new Error("A conta para débito/crédito é obrigatória para carteiras próprias.");
             }
             const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
@@ -74,12 +108,12 @@ export async function addMovement(portfolioId, assetId, movementData) {
                 category: "Investimentos",
                 paymentMethod: transactionType === 'expense' ? 'debit' : 'credit',
                 userId: userId,
-                accountId: accountId,
+                accountId: finalAccountId,
                 createdAt: serverTimestamp()
             };
             batch.set(newTransactionRef, transactionData);
 
-            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, finalAccountId);
             const amountToUpdate = transactionType === 'expense' ? -totalCost : totalCost;
             batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
         }
@@ -166,7 +200,6 @@ export async function getMovements(portfolioId, assetId) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Adiciona um provento a um ativo, calculando o valor total com base na posição da data.
  * @param {string} portfolioId - O ID da carteira.
@@ -177,7 +210,10 @@ export async function getMovements(portfolioId, assetId) {
  */
 export async function addProvento(portfolioId, assetId, proventoData) {
     const batch = writeBatch(db);
-    const { proventoType, paymentDate, valuePerShare, accountId, userId } = proventoData;
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // O accountId do formulário é removido daqui, pois será determinado automaticamente.
+    const { proventoType, paymentDate, valuePerShare, totalAmount, userId } = proventoData;
+    // --- FIM DA ALTERAÇÃO ---
     const paymentTimestamp = Timestamp.fromDate(new Date(paymentDate + 'T00:00:00'));
 
     try {
@@ -185,17 +221,14 @@ export async function addProvento(portfolioId, assetId, proventoData) {
         const assetRef = doc(portfolioRef, 'assets', assetId);
         const movementsRef = collection(assetRef, 'movements');
 
-        // 1. Verifica se a carteira é própria
         const portfolioSnap = await getDoc(portfolioRef);
         if (!portfolioSnap.exists()) throw new Error("Carteira não encontrada.");
         const isOwnPortfolio = portfolioSnap.data().ownershipType === 'own';
 
-        // 2. Busca o ticker do ativo
         const assetSnap = await getDoc(assetRef);
         if (!assetSnap.exists()) throw new Error("Ativo não encontrado para registrar o provento.");
         const assetTicker = assetSnap.data().ticker;
 
-        // 3. Calcula a quantidade de cotas na data do pagamento
         const allMovementsQuery = query(movementsRef, where("date", "<=", paymentTimestamp), orderBy("date", "asc"));
         const movementsSnapshot = await getDocs(allMovementsQuery);
         let quantityOnDate = 0;
@@ -205,18 +238,18 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             if (mov.type === 'sell') quantityOnDate -= mov.quantity;
         });
 
-        if (quantityOnDate <= 0) {
+        if (quantityOnDate <= 0 && !totalAmount) { // Se não tem qtde e não foi informado valor total
             throw new Error(`Você não possuía cotas de ${assetTicker} na data ${paymentDate} para receber proventos.`);
         }
 
-        // 4. Calcula o valor total e prepara o registro do movimento
-        const totalAmount = quantityOnDate * valuePerShare;
+        // Se o valor total não foi informado, calcula com base no valor por cota.
+        const finalTotalAmount = totalAmount > 0 ? totalAmount : quantityOnDate * valuePerShare;
         let transactionIdForMovement = null;
 
         const newMovementData = {
             type: 'provento',
             proventoType: proventoType,
-            totalAmount: totalAmount,
+            totalAmount: finalTotalAmount,
             valuePerShare: valuePerShare,
             quantityOnDate: quantityOnDate,
             date: paymentTimestamp,
@@ -224,32 +257,36 @@ export async function addProvento(portfolioId, assetId, proventoData) {
             userId: userId
         };
 
-        // 5. Se for carteira própria, cria a transação financeira
         if (isOwnPortfolio) {
-            if (!accountId) throw new Error("A conta de destino é obrigatória para carteiras próprias.");
-            
+            // --- INÍCIO DA ALTERAÇÃO ---
+            const investmentAccount = await getInvestmentAccountForPortfolio(portfolioId, userId);
+            if (!investmentAccount) {
+                throw new Error("Conta de investimento para esta carteira não foi encontrada.");
+            }
+            const finalAccountId = investmentAccount.id;
+            // --- FIM DA ALTERAÇÃO ---
+
             const newTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
             transactionIdForMovement = newTransactionRef.id;
 
             const transactionData = {
                 description: `${proventoType} de ${assetTicker}`,
-                amount: totalAmount,
+                amount: finalTotalAmount,
                 date: paymentTimestamp,
                 type: 'revenue',
                 category: 'Investimentos',
                 subcategory: proventoType,
                 paymentMethod: 'credit',
                 userId: userId,
-                accountId: accountId,
+                accountId: finalAccountId,
                 createdAt: serverTimestamp()
             };
             batch.set(newTransactionRef, transactionData);
 
-            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
-            batch.update(accountRef, { currentBalance: increment(totalAmount) });
+            const accountRef = doc(db, COLLECTIONS.ACCOUNTS, finalAccountId);
+            batch.update(accountRef, { currentBalance: increment(finalTotalAmount) });
         }
         
-        // 6. Salva o registro do movimento
         newMovementData.transactionId = transactionIdForMovement;
         const newMovementRef = doc(movementsRef);
         batch.set(newMovementRef, newMovementData);
@@ -258,10 +295,9 @@ export async function addProvento(portfolioId, assetId, proventoData) {
 
     } catch (error) {
         console.error("Erro ao registrar provento:", error);
-        throw error; // Re-lança o erro para ser capturado no handler
+        throw error; 
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Busca todos os movimentos do tipo 'provento' de um usuário.
