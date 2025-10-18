@@ -344,7 +344,7 @@ export function renderPatrimonioChart(data) {
     state.setPatrimonioChart(newChart);
 }
 
-// INÍCIO DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Renderiza o gráfico de evolução mensal de proventos (tipo 'bar').
  * @param {object} chartData - Objeto com { labels, values }.
@@ -402,4 +402,4 @@ export function renderProventosMonthlyChart(chartData) {
 
     state.setProventosMonthlyChart(newChart);
 }
-// FIM DA ALTERAÇÃO
+// --- FIM DA ALTERAÇÃO ---
