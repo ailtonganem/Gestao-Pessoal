@@ -760,7 +760,6 @@
                         <h3 id="total-debt-balance-label">Saldo Devedor Total</h3>
                         <p id="total-debt-balance">R$ 0,00</p>
                     </div>
-                    <!-- INÍCIO DA ALTERAÇÃO: NOVOS CARDS DE RESUMO -->
                     <div class="summary-card">
                         <h3>Próximo Vencimento</h3>
                         <p id="next-due-date">--/--/----</p>
@@ -769,19 +768,30 @@
                         <h3>Total Pago no Mês</h3>
                         <p id="total-paid-this-month">R$ 0,00</p>
                     </div>
+                </section>
+
+                <section class="investment-card full-width">
+                    <!-- INÍCIO DA ALTERAÇÃO: ESTRUTURA DE ABAS -->
+                    <div id="debt-tabs-container" class="modal-tabs" style="margin-bottom: 1.5rem;">
+                        <button class="tab-link active" data-debt-tab="active-debts">Ativas</button>
+                        <button class="tab-link" data-debt-tab="paid-debts">Quitadas</button>
+                    </div>
+
+                    <div id="active-debts-content" class="debt-tab-content active">
+                        <ul id="debt-list">
+                            <li>Carregando dívidas...</li>
+                        </ul>
+                    </div>
+                    <div id="paid-debts-content" class="debt-tab-content" style="display: none;">
+                        <ul id="paid-debt-list">
+                            <li>Nenhuma dívida quitada.</li>
+                        </ul>
+                    </div>
                     <!-- FIM DA ALTERAÇÃO -->
                 </section>
 
                 <section class="investment-card full-width">
-                    <h3>Dívidas Ativas</h3>
-                    <ul id="debt-list">
-                        <li>Carregando dívidas...</li>
-                    </ul>
-                </section>
-
-                <section class="investment-card full-width">
                     <h3>Adicionar Nova Dívida</h3>
-                    <!-- INÍCIO DA ALTERAÇÃO: FORMULÁRIO DE DÍVIDAS EXPANDIDO -->
                     <form id="add-debt-form">
                         <div class="form-control">
                             <label for="debt-description">Descrição</label>
@@ -845,7 +855,6 @@
                         </div>
                         <button type="submit">Adicionar Dívida</button>
                     </form>
-                    <!-- FIM DA ALTERAÇÃO -->
                 </section>
             </main>
         </div>
@@ -1420,7 +1429,6 @@
         </div>
     </div>
 
-    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL DE DETALHES DA DÍVIDA -->
     <div id="debt-details-modal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <span class="close-debt-details-modal-button">&times;</span>
@@ -1449,7 +1457,6 @@
             </section>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="advance-payment-modal" class="modal">
         <div class="modal-content">
