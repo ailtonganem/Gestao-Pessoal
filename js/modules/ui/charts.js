@@ -14,18 +14,17 @@ const invoiceSpendingChartCanvas = document.getElementById('invoice-spending-cha
 const rentabilidadeChartCanvas = document.getElementById('rentabilidade-chart');
 const composicaoChartCanvas = document.getElementById('composicao-chart');
 const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
-// INÍCIO DA ALTERAÇÃO
 const proventosMonthlyChartCanvas = document.getElementById('proventos-monthly-chart');
-// FIM DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
+const debtEvolutionChartCanvas = document.getElementById('debt-evolution-chart');
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza o gráfico de despesas por categoria (tipo 'pie').
  * @param {Array<object>} transactions - A lista de transações a ser analisada.
  */
 export function renderExpensesChart(transactions) {
-    // Desdobra as transações divididas para garantir que os cálculos sejam feitos nas categorias corretas.
     const unpackedTransactions = unpackSplitTransactions(transactions);
-
     const expenses = unpackedTransactions.filter(t => t.type === 'expense');
 
     const spendingByCategory = expenses.reduce((acc, transaction) => {
@@ -40,14 +39,12 @@ export function renderExpensesChart(transactions) {
     const labels = Object.keys(spendingByCategory);
     const data = Object.values(spendingByCategory);
 
-    // Destrói a instância anterior do gráfico, se existir
     if (state.expensesChart) {
         state.expensesChart.destroy();
     }
 
-    // Não renderiza o gráfico se não houver dados
     if (labels.length === 0) {
-        state.setExpensesChart(null); // Garante que a referência seja limpa
+        state.setExpensesChart(null);
         return;
     }
 
@@ -70,7 +67,6 @@ export function renderExpensesChart(transactions) {
             plugins: {
                 legend: {
                     labels: {
-                        // Define a cor do texto da legenda com base no tema atual
                         color: document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e'
                     }
                 }
@@ -78,7 +74,6 @@ export function renderExpensesChart(transactions) {
         }
     });
 
-    // Salva a nova instância do gráfico no estado global
     state.setExpensesChart(newChart);
 }
 
@@ -87,7 +82,6 @@ export function renderExpensesChart(transactions) {
  * @param {object} summaryData - Os dados agregados contendo { labels, revenues, expenses }.
  */
 export function renderTrendsChart(summaryData) {
-    // Destrói a instância anterior do gráfico, se existir
     if (state.trendsChart) {
         state.trendsChart.destroy();
     }
@@ -149,7 +143,6 @@ export function renderTrendsChart(summaryData) {
         }
     });
 
-    // Salva a nova instância do gráfico no estado global
     state.setTrendsChart(newChart);
 }
 
@@ -209,8 +202,6 @@ export function renderInvoiceSpendingChart(invoiceTransactions) {
     state.setInvoiceSpendingChart(newChart);
 }
 
-
-
 /**
  * Renderiza o gráfico de rentabilidade da carteira (tipo 'line').
  * @param {object} data - Dados de rentabilidade (placeholder).
@@ -220,7 +211,6 @@ export function renderRentabilidadeChart(data) {
         state.rentabilidadeChart.destroy();
     }
     
-    // Dados de exemplo para visualização
     const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
     const chartData = {
         labels: labels,
@@ -266,7 +256,6 @@ export function renderComposicaoChart(data) {
         state.composicaoChart.destroy();
     }
     
-    // Se não houver dados, não renderiza o gráfico.
     if (!data || !data.labels || data.labels.length === 0) {
         composicaoChartCanvas.getContext('2d').clearRect(0, 0, composicaoChartCanvas.width, composicaoChartCanvas.height);
         state.setComposicaoChart(null);
@@ -314,7 +303,6 @@ export function renderPatrimonioChart(data) {
         state.patrimonioChart.destroy();
     }
     
-    // Dados de exemplo
     const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
     const chartData = {
         labels: labels,
@@ -333,9 +321,9 @@ export function renderPatrimonioChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }, // Oculta a legenda para um visual mais limpo
+            plugins: { legend: { display: false } },
             scales: {
-                y: { display: false }, // Oculta o eixo Y
+                y: { display: false },
                 x: { ticks: { color: textColor }, grid: { color: 'transparent' } }
             }
         }
@@ -344,7 +332,6 @@ export function renderPatrimonioChart(data) {
     state.setPatrimonioChart(newChart);
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Renderiza o gráfico de evolução mensal de proventos (tipo 'bar').
  * @param {object} chartData - Objeto com { labels, values }.
@@ -375,7 +362,7 @@ export function renderProventosMonthlyChart(chartData) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: false // Legenda é redundante aqui
+                    display: false
                 }
             },
             scales: {
@@ -401,5 +388,68 @@ export function renderProventosMonthlyChart(chartData) {
     });
 
     state.setProventosMonthlyChart(newChart);
+}
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Renderiza o gráfico de evolução do saldo devedor (tipo 'line').
+ * @param {object} chartData - Objeto com { labels, data }.
+ */
+export function renderDebtEvolutionChart(chartData) {
+    if (state.debtEvolutionChart) {
+        state.debtEvolutionChart.destroy();
+    }
+
+    const data = {
+        labels: chartData.labels,
+        datasets: [{
+            label: 'Saldo Devedor',
+            data: chartData.data,
+            borderColor: 'rgba(231, 76, 60, 1)',
+            backgroundColor: 'rgba(231, 76, 60, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    };
+
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
+    const newChart = new Chart(debtEvolutionChartCanvas, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor,
+                        callback: function(value) {
+                            return 'R$ ' + (value / 1000) + 'k';
+                        }
+                    },
+                    grid: {
+                        color: textColor.replace('rgb', 'rgba').replace(')', ', 0.1)')
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: 'transparent'
+                    }
+                }
+            }
+        }
+    });
+
+    state.setDebtEvolutionChart(newChart);
 }
 // --- FIM DA ALTERAÇÃO ---
