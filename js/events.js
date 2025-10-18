@@ -508,13 +508,11 @@ export function initializeEventListeners() {
         }
     });
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('save-dashboard-customization-button').addEventListener('click', () => {
         app.saveDashboardVisibility();
         showNotification("Preferências do dashboard salvas!", "success");
         modals.closeSettingsModal();
     });
-    // --- FIM DA ALTERAÇÃO ---
 
     addAccountForm.addEventListener('submit', handleAddAccount);
     addCategoryForm.addEventListener('submit', handleAddCategory);
@@ -561,13 +559,23 @@ export function initializeEventListeners() {
         }
     });
 
+    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('account-list').addEventListener('click', (e) => {
-        const deleteButton = e.target.closest('.delete-btn[data-account-id]');
-        if (deleteButton) {
-            const accountId = deleteButton.dataset.accountId;
-            handleDeleteAccount(accountId);
+        const archiveButton = e.target.closest('.archive-btn[data-account-id]');
+        if (archiveButton) {
+            const accountId = archiveButton.dataset.accountId;
+            handleArchiveAccount(accountId);
         }
     });
+    
+    document.getElementById('archived-account-list').addEventListener('click', (e) => {
+        const unarchiveButton = e.target.closest('.unarchive-btn[data-account-id]');
+        if (unarchiveButton) {
+            const accountId = unarchiveButton.dataset.accountId;
+            handleUnarchiveAccount(accountId);
+        }
+    });
+    // --- FIM DA ALTERAÇÃO ---
     
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
@@ -652,7 +660,11 @@ export function initializeEventListeners() {
         investmentsUI.showPortfoliosManagementView();
     });
     
-    // Listener para o novo botão "Voltar" na página de detalhes do ativo
+    document.getElementById('back-to-portfolios-button').addEventListener('click', (e) => {
+        e.preventDefault();
+        investmentsUI.showPortfoliosView();
+    });
+    
     const backToAssetsFromDetailBtn = document.getElementById('back-to-assets-from-detail-button');
     if (backToAssetsFromDetailBtn) {
         backToAssetsFromDetailBtn.addEventListener('click', (e) => {
@@ -843,9 +855,8 @@ async function handleAddProventoFromDetail(e) {
         showNotification("Provento registrado com sucesso!");
         form.reset();
         
-        // Recarrega a view de detalhes para mostrar o novo provento
         await investmentsUI.refreshMovementsView();
-        await app.loadUserAccounts(); // Atualiza saldo das contas
+        await app.loadUserAccounts();
 
     } catch (error) {
         showNotification(error.message, 'error');
@@ -1228,28 +1239,39 @@ async function handleAddAccount(e) {
     }
 }
 
-async function handleDeleteAccount(accountId) {
+// --- INÍCIO DA ALTERAÇÃO ---
+async function handleArchiveAccount(accountId) {
     const account = state.userAccounts.find(acc => acc.id === accountId);
     if (!account) return;
 
-    if (account.currentBalance !== 0) {
-        if (!confirm(`A conta "${account.name}" possui um saldo de ${formatCurrency(account.currentBalance)}. Excluir uma conta com saldo pode causar inconsistências. Deseja continuar?`)) {
-            return;
+    if (confirm(`Tem certeza que deseja arquivar a conta "${account.name}"? Ela não aparecerá mais nas listas de transações.`)) {
+        try {
+            await accounts.archiveAccount(accountId);
+            showNotification('Conta arquivada com sucesso!');
+            await app.loadUserAccounts(); // Recarrega contas ativas
+            await modals.loadAndRenderArchivedAccounts(); // Recarrega a lista de arquivadas no modal
+        } catch (error) {
+            showNotification(error.message, 'error');
         }
-    } else {
-        if (!confirm(`Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`)) {
-            return;
-        }
-    }
-
-    try {
-        await accounts.deleteAccount(accountId);
-        showNotification('Conta excluída com sucesso!');
-        await app.loadUserAccounts();
-    } catch (error) {
-        showNotification(error.message, 'error');
     }
 }
+
+async function handleUnarchiveAccount(accountId) {
+    const account = state.archivedAccounts.find(acc => acc.id === accountId);
+    if (!account) return;
+    
+    if (confirm(`Deseja reativar a conta "${account.name}"?`)) {
+        try {
+            await accounts.unarchiveAccount(accountId);
+            showNotification('Conta reativada com sucesso!');
+            await app.loadUserAccounts();
+            await modals.loadAndRenderArchivedAccounts();
+        } catch (error) {
+            showNotification(error.message, 'error');
+        }
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 
 async function handleUpdateInvoiceTransaction(e) {
