@@ -9,13 +9,15 @@ import * as debts from '../debts.js';
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency } from '../ui/utils.js';
 import { populateCategorySelects } from '../ui/render.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import { renderDebtEvolutionChart } from '../ui/charts.js';
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const debtListEl = document.getElementById('debt-list');
 const totalDebtBalanceEl = document.getElementById('total-debt-balance');
 const debtCategorySelect = document.getElementById('debt-category');
 
-// Novos elementos do DOM
 const nextDueDateEl = document.getElementById('next-due-date');
 const totalPaidThisMonthEl = document.getElementById('total-paid-this-month');
 const debtDetailsModal = document.getElementById('debt-details-modal');
@@ -25,9 +27,7 @@ const debtDetailsProgressEl = document.getElementById('debt-details-progress');
 const debtDetailsInfoGridEl = document.getElementById('debt-details-info-grid');
 const debtDetailsPaymentListEl = document.getElementById('debt-details-payment-list');
 
-// --- INÍCIO DA ALTERAÇÃO ---
 const paidDebtListEl = document.getElementById('paid-debt-list');
-// --- FIM DA ALTERAÇÃO ---
 
 
 /**
@@ -44,6 +44,12 @@ export async function loadDebtsPage() {
         renderDebtsSummary(userDebts);
         renderDebtsList(userDebts);
 
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Gera e renderiza o gráfico de evolução
+        const evolutionData = await debts.getDebtEvolutionData(state.currentUser.uid, state.allTransactions);
+        renderDebtEvolutionChart(evolutionData);
+        // --- FIM DA ALTERAÇÃO ---
+
     } catch (error) {
         showNotification(error.message, 'error');
         debtListEl.innerHTML = '<li>Erro ao carregar as dívidas.</li>';
@@ -56,9 +62,7 @@ export async function loadDebtsPage() {
  */
 function renderLoadingPlaceholders() {
     debtListEl.innerHTML = '<li>Carregando dívidas...</li>';
-    // --- INÍCIO DA ALTERAÇÃO ---
     paidDebtListEl.innerHTML = '<li>Carregando histórico...</li>';
-    // --- FIM DA ALTERAÇÃO ---
     totalDebtBalanceEl.textContent = 'Calculando...';
     nextDueDateEl.textContent = '...';
     totalPaidThisMonthEl.textContent = '...';
@@ -107,7 +111,6 @@ function renderDebtsSummary(userDebts) {
     totalPaidThisMonthEl.textContent = formatCurrency(paidThisMonth);
 }
 
-// --- INÍCIO DA ALTERAÇÃO: Refatoração da renderDebtsList ---
 /**
  * Renderiza as listas de dívidas ativas e quitadas em suas respectivas abas.
  * @param {Array<object>} userDebts - A lista completa de dívidas do usuário.
@@ -179,18 +182,15 @@ function createDebtListItemHTML(debt) {
  * @param {string} tabId - O ID da aba a ser ativada.
  */
 export function switchDebtTab(tabId) {
-    // Esconde todos os conteúdos
     document.querySelectorAll('.debt-tab-content').forEach(content => {
         content.style.display = 'none';
         content.classList.remove('active');
     });
 
-    // Remove a classe 'active' de todos os botões
     document.querySelectorAll('#debt-tabs-container .tab-link').forEach(button => {
         button.classList.remove('active');
     });
 
-    // Mostra o conteúdo da aba selecionada e ativa o botão
     const activeContent = document.getElementById(`${tabId}-content`);
     const activeButton = document.querySelector(`#debt-tabs-container .tab-link[data-debt-tab="${tabId}"]`);
 
@@ -202,7 +202,6 @@ export function switchDebtTab(tabId) {
         activeButton.classList.add('active');
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Abre o modal de detalhes de uma dívida específica.
