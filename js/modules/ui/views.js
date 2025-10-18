@@ -16,9 +16,10 @@ const applicationWrapper = document.getElementById('application-wrapper');
 const dashboardContainer = document.getElementById('dashboard-container');
 const investmentsContainer = document.getElementById('investments-container');
 const proventosContainer = document.getElementById('proventos-container');
-// INÍCIO DA ALTERAÇÃO
 const transactionsInvestmentContainer = document.getElementById('transactions-investment-container');
-// FIM DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
+const debtsContainer = document.getElementById('debts-container');
+// --- FIM DA ALTERAÇÃO ---
 const mainHeaderTitle = document.getElementById('main-header-title');
 
 
@@ -80,9 +81,10 @@ function hideAllAppPages() {
     dashboardContainer.style.display = 'none';
     investmentsContainer.style.display = 'none';
     proventosContainer.style.display = 'none';
-    // INÍCIO DA ALTERAÇÃO
     transactionsInvestmentContainer.style.display = 'none';
-    // FIM DA ALTERAÇÃO
+    // --- INÍCIO DA ALTERAÇÃO ---
+    debtsContainer.style.display = 'none';
+    // --- FIM DA ALTERAÇÃO ---
 }
 
 
@@ -113,7 +115,6 @@ export function showProventosView() {
     mainHeaderTitle.textContent = 'Proventos';
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Exibe a "página" de Transações de Investimentos.
  */
@@ -122,4 +123,14 @@ export function showTransactionsInvestmentView() {
     transactionsInvestmentContainer.style.display = 'block';
     mainHeaderTitle.textContent = 'Transações de Investimentos';
 }
-// FIM DA ALTERAÇÃO
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Exibe a "página" de Dívidas.
+ */
+export function showDebtsView() {
+    hideAllAppPages();
+    debtsContainer.style.display = 'block';
+    mainHeaderTitle.textContent = 'Minhas Dívidas';
+}
+// --- FIM DA ALTERAÇÃO ---
