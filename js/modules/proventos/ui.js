@@ -168,7 +168,6 @@ function renderSummaryCards(data) {
     `;
 }
 
-// INÍCIO DA ALTERAÇÃO
 /**
  * Renderiza o gráfico de evolução mensal.
  * @param {object} chartData - O objeto retornado por prepareMonthlyChartData.
@@ -176,7 +175,6 @@ function renderSummaryCards(data) {
 function renderMonthlyChart(chartData) {
     charts.renderProventosMonthlyChart(chartData);
 }
-// FIM DA ALTERAÇÃO
 
 /**
  * Renderiza a tabela de proventos agrupados por ativo.
