@@ -549,25 +549,38 @@ export function initializeEventListeners() {
     setBudgetForm.addEventListener('submit', handleSetBudget);
     addRecurringForm.addEventListener('submit', handleAddRecurring);
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     // Listeners do Módulo de Dívidas
     addDebtForm.addEventListener('submit', handleAddDebt);
     payDebtInstallmentForm.addEventListener('submit', handlePayDebtInstallment);
     document.querySelector('.close-pay-debt-modal-button').addEventListener('click', closePayDebtModal);
     document.querySelector('.close-debt-details-modal-button').addEventListener('click', debtsUI.closeDebtDetailsModal);
 
-    debtList.addEventListener('click', (e) => {
-        const payButton = e.target.closest('.pay-installment-btn');
-        const detailsButton = e.target.closest('.details-btn');
+    // --- INÍCIO DA ALTERAÇÃO ---
+    const debtTabsContainer = document.getElementById('debt-tabs-container');
+    if (debtTabsContainer) {
+        debtTabsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-link')) {
+                const tabId = e.target.dataset.debtTab;
+                debtsUI.switchDebtTab(tabId);
+            }
+        });
+    }
+    
+    const debtListsContainer = document.querySelector('.investment-card.full-width');
+    if(debtListsContainer) {
+        debtListsContainer.addEventListener('click', (e) => {
+            const payButton = e.target.closest('.pay-installment-btn');
+            const detailsButton = e.target.closest('.details-btn');
 
-        if (payButton) {
-            const debtId = payButton.dataset.debtId;
-            openPayDebtModal(debtId);
-        } else if (detailsButton) {
-            const debtId = detailsButton.dataset.debtId;
-            debtsUI.openDebtDetailsModal(debtId);
-        }
-    });
+            if (payButton) {
+                const debtId = payButton.dataset.debtId;
+                openPayDebtModal(debtId);
+            } else if (detailsButton) {
+                const debtId = detailsButton.dataset.debtId;
+                debtsUI.openDebtDetailsModal(debtId);
+            }
+        });
+    }
     // --- FIM DA ALTERAÇÃO ---
 
     const categoryContainer = document.getElementById('category-lists-container');
@@ -759,7 +772,6 @@ export function initializeEventListeners() {
 
 // --- Funções "Handler" para Lógica de Eventos ---
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Manipula o envio do formulário de adicionar dívida.
  */
@@ -814,7 +826,6 @@ function openPayDebtModal(debtId) {
     modal.querySelector('#pay-debt-amount').value = render.formatCurrency(debt.installmentAmount);
     modal.querySelector('#pay-debt-payment-date').value = new Date().toISOString().split('T')[0];
     
-    // Mostra o seletor de conta apenas se o pagamento for via débito em conta
     const accountSelectorWrapper = modal.querySelector('#pay-debt-account-select').parentElement;
     if (debt.paymentMethod === 'account_debit') {
         accountSelectorWrapper.style.display = 'block';
@@ -824,7 +835,7 @@ function openPayDebtModal(debtId) {
         modal.querySelector('#pay-debt-account-select').required = false;
     }
 
-    render.populateAccountSelects(); // Garante que as contas estão atualizadas
+    render.populateAccountSelects();
     modal.style.display = 'flex';
 }
 
@@ -863,14 +874,13 @@ async function handlePayDebtInstallment(e) {
         showNotification("Parcela paga com sucesso!");
         closePayDebtModal();
         await debtsUI.loadDebtsPage();
-        await app.loadUserAccounts(); // Recarrega os saldos das contas
+        await app.loadUserAccounts();
     } catch (error) {
         showNotification(error.message, 'error');
     } finally {
         submitButton.disabled = false;
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 async function handlePermanentReset(e) {
     const button = e.target;
@@ -884,8 +894,6 @@ async function handlePermanentReset(e) {
         showNotification('Seus dados foram apagados com sucesso! O sistema será reiniciado.', 'success');
         
         setTimeout(() => {
-            // Recarrega a página para refletir o estado zerado.
-            // O usuário continuará logado, mas sem dados.
             window.location.reload();
         }, 2000);
 
