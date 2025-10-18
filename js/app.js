@@ -39,9 +39,7 @@ const DASHBOARD_SECTIONS = [
     { id: 'history', name: 'Histórico' }
 ];
 
-// --- INÍCIO DA ALTERAÇÃO ---
 let currentPage = 1; // Variável para controlar a página atual do histórico unificado
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Ponto de Entrada da Aplicação ---
@@ -97,6 +95,9 @@ async function handleAuthStateChange(user) {
         state.setUserBudgets([]);
         state.setUserRecurringTransactions([]);
         state.setUserAccounts([]);
+        // --- INÍCIO DA ALTERAÇÃO ---
+        state.setUserDebts([]);
+        // --- FIM DA ALTERAÇÃO ---
         state.setLastTransactionDoc(null);
         state.setHasMoreTransactions(true);
         views.showAuthForms();
@@ -145,10 +146,8 @@ async function loadInitialData(userId) {
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
-    // --- INÍCIO DA ALTERAÇÃO ---
     currentPage = 1; // Reseta a paginação para a primeira página
     state.setHasMoreTransactions(true); // Assume que há mais transações até que a busca prove o contrário
-    // --- FIM DA ALTERAÇÃO ---
 
     const filters = {
         month: document.getElementById('filter-month').value,
@@ -159,14 +158,12 @@ export async function loadUserDashboard() {
     };
 
     try {
-        // --- INÍCIO DA ALTERAÇÃO ---
         // Chama a nova função de busca unificada
         const { transactions: userTransactions, hasMore } = await transactions.getUnifiedTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
             page: currentPage
         });
-        // --- FIM DA ALTERAÇÃO ---
 
         state.setAllTransactions(userTransactions);
         state.setHasMoreTransactions(hasMore);
@@ -230,9 +227,7 @@ async function updateInvestmentEquitySummary(userId) {
 export async function loadMoreTransactions() {
     if (!state.currentUser || !state.hasMoreTransactions) return;
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     currentPage++; // Incrementa o número da página
-    // --- FIM DA ALTERAÇÃO ---
 
     const loadMoreButton = document.getElementById('load-more-button');
     loadMoreButton.disabled = true;
@@ -247,7 +242,6 @@ export async function loadMoreTransactions() {
     };
 
     try {
-        // --- INÍCIO DA ALTERAÇÃO ---
         const { transactions: newTransactions, hasMore } = await transactions.getUnifiedTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
@@ -263,13 +257,10 @@ export async function loadMoreTransactions() {
 
         // Aplica filtros locais (descrição, categoria, etc.) na lista agora expandida
         applyFiltersAndUpdateDashboard(); 
-        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         showNotification(error.message, 'error');
-        // --- INÍCIO DA ALTERAÇÃO ---
         currentPage--; // Reverte o incremento da página em caso de erro
-        // --- FIM DA ALTERAÇÃO ---
     } finally {
         loadMoreButton.disabled = false;
         loadMoreButton.textContent = 'Carregar Mais';
@@ -386,11 +377,9 @@ export function applyFiltersAndUpdateDashboard() {
     }
 
     state.setFilteredTransactions(filtered);
-    // --- INÍCIO DA ALTERAÇÃO ---
     // A renderização agora é feita apenas com a lista filtrada.
     // O append é tratado em 'loadMoreTransactions'.
     render.renderTransactionList(filtered, false); 
-    // --- FIM DA ALTERAÇÃO ---
     render.updateDashboard();
 }
 
