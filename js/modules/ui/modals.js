@@ -12,10 +12,10 @@ import { getInvoices, getInvoiceTransactions } from '../invoices.js';
 import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
 import * as charts from './charts.js';
-// INÍCIO DA ALTERAÇÃO
 import { populateDashboardCustomization } from '../../app.js';
+// INÍCIO DA ALTERAÇÃO
+import * as accounts from '../accounts.js';
 // FIM DA ALTERAÇÃO
-
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
@@ -363,9 +363,7 @@ export async function displayInvoiceDetails(invoice) {
 export async function openSettingsModal() {
     if (!state.currentUser) return;
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     populateDashboardCustomization();
-    // --- FIM DA ALTERAÇÃO ---
 
     if (state.currentUserProfile.role === 'admin') {
         adminTabButton.style.display = 'block';
@@ -395,11 +393,19 @@ export async function openManagementModal() {
     managementModal.style.display = 'flex';
     
     try {
-        const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
-        state.setUserRecurringTransactions(recurringTxs);
-        render.renderRecurringList();
-        render.renderBudgetList();
-        render.renderAccountList();
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Carrega todas as listas, incluindo a nova de contas arquivadas
+        await Promise.all([
+            (async () => {
+                const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
+                state.setUserRecurringTransactions(recurringTxs);
+                render.renderRecurringList();
+            })(),
+            render.renderBudgetList(),
+            render.renderAccountList(),
+            loadAndRenderArchivedAccounts() // Nova função
+        ]);
+        // --- FIM DA ALTERAÇÃO ---
     } catch (error) {
         showNotification(error.message, 'error');
     }
@@ -429,6 +435,26 @@ export function switchSettingsTab(tabId) {
 export function switchManagementTab(tabId) {
     switchTab(tabId, managementModal);
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+// --- Funções para a Aba de Itens Arquivados ---
+
+/**
+ * Busca as contas arquivadas e as renderiza na lista correspondente.
+ */
+export async function loadAndRenderArchivedAccounts() {
+    const listEl = document.getElementById('archived-account-list');
+    listEl.innerHTML = '<li>Carregando contas arquivadas...</li>';
+
+    try {
+        const archivedAccounts = await accounts.getArchivedAccounts(state.currentUser.uid);
+        render.renderArchivedAccountList(archivedAccounts);
+    } catch (error) {
+        showNotification(error.message, 'error');
+        listEl.innerHTML = '<li>Erro ao carregar contas arquivadas.</li>';
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções para o modal de pagamento de fatura ---
