@@ -18,9 +18,7 @@ import * as admin from './modules/admin.js';
 import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
 import * as transfers from './modules/transfers.js';
-// --- INÍCIO DA ALTERAÇÃO ---
 import * as debts from './modules/debts.js';
-// --- FIM DA ALTERAÇÃO ---
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 import * as investmentsUI from './modules/investments/ui.js';
 import * as movements from './modules/investments/movements.js';
@@ -34,9 +32,7 @@ import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
 import * as proventosUI from './modules/proventos/ui.js';
 import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js';
-// --- INÍCIO DA ALTERAÇÃO ---
 import * as debtsUI from './modules/debts/ui.js';
-// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const loginForm = document.querySelector('#login-form form');
@@ -65,11 +61,9 @@ const portfolioFilterSelect = document.getElementById('portfolio-filter-select')
 const backToInvestmentDashboardBtn = document.getElementById('back-to-investment-dashboard-btn');
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
 const transactionsInvestmentList = document.getElementById('transactions-investment-list');
-// --- INÍCIO DA ALTERAÇÃO ---
 const addDebtForm = document.getElementById('add-debt-form');
 const debtList = document.getElementById('debt-list');
 const payDebtInstallmentForm = document.getElementById('pay-debt-installment-form');
-// --- FIM DA ALTERAÇÃO ---
 
 
 // Formulários de Edição de Investimentos
@@ -144,13 +138,11 @@ export function initializeEventListeners() {
         await proventosUI.loadProventosPage(); 
     });
     
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('nav-debts-button').addEventListener('click', async (e) => {
         e.preventDefault();
         views.showDebtsView();
         await debtsUI.loadDebtsPage();
     });
-    // --- FIM DA ALTERAÇÃO ---
 
     document.getElementById('nav-transactions-investment-button').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -562,12 +554,18 @@ export function initializeEventListeners() {
     addDebtForm.addEventListener('submit', handleAddDebt);
     payDebtInstallmentForm.addEventListener('submit', handlePayDebtInstallment);
     document.querySelector('.close-pay-debt-modal-button').addEventListener('click', closePayDebtModal);
+    document.querySelector('.close-debt-details-modal-button').addEventListener('click', debtsUI.closeDebtDetailsModal);
 
     debtList.addEventListener('click', (e) => {
         const payButton = e.target.closest('.pay-installment-btn');
+        const detailsButton = e.target.closest('.details-btn');
+
         if (payButton) {
             const debtId = payButton.dataset.debtId;
             openPayDebtModal(debtId);
+        } else if (detailsButton) {
+            const debtId = detailsButton.dataset.debtId;
+            debtsUI.openDebtDetailsModal(debtId);
         }
     });
     // --- FIM DA ALTERAÇÃO ---
@@ -773,8 +771,11 @@ async function handleAddDebt(e) {
 
     const debtData = {
         description: form['debt-description'].value,
+        creditor: form['debt-creditor'].value,
         type: form['debt-type'].value,
+        contractDate: form['debt-contract-date'].value,
         totalAmount: parseFloat(form['debt-total-amount'].value),
+        interestRate: parseFloat(form['debt-interest-rate'].value),
         installmentAmount: parseFloat(form['debt-installment-amount'].value),
         totalInstallments: parseInt(form['debt-total-installments'].value),
         dueDay: parseInt(form['debt-due-day'].value),
