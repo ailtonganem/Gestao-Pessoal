@@ -28,7 +28,6 @@ import { formatCurrency } from './modules/ui/utils.js';
 
 import { PAGINATION, STORAGE_KEYS } from './config/constants.js';
 
-// --- INÍCIO DA ALTERAÇÃO ---
 // Definição das seções do dashboard para personalização
 const DASHBOARD_SECTIONS = [
     { id: 'accounts-summary', name: 'Minhas Contas' },
@@ -39,6 +38,9 @@ const DASHBOARD_SECTIONS = [
     { id: 'forms', name: 'Lançamentos' },
     { id: 'history', name: 'Histórico' }
 ];
+
+// --- INÍCIO DA ALTERAÇÃO ---
+let currentPage = 1; // Variável para controlar a página atual do histórico unificado
 // --- FIM DA ALTERAÇÃO ---
 
 
@@ -56,9 +58,7 @@ function initializeApp() {
     initializeInvestmentsModule();
     initializeCollapsibleSections();
     applyDashboardOrder(); 
-    // --- INÍCIO DA ALTERAÇÃO ---
     applyDashboardVisibility();
-    // --- FIM DA ALTERAÇÃO ---
 
     views.showLoading();
     auth.monitorAuthState(handleAuthStateChange);
@@ -145,8 +145,10 @@ async function loadInitialData(userId) {
 export async function loadUserDashboard() {
     if (!state.currentUser) return;
     
-    state.setLastTransactionDoc(null);
-    state.setHasMoreTransactions(true);
+    // --- INÍCIO DA ALTERAÇÃO ---
+    currentPage = 1; // Reseta a paginação para a primeira página
+    state.setHasMoreTransactions(true); // Assume que há mais transações até que a busca prove o contrário
+    // --- FIM DA ALTERAÇÃO ---
 
     const filters = {
         month: document.getElementById('filter-month').value,
@@ -157,15 +159,17 @@ export async function loadUserDashboard() {
     };
 
     try {
-        const { transactions: userTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Chama a nova função de busca unificada
+        const { transactions: userTransactions, hasMore } = await transactions.getUnifiedTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
-            lastDoc: null
+            page: currentPage
         });
+        // --- FIM DA ALTERAÇÃO ---
 
         state.setAllTransactions(userTransactions);
-        state.setLastTransactionDoc(lastVisible);
-        state.setHasMoreTransactions(userTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
+        state.setHasMoreTransactions(hasMore);
         
         await updateInvestmentEquitySummary(state.currentUser.uid);
 
@@ -226,6 +230,10 @@ async function updateInvestmentEquitySummary(userId) {
 export async function loadMoreTransactions() {
     if (!state.currentUser || !state.hasMoreTransactions) return;
 
+    // --- INÍCIO DA ALTERAÇÃO ---
+    currentPage++; // Incrementa o número da página
+    // --- FIM DA ALTERAÇÃO ---
+
     const loadMoreButton = document.getElementById('load-more-button');
     loadMoreButton.disabled = true;
     loadMoreButton.textContent = 'Carregando...';
@@ -239,22 +247,29 @@ export async function loadMoreTransactions() {
     };
 
     try {
-        const { transactions: newTransactions, lastVisible } = await transactions.getTransactions(state.currentUser.uid, {
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const { transactions: newTransactions, hasMore } = await transactions.getUnifiedTransactions(state.currentUser.uid, {
             filters,
             limitNum: PAGINATION.TRANSACTIONS_PER_PAGE,
-            lastDoc: state.lastTransactionDoc
+            page: currentPage
         });
         
-        render.renderTransactionList(newTransactions, true);
+        // Adiciona as novas transações à lista (append)
+        render.renderTransactionList(newTransactions, true); 
         
+        // Atualiza o estado
         state.setAllTransactions([...state.allTransactions, ...newTransactions]);
-        state.setLastTransactionDoc(lastVisible);
-        state.setHasMoreTransactions(newTransactions.length === PAGINATION.TRANSACTIONS_PER_PAGE);
+        state.setHasMoreTransactions(hasMore);
 
-        applyFiltersAndUpdateDashboard();
+        // Aplica filtros locais (descrição, categoria, etc.) na lista agora expandida
+        applyFiltersAndUpdateDashboard(); 
+        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         showNotification(error.message, 'error');
+        // --- INÍCIO DA ALTERAÇÃO ---
+        currentPage--; // Reverte o incremento da página em caso de erro
+        // --- FIM DA ALTERAÇÃO ---
     } finally {
         loadMoreButton.disabled = false;
         loadMoreButton.textContent = 'Carregar Mais';
@@ -359,7 +374,7 @@ export function applyFiltersAndUpdateDashboard() {
             filtered.sort((a, b) => a.date - b.date);
             break;
         case 'amount_desc':
-            filtered.sort((a, b) => b.amount - b.amount);
+            filtered.sort((a, b) => b.amount - a.amount);
             break;
         case 'amount_asc':
             filtered.sort((a, b) => a.amount - b.amount);
@@ -371,7 +386,11 @@ export function applyFiltersAndUpdateDashboard() {
     }
 
     state.setFilteredTransactions(filtered);
-    render.renderTransactionList(filtered);
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // A renderização agora é feita apenas com a lista filtrada.
+    // O append é tratado em 'loadMoreTransactions'.
+    render.renderTransactionList(filtered, false); 
+    // --- FIM DA ALTERAÇÃO ---
     render.updateDashboard();
 }
 
@@ -496,8 +515,6 @@ function applyDashboardOrder() {
     });
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
-
 // --- Lógica para Personalização do Dashboard ---
 
 /**
@@ -570,7 +587,6 @@ function applyDashboardVisibility() {
         }
     });
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 /**
