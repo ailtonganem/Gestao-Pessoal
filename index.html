@@ -760,6 +760,16 @@
                         <h3 id="total-debt-balance-label">Saldo Devedor Total</h3>
                         <p id="total-debt-balance">R$ 0,00</p>
                     </div>
+                    <!-- INÍCIO DA ALTERAÇÃO: NOVOS CARDS DE RESUMO -->
+                    <div class="summary-card">
+                        <h3>Próximo Vencimento</h3>
+                        <p id="next-due-date">--/--/----</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Total Pago no Mês</h3>
+                        <p id="total-paid-this-month">R$ 0,00</p>
+                    </div>
+                    <!-- FIM DA ALTERAÇÃO -->
                 </section>
 
                 <section class="investment-card full-width">
@@ -769,13 +779,17 @@
                     </ul>
                 </section>
 
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <section class="investment-card full-width">
                     <h3>Adicionar Nova Dívida</h3>
+                    <!-- INÍCIO DA ALTERAÇÃO: FORMULÁRIO DE DÍVIDAS EXPANDIDO -->
                     <form id="add-debt-form">
                         <div class="form-control">
                             <label for="debt-description">Descrição</label>
-                            <input type="text" id="debt-description" placeholder="Ex: Financiamento Veículo, Empréstimo Pessoal" required>
+                            <input type="text" id="debt-description" placeholder="Ex: Financiamento Veículo Fiat Argo" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-creditor">Credor (Instituição ou Pessoa)</label>
+                            <input type="text" id="debt-creditor" placeholder="Ex: Banco Itaú, Nubank, Maria S." required>
                         </div>
                         <div class="form-control">
                             <label for="debt-type">Tipo de Dívida</label>
@@ -788,9 +802,19 @@
                             </select>
                         </div>
                         <div class="form-control">
-                            <label for="debt-total-amount">Valor Total da Dívida (R$)</label>
+                            <label for="debt-contract-date">Data do Contrato</label>
+                            <input type="date" id="debt-contract-date" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-total-amount">Valor Total Financiado/Emprestado (R$)</label>
                             <input type="number" id="debt-total-amount" placeholder="25000.00" step="0.01" required>
                         </div>
+                        <div class="form-control">
+                            <label for="debt-interest-rate">Taxa de Juros (% a.m.)</label>
+                            <input type="number" id="debt-interest-rate" placeholder="1.99" step="0.01">
+                        </div>
+                        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                        <h4>Detalhes das Parcelas</h4>
                         <div class="form-control">
                             <label for="debt-installment-amount">Valor da Parcela (R$)</label>
                             <input type="number" id="debt-installment-amount" placeholder="650.00" step="0.01" required>
@@ -808,7 +832,7 @@
                             <input type="date" id="debt-start-date" required>
                         </div>
                          <div class="form-control">
-                            <label for="debt-category">Categoria da Despesa</label>
+                            <label for="debt-category">Categoria da Despesa (para lançamentos)</label>
                             <select id="debt-category" required></select>
                         </div>
                          <div class="form-control">
@@ -821,8 +845,8 @@
                         </div>
                         <button type="submit">Adicionar Dívida</button>
                     </form>
+                    <!-- FIM DA ALTERAÇÃO -->
                 </section>
-                <!-- FIM DA ALTERAÇÃO -->
             </main>
         </div>
     </div>
@@ -1395,6 +1419,37 @@
             </form>
         </div>
     </div>
+
+    <!-- INÍCIO DA ALTERAÇÃO: NOVO MODAL DE DETALHES DA DÍVIDA -->
+    <div id="debt-details-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close-debt-details-modal-button">&times;</span>
+            <h2 id="debt-details-description">Detalhes da Dívida</h2>
+            <div id="debt-details-summary-cards" class="summary-section" style="margin-bottom: 2rem; grid-template-columns: repeat(2, 1fr);">
+                <div class="summary-card">
+                    <h3>Saldo Devedor</h3>
+                    <p id="debt-details-balance">R$ 0,00</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Progresso</h3>
+                    <p id="debt-details-progress">0 / 0</p>
+                </div>
+            </div>
+            <section id="debt-info-section">
+                <h3>Informações do Contrato</h3>
+                <div id="debt-details-info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
+                    <!-- Informações serão preenchidas via JS -->
+                </div>
+            </section>
+            <section id="debt-payment-history-section" style="margin-top: 1.5rem;">
+                <h3>Histórico de Pagamentos</h3>
+                <ul id="debt-details-payment-list">
+                    <li>Carregando histórico...</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="advance-payment-modal" class="modal">
         <div class="modal-content">
