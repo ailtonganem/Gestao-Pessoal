@@ -2,9 +2,7 @@
 
 // Importa a instância do Firestore e funções necessárias.
 import { db } from '../firebase-config.js';
-// INÍCIO DA ALTERAÇÃO - Correção para caminho relativo
 import { COLLECTIONS } from '../config/constants.js';
-// FIM DA ALTERAÇÃO
 import {
     collection,
     addDoc,
@@ -45,18 +43,21 @@ async function addAccount(accountData) {
 }
 
 /**
- * Busca todas as contas de um usuário específico.
+ * Busca todas as contas de um usuário específico, excluindo as contas de investimento.
  * @param {string} userId - O ID do usuário.
  * @returns {Promise<Array<object>>} Uma lista de objetos de conta.
  */
 async function getAccounts(userId) {
     try {
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+        // --- INÍCIO DA ALTERAÇÃO ---
         const q = query(
             accountsRef,
             where("userId", "==", userId),
+            where("type", "!=", "investment"), // Filtra para não incluir contas do tipo 'investment'
             orderBy("name")
         );
+        // --- FIM DA ALTERAÇÃO ---
         const querySnapshot = await getDocs(q);
         const accounts = [];
         querySnapshot.forEach((doc) => {
