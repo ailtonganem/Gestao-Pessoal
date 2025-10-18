@@ -19,7 +19,10 @@ export const COLLECTIONS = {
     RECURRING_TRANSACTIONS: 'recurringTransactions',
     DESCRIPTIONS: 'descriptions', // Subcoleção dentro de users
     INVESTMENT_PORTFOLIOS: 'investment_portfolios',
-    ASSET_QUOTES: 'asset_quotes' // Subcoleção dentro de users
+    ASSET_QUOTES: 'asset_quotes', // Subcoleção dentro de users
+    // --- INÍCIO DA ALTERAÇÃO ---
+    DEBTS: 'debts'
+    // --- FIM DA ALTERAÇÃO ---
 };
 
 // Chaves usadas no Local Storage
@@ -27,9 +30,7 @@ export const STORAGE_KEYS = {
     THEME: 'theme',
     COLLAPSIBLE_STATE: 'dashboardCollapsibleState',
     DASHBOARD_ORDER: 'dashboardSectionOrder',
-    // INÍCIO DA ALTERAÇÃO
     DASHBOARD_VISIBILITY: 'dashboardVisibilityPreferences'
-    // FIM DA ALTERAÇÃO
 };
 
 // Configurações de Paginação
