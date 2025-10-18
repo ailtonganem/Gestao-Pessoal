@@ -10,7 +10,7 @@ import { showNotification } from '../ui/notifications.js';
 import { formatCurrency } from '../ui/utils.js';
 import { populateCategorySelects } from '../ui/render.js';
 // --- INÍCIO DA ALTERAÇÃO ---
-import { renderDebtEvolutionChart } from '../ui/charts.js';
+import { renderDebtEvolutionChart, renderDebtCompositionChart } from '../ui/charts.js';
 // --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
@@ -45,9 +45,12 @@ export async function loadDebtsPage() {
         renderDebtsList(userDebts);
 
         // --- INÍCIO DA ALTERAÇÃO ---
-        // Gera e renderiza o gráfico de evolução
+        // Gera e renderiza os gráficos
         const evolutionData = await debts.getDebtEvolutionData(state.currentUser.uid, state.allTransactions);
         renderDebtEvolutionChart(evolutionData);
+        
+        const compositionData = debts.getDebtCompositionData(userDebts);
+        renderDebtCompositionChart(compositionData);
         // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
