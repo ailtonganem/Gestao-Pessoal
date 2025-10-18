@@ -52,12 +52,13 @@ async function getAccounts(userId) {
     try {
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
         // --- INÍCIO DA ALTERAÇÃO ---
-        // A consulta agora filtra por status 'not-in' ['archived'].
-        // Isso inclui documentos com status 'active' e também documentos antigos que não possuem o campo 'status'.
+        // A consulta agora ordena primeiro por 'status' para atender à exigência do Firestore
+        // ao usar o filtro 'not-in', e depois por 'name' para manter a ordem alfabética.
         const q = query(
             accountsRef,
             where("userId", "==", userId),
             where("status", "not-in", ["archived"]),
+            orderBy("status"),
             orderBy("name")
         );
         // --- FIM DA ALTERAÇÃO ---
