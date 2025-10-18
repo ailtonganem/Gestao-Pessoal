@@ -97,7 +97,7 @@ export function renderTransactionList(transactionsToRender, append = false) {
         transactionsListEl.innerHTML = '';
     }
 
-    if (state.allTransactions.length === 0) {
+    if (transactionsToRender.length === 0 && !append) {
         transactionsListEl.innerHTML = '<li>Nenhuma transação encontrada para os filtros aplicados.</li>';
     } else {
         transactionsToRender.forEach(transaction => {
@@ -144,15 +144,23 @@ export function renderTransactionList(transactionsToRender, append = false) {
                         ${transaction.tags.map(tag => `<span class="tag-badge">#${tag}</span>`).join('')}
                        </div>`
                     : '';
-
-                const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
-                const accountName = account ? account.name : 'Conta não informada';
+                
+                // --- INÍCIO DA ALTERAÇÃO ---
+                let sourceName;
+                if (transaction.paymentMethod === 'credit_card') {
+                    const card = state.userCreditCards.find(c => c.id === transaction.cardId);
+                    sourceName = card ? `CC ${card.name}` : 'Cartão não informado';
+                } else {
+                    const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
+                    sourceName = account ? account.name : 'Conta não informada';
+                }
+                // --- FIM DA ALTERAÇÃO ---
 
                 li.innerHTML = `
                     <div style="text-align: left; flex-grow: 1;">
                         <span class="transaction-description">${transaction.description}</span>
                         <span style="display: block; font-size: 0.8rem; color: #7f8c8d;">
-                            ${formattedDate} • ${accountName} • ${categoryDisplay || ''}
+                            ${formattedDate} • ${sourceName} • ${categoryDisplay || ''}
                         </span>
                         ${tagsHtml}
                     </div>
@@ -219,7 +227,6 @@ export function populateCreditCardSelects() {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
     // Selects que devem mostrar TODAS as contas (gerais + investimento)
@@ -277,7 +284,6 @@ export function populateAccountSelects() {
     populate(allAccountsSelects, allAccounts);
     populate(generalAccountsSelects, generalAccounts);
 }
-// --- FIM DA ALTERAÇÃO ---
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
