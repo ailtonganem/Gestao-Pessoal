@@ -19,9 +19,10 @@ export let filteredTransactions = []; // Contém as transações após a aplica�
 export let userRecurringTransactions = [];
 export let userAccounts = [];
 export let userPortfolios = []; // Armazena as carteiras de investimento do usuário
-// INÍCIO DA ALTERAÇÃO
 export let investmentAccounts = []; // Armazena as contas de investimento separadamente
-// FIM DA ALTERAÇÃO
+// --- INÍCIO DA ALTERAÇÃO ---
+export let userDebts = []; // Armazena as dívidas do usuário
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Estado da Interface (UI State) ---
@@ -82,11 +83,15 @@ export function setUserAccounts(accounts) {
     userAccounts = accounts;
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function setInvestmentAccounts(accounts) {
     investmentAccounts = accounts;
 }
-// FIM DA ALTERAÇÃO
+
+// --- INÍCIO DA ALTERAÇÃO ---
+export function setUserDebts(debts) {
+    userDebts = debts;
+}
+// --- FIM DA ALTERAÇÃO ---
 
 export function setUserPortfolios(portfolios) {
     userPortfolios = portfolios;
