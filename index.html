@@ -524,7 +524,6 @@
                                     <label for="asset-ticker">Ticker (Código)</label>
                                     <input type="text" id="asset-ticker" placeholder="Ex: PETR4" required>
                                 </div>
-                                <!-- INÍCIO DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="asset-type">Tipo</label>
                                     <select id="asset-type" required>
@@ -539,7 +538,6 @@
                                         <option value="Outro">Outro</option>
                                     </select>
                                 </div>
-                                <!-- FIM DA ALTERAÇÃO -->
                                 <div class="form-control">
                                     <label for="asset-class">Classe</label>
                                     <select id="asset-class" required>
@@ -989,6 +987,9 @@
                 <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <button class="tab-link" data-tab="archived-items-tab">Itens Arquivados</button>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
             <div id="management-content">
                 <div id="account-management-tab" class="tab-content active">
@@ -1115,6 +1116,17 @@
                         <ul id="recurring-list"></ul>
                     </section>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div id="archived-items-tab" class="tab-content">
+                    <section>
+                        <h3>Contas Arquivadas</h3>
+                        <p class="subtitle">Contas que não estão mais em uso, mas cujo histórico foi mantido.</p>
+                        <ul id="archived-account-list">
+                            <li>Nenhuma conta arquivada.</li>
+                        </ul>
+                    </section>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
         </div>
     </div>
@@ -1373,7 +1385,6 @@
                     <label for="edit-asset-ticker">Ticker (Código)</label>
                     <input type="text" id="edit-asset-ticker" required>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-asset-type">Tipo</label>
                     <select id="edit-asset-type" required>
@@ -1388,7 +1399,6 @@
                         <option value="Outro">Outro</option>
                     </select>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
                 <div class="form-control">
                     <label for="edit-asset-class">Classe</label>
                     <select id="edit-asset-class" required>
