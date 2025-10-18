@@ -15,8 +15,9 @@ const rentabilidadeChartCanvas = document.getElementById('rentabilidade-chart');
 const composicaoChartCanvas = document.getElementById('composicao-chart');
 const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
 const proventosMonthlyChartCanvas = document.getElementById('proventos-monthly-chart');
-// --- INÍCIO DA ALTERAÇÃO ---
 const debtEvolutionChartCanvas = document.getElementById('debt-evolution-chart');
+// --- INÍCIO DA ALTERAÇÃO ---
+const debtCompositionChartCanvas = document.getElementById('debt-composition-chart');
 // --- FIM DA ALTERAÇÃO ---
 
 /**
@@ -390,7 +391,6 @@ export function renderProventosMonthlyChart(chartData) {
     state.setProventosMonthlyChart(newChart);
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Renderiza o gráfico de evolução do saldo devedor (tipo 'line').
  * @param {object} chartData - Objeto com { labels, data }.
@@ -451,5 +451,59 @@ export function renderDebtEvolutionChart(chartData) {
     });
 
     state.setDebtEvolutionChart(newChart);
+}
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Renderiza o gráfico de composição das dívidas por tipo (tipo 'doughnut').
+ * @param {object} chartData - Objeto com { labels, data }.
+ */
+export function renderDebtCompositionChart(chartData) {
+    if (state.debtCompositionChart) {
+        state.debtCompositionChart.destroy();
+    }
+    
+    if (!chartData || !chartData.labels || chartData.labels.length === 0) {
+        if(debtCompositionChartCanvas) {
+            const ctx = debtCompositionChartCanvas.getContext('2d');
+            ctx.clearRect(0, 0, debtCompositionChartCanvas.width, debtCompositionChartCanvas.height);
+            // Opcional: Desenhar texto "Sem dados"
+        }
+        state.setDebtCompositionChart(null);
+        return;
+    }
+
+    const data = {
+        labels: chartData.labels,
+        datasets: [{
+            label: 'Composição da Dívida',
+            data: chartData.data,
+            backgroundColor: [
+                '#e74c3c', '#f39c12', '#f1c40f', '#3498db', '#9b59b6', '#34495e'
+            ],
+            hoverOffset: 4
+        }]
+    };
+
+    const textColor = document.body.classList.contains('dark-mode') ? '#bdc3c7' : '#34495e';
+
+    const newChart = new Chart(debtCompositionChartCanvas, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: textColor
+                    }
+                }
+            }
+        }
+    });
+
+    state.setDebtCompositionChart(newChart);
 }
 // --- FIM DA ALTERAÇÃO ---
