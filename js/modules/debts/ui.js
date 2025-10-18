@@ -80,8 +80,8 @@ function renderDebtsList(userDebts) {
         const li = document.createElement('li');
         li.className = `debt-item ${debt.status === 'paid' ? 'paid' : ''}`;
         
-        const remainingBalance = debt.totalAmount - debt.amountPaid;
-        const percentage = debt.totalAmount > 0 ? (debt.amountPaid / debt.totalAmount) * 100 : 0;
+        const remainingBalance = debt.totalAmount - (debt.amountPaid || 0);
+        const percentage = debt.totalAmount > 0 ? ((debt.amountPaid || 0) / debt.totalAmount) * 100 : 0;
         const cappedPercentage = Math.min(percentage, 100);
 
         const actionsHtml = debt.status === 'active'
@@ -92,7 +92,7 @@ function renderDebtsList(userDebts) {
             <div class="debt-item-header">
                 <span>${debt.description}</span>
                 <span class="debt-item-values">
-                    ${formatCurrency(debt.amountPaid)} / ${formatCurrency(debt.totalAmount)}
+                    ${debt.installmentsPaid || 0} / ${debt.totalInstallments} parcelas pagas
                 </span>
             </div>
             <div class="progress-bar-container">
