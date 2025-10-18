@@ -773,10 +773,14 @@ async function handleAddDebt(e) {
 
     const debtData = {
         description: form['debt-description'].value,
+        type: form['debt-type'].value,
         totalAmount: parseFloat(form['debt-total-amount'].value),
         installmentAmount: parseFloat(form['debt-installment-amount'].value),
+        totalInstallments: parseInt(form['debt-total-installments'].value),
+        dueDay: parseInt(form['debt-due-day'].value),
         startDate: form['debt-start-date'].value,
         category: form['debt-category'].value,
+        paymentMethod: form['debt-payment-method'].value,
         userId: state.currentUser.uid,
     };
 
@@ -809,6 +813,16 @@ function openPayDebtModal(debtId) {
     modal.querySelector('#pay-debt-amount').value = render.formatCurrency(debt.installmentAmount);
     modal.querySelector('#pay-debt-payment-date').value = new Date().toISOString().split('T')[0];
     
+    // Mostra o seletor de conta apenas se o pagamento for via débito em conta
+    const accountSelectorWrapper = modal.querySelector('#pay-debt-account-select').parentElement;
+    if (debt.paymentMethod === 'account_debit') {
+        accountSelectorWrapper.style.display = 'block';
+        modal.querySelector('#pay-debt-account-select').required = true;
+    } else {
+        accountSelectorWrapper.style.display = 'none';
+        modal.querySelector('#pay-debt-account-select').required = false;
+    }
+
     render.populateAccountSelects(); // Garante que as contas estão atualizadas
     modal.style.display = 'flex';
 }
@@ -840,7 +854,9 @@ async function handlePayDebtInstallment(e) {
     };
 
     try {
-        if (!paymentDetails.accountId) throw new Error("Selecione uma conta para o pagamento.");
+        if (debt.paymentMethod === 'account_debit' && !paymentDetails.accountId) {
+            throw new Error("Selecione uma conta para o pagamento.");
+        }
         
         await debts.payDebtInstallment(debt, paymentDetails);
         showNotification("Parcela paga com sucesso!");
