@@ -993,7 +993,7 @@
                 <button class="tab-link" data-tab="dashboard-customization-tab">Personalizar Dashboard</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
                 <!-- INÍCIO DA ALTERAÇÃO -->
-                <button id="admin-advanced-tab-button" class="tab-link" data-tab="advanced-admin-tab" style="display: none;">Administração</button>
+                <button class="tab-link" data-tab="danger-zone-tab">Zona de Perigo</button>
                 <!-- FIM DA ALTERAÇÃO -->
             </div>
             <div id="settings-content">
@@ -1027,13 +1027,13 @@
                     </section>
                 </div>
                 <!-- INÍCIO DA ALTERAÇÃO -->
-                <div id="advanced-admin-tab" class="tab-content">
+                <div id="danger-zone-tab" class="tab-content">
                     <section>
-                        <h3>Resetar Dados do Sistema</h3>
-                        <p class="subtitle reset-warning"><strong>ATENÇÃO:</strong> Esta é uma operação perigosa e irreversível. Todos os dados selecionados serão permanentemente excluídos do banco de dados.</p>
+                        <h3>Resetar Seus Dados</h3>
+                        <p class="subtitle reset-warning"><strong>ATENÇÃO:</strong> Esta é uma operação perigosa e irreversível. Todos os seus dados selecionados serão permanentemente excluídos da sua conta.</p>
                         
                         <div id="reset-options-container">
-                            <h4>Selecione os dados para apagar:</h4>
+                            <h4>Selecione os dados que deseja apagar:</h4>
                             <ul class="reset-options-list">
                                 <li>
                                     <input type="checkbox" id="reset-all" name="reset-all">
@@ -1073,7 +1073,7 @@
                                 </li>
                             </ul>
                         </div>
-                        <button id="initiate-reset-button" class="button-danger" style="width: 100%; margin-top: 1rem;">Iniciar Reset do Sistema</button>
+                        <button id="initiate-reset-button" class="button-danger" style="width: 100%; margin-top: 1rem;">Iniciar Reset de Dados</button>
                     </section>
                 </div>
                 <!-- FIM DA ALTERAÇÃO -->
@@ -1230,24 +1230,22 @@
         </div>
     </div>
     
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="reset-confirmation-modal" class="modal">
         <div class="modal-content">
             <span class="close-reset-confirmation-modal-button">&times;</span>
             <h2>Confirmação de Reset Permanente</h2>
             <p class="reset-warning"><strong>ATENÇÃO MÁXIMA!</strong> Esta ação é <strong>IRREVERSÍVEL</strong>.</p>
-            <p class="subtitle">Os seguintes dados serão <strong>permanentemente excluídos</strong> de todo o sistema:</p>
+            <p class="subtitle">Os seguintes tipos de dados da sua conta serão <strong>permanentemente excluídos</strong>:</p>
             <ul id="reset-summary-list">
                 <!-- Itens a serem excluídos serão listados aqui -->
             </ul>
             <div class="form-control" style="margin-top: 1.5rem;">
-                <label for="reset-confirmation-input">Para confirmar, digite <strong>RESETAR SISTEMA</strong> no campo abaixo:</label>
+                <label for="reset-confirmation-input">Para confirmar, digite <strong>APAGAR MEUS DADOS</strong> no campo abaixo:</label>
                 <input type="text" id="reset-confirmation-input" autocomplete="off">
             </div>
-            <button id="confirm-permanent-reset-button" class="button-danger" disabled style="width: 100%; margin-top: 1rem;">Confirmar Reset Permanente</button>
+            <button id="confirm-permanent-reset-button" class="button-danger" disabled style="width: 100%; margin-top: 1rem;">Confirmar Exclusão Permanente</button>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
