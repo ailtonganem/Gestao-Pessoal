@@ -33,7 +33,8 @@ async function addAccount(accountData) {
         const dataToSave = {
             ...accountData,
             currentBalance: accountData.initialBalance, // Saldo atual começa com o saldo inicial
-            createdAt: Timestamp.now()
+            createdAt: Timestamp.now(),
+            status: 'active' // --- INÍCIO DA ALTERAÇÃO ---
         };
         return await addDoc(accountsRef, dataToSave);
     } catch (error) {
@@ -43,7 +44,7 @@ async function addAccount(accountData) {
 }
 
 /**
- * Busca todas as contas de um usuário específico, excluindo as contas de investimento.
+ * Busca todas as contas ativas de um usuário específico, excluindo as contas de investimento.
  * @param {string} userId - O ID do usuário.
  * @returns {Promise<Array<object>>} Uma lista de objetos de conta.
  */
@@ -51,12 +52,12 @@ async function getAccounts(userId) {
     try {
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
         // --- INÍCIO DA ALTERAÇÃO ---
+        // A consulta agora filtra por status 'active' para ocultar as arquivadas.
         const q = query(
             accountsRef,
             where("userId", "==", userId),
-            where("type", "!=", "investment"), // Filtra para não incluir contas do tipo 'investment'
-            orderBy("type"), // Primeira ordenação DEVE ser no campo do filtro de desigualdade
-            orderBy("name")  // Segunda ordenação para manter a ordem alfabética
+            where("status", "==", "active"),
+            orderBy("name")
         );
         // --- FIM DA ALTERAÇÃO ---
         const querySnapshot = await getDocs(q);
@@ -90,22 +91,50 @@ async function updateAccount(accountId, updatedData) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
 /**
- * Exclui uma conta.
- * ATENÇÃO: Esta função apenas remove a conta. A lógica para lidar com
- * transações associadas a esta conta precisa ser definida.
+ * Arquiva uma conta mudando seu status para 'archived'.
+ * @param {string} accountId - O ID do documento da conta.
+ * @returns {Promise<void>}
+ */
+async function archiveAccount(accountId) {
+    try {
+        const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+        await updateDoc(accountDocRef, { status: 'archived' });
+    } catch (error) {
+        console.error("Erro ao arquivar conta:", error);
+        throw new Error("Não foi possível arquivar a conta.");
+    }
+}
+
+/**
+ * Reativa uma conta mudando seu status para 'active'.
+ * @param {string} accountId - O ID do documento da conta.
+ * @returns {Promise<void>}
+ */
+async function unarchiveAccount(accountId) {
+    try {
+        const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+        await updateDoc(accountDocRef, { status: 'active' });
+    } catch (error) {
+        console.error("Erro ao reativar conta:", error);
+        throw new Error("Não foi possível reativar a conta.");
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
+/**
+ * Exclui uma conta permanentemente.
  * @param {string} accountId - O ID do documento da conta.
  * @returns {Promise<void>}
  */
 async function deleteAccount(accountId) {
     try {
-        // Futuramente, podemos adicionar uma verificação se a conta possui transações
-        // e impedir a exclusão ou pedir confirmação extra.
         const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
         await deleteDoc(accountDocRef);
     } catch (error) {
-        console.error("Erro ao excluir conta:", error);
-        throw new Error("Não foi possível excluir a conta.");
+        console.error("Erro ao excluir conta permanentemente:", error);
+        throw new Error("Não foi possível excluir a conta permanentemente.");
     }
 }
 
@@ -123,4 +152,4 @@ function updateBalanceInBatch(batch, accountId, amount, transactionType) {
 }
 
 
-export { addAccount, getAccounts, updateAccount, deleteAccount, updateBalanceInBatch };
+export { addAccount, getAccounts, updateAccount, deleteAccount, archiveAccount, unarchiveAccount, updateBalanceInBatch };
