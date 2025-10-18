@@ -219,44 +219,65 @@ export function populateCreditCardSelects() {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
 /** Popula os <select> de conta com as contas do usuário. */
 export function populateAccountSelects() {
-    const advancePaymentAccountSelect = document.getElementById('advance-payment-account-select');
-    const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
-    const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
-    const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
-    const recurringAccountSelect = document.getElementById('recurring-account');
-    const editRecurringAccountSelect = document.getElementById('edit-recurring-account');
-    // INÍCIO DA ALTERAÇÃO
+    // Selects que devem mostrar TODAS as contas (gerais + investimento)
     const assetInitialAccountSelect = document.getElementById('asset-initial-account');
     const movementAccountSelect = document.getElementById('movement-account');
-    const proventoAccountSelect = document.getElementById('provento-account');
-    // FIM DA ALTERAÇÃO
+    const transferFromAccountSelect = document.getElementById('transfer-from-account');
+    const transferToAccountSelect = document.getElementById('transfer-to-account');
+    const editTransferFromAccountSelect = document.getElementById('edit-transfer-from-account');
+    const editTransferToAccountSelect = document.getElementById('edit-transfer-to-account');
+
+    // Selects que devem mostrar APENAS contas gerais
+    const transactionAccountSelect = document.getElementById('transaction-account');
+    const editTransactionAccountSelect = document.getElementById('edit-transaction-account');
+    const advancePaymentAccountSelect = document.getElementById('advance-payment-account-select');
+    const payInvoiceAccountSelect = document.getElementById('pay-invoice-account-select');
+    const recurringAccountSelect = document.getElementById('recurring-account');
+    const editRecurringAccountSelect = document.getElementById('edit-recurring-account');
     
-    const selects = [
-        transactionAccountSelect, editTransactionAccountSelect, transferFromAccountSelect, 
-        transferToAccountSelect, payInvoiceAccountSelect, advancePaymentAccountSelect,
-        editTransferFromAccountSelect, editTransferToAccountSelect, recurringAccountSelect,
-        editRecurringAccountSelect, 
-        // INÍCIO DA ALTERAÇÃO
-        assetInitialAccountSelect, movementAccountSelect, proventoAccountSelect
-        // FIM DA ALTERAÇÃO
+    // Selects de investimento que também precisam ser populados
+    const proventoAccountSelect = document.getElementById('provento-account');
+    const detailProventoAccountSelect = document.getElementById('detail-provento-account');
+
+    const allAccountsSelects = [
+        assetInitialAccountSelect, movementAccountSelect, transferFromAccountSelect, 
+        transferToAccountSelect, editTransferFromAccountSelect, editTransferToAccountSelect
+    ];
+    
+    const generalAccountsSelects = [
+        transactionAccountSelect, editTransactionAccountSelect, payInvoiceAccountSelect, 
+        advancePaymentAccountSelect, recurringAccountSelect, editRecurringAccountSelect,
+        proventoAccountSelect, detailProventoAccountSelect
     ];
 
-    selects.forEach(select => { if(select) select.innerHTML = ''; });
+    const allAccounts = [...state.userAccounts, ...(state.investmentAccounts || [])];
+    const generalAccounts = state.userAccounts;
 
-    if (state.userAccounts.length === 0) {
-        const option = '<option disabled value="">Nenhuma conta cadastrada</option>';
-        selects.forEach(select => { if(select) select.innerHTML = option; });
-    } else {
-        state.userAccounts.forEach(account => {
-            const option = document.createElement('option');
-            option.value = account.id;
-            option.textContent = `${account.name} (${formatCurrency(account.currentBalance)})`;
-            selects.forEach(select => { if(select) select.appendChild(option.cloneNode(true)); });
+    const populate = (selects, accounts) => {
+        selects.forEach(select => {
+            if (select) {
+                select.innerHTML = '';
+                if (accounts.length === 0) {
+                    select.innerHTML = '<option disabled value="">Nenhuma conta cadastrada</option>';
+                } else {
+                    accounts.forEach(account => {
+                        const option = document.createElement('option');
+                        option.value = account.id;
+                        option.textContent = `${account.name} (${formatCurrency(account.currentBalance)})`;
+                        select.appendChild(option);
+                    });
+                }
+            }
         });
-    }
+    };
+
+    populate(allAccountsSelects, allAccounts);
+    populate(generalAccountsSelects, generalAccounts);
 }
+// --- FIM DA ALTERAÇÃO ---
 
 /** Popula o dropdown de anos no filtro. */
 export function populateYearFilter() {
