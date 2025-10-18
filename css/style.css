@@ -569,7 +569,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     border: 1px solid var(--border-color);
 }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* Estilos para a Página de Dívidas */
 .debts-header {
     display: flex;
@@ -584,7 +583,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 #debts-summary-cards {
     gap: 1.5rem;
 }
-#debt-list {
+#debt-list, #paid-debt-list {
     list-style-type: none;
     padding: 0;
     display: flex;
@@ -599,7 +598,7 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     text-align: left;
 }
 .debt-item.paid {
-    opacity: 0.7;
+    opacity: 0.6;
     background-color: var(--background-color);
 }
 .debt-item-header {
@@ -613,11 +612,24 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     font-size: 0.9rem;
     color: #7f8c8d;
 }
+/* INÍCIO DA ALTERAÇÃO */
+.debt-item-details {
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 0.5rem; 
+    font-size: 0.9rem;
+}
 .debt-item-actions {
     margin-top: 1rem;
     text-align: right;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
-/* --- FIM DA ALTERAÇÃO --- */
+.debt-tab-content {
+    animation: fadeIn 0.5s;
+}
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos para a lista de Próximas Faturas */
 #upcoming-invoices-list {
@@ -677,8 +689,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-management-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button, .close-reset-confirmation-modal-button, .close-pay-debt-modal-button {
+/* INÍCIO DA ALTERAÇÃO */
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-management-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button, .close-reset-confirmation-modal-button, .close-pay-debt-modal-button, .close-debt-details-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -700,10 +712,11 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-edit-movement-modal-button:hover, .close-edit-movement-modal-button:focus,
 .close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus,
 .close-reset-confirmation-modal-button:hover, .close-reset-confirmation-modal-button:focus,
-.close-pay-debt-modal-button:hover, .close-pay-debt-modal-button:focus {
+.close-pay-debt-modal-button:hover, .close-pay-debt-modal-button:focus,
+.close-debt-details-modal-button:hover, .close-debt-details-modal-button:focus {
     color: var(--text-color);
 }
-/* --- FIM DA ALTERAÇÃO --- */
+/* FIM DA ALTERAÇÃO */
 
 /* Estilos específicos para os modais de Configurações e Gerenciamento */
 #settings-modal .modal-content,
@@ -712,32 +725,41 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 
 #settings-modal .modal-tabs,
-#management-modal .modal-tabs {
+#management-modal .modal-tabs,
+#debt-tabs-container { /* Reutiliza o estilo para as abas de dívida */
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 1.5rem;
     padding-bottom: 0; /* Remove padding inferior para alinhar com a borda */
     gap: 0; /* Remove gap entre botões */
+    display: flex;
 }
 
 #settings-modal .tab-link,
-#management-modal .tab-link {
+#management-modal .tab-link,
+#debt-tabs-container .tab-link { /* Reutiliza o estilo para as abas de dívida */
     flex: 1; /* Distribui o espaço igualmente entre as abas */
     padding: 0.8rem 1rem;
     margin-bottom: -1px; /* Alinha a borda inferior */
     border-bottom: 3px solid transparent;
     transition: border-color 0.2s ease, color 0.2s ease;
+    background: none;
+    font-size: 1rem;
+    color: #7f8c8d;
 }
 
 #settings-modal .tab-link:hover,
-#management-modal .tab-link:hover {
+#management-modal .tab-link:hover,
+#debt-tabs-container .tab-link:hover {
     color: var(--text-color);
     border-bottom-color: var(--hover-color);
 }
 
 #settings-modal .tab-link.active,
-#management-modal .tab-link.active {
+#management-modal .tab-link.active,
+#debt-tabs-container .tab-link.active {
     color: var(--secondary-color);
     border-bottom-color: var(--secondary-color);
+    font-weight: bold;
 }
 
 #settings-modal #settings-content,
