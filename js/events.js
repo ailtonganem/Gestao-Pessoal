@@ -21,6 +21,9 @@ import * as transfers from './modules/transfers.js';
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 import * as investmentsUI from './modules/investments/ui.js';
 import * as movements from './modules/investments/movements.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import { performSystemReset } from './modules/admin/systemReset.js';
+// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Módulos de UI ---
@@ -514,6 +517,26 @@ export function initializeEventListeners() {
         modals.closeSettingsModal();
     });
 
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Listeners da "Zona de Perigo"
+    document.getElementById('reset-all').addEventListener('change', (e) => {
+        document.querySelectorAll('input[name="reset-option"]').forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+    });
+
+    document.getElementById('initiate-reset-button').addEventListener('click', modals.openResetConfirmationModal);
+
+    document.querySelector('.close-reset-confirmation-modal-button').addEventListener('click', modals.closeResetConfirmationModal);
+
+    document.getElementById('reset-confirmation-input').addEventListener('input', (e) => {
+        const confirmButton = document.getElementById('confirm-permanent-reset-button');
+        confirmButton.disabled = e.target.value !== "APAGAR MEUS DADOS";
+    });
+
+    document.getElementById('confirm-permanent-reset-button').addEventListener('click', handlePermanentReset);
+    // --- FIM DA ALTERAÇÃO ---
+
     addAccountForm.addEventListener('submit', handleAddAccount);
     addCategoryForm.addEventListener('submit', handleAddCategory);
     setBudgetForm.addEventListener('submit', handleSetBudget);
@@ -559,7 +582,6 @@ export function initializeEventListeners() {
         }
     });
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     document.getElementById('account-list').addEventListener('click', (e) => {
         const archiveButton = e.target.closest('.archive-btn[data-account-id]');
         if (archiveButton) {
@@ -575,7 +597,6 @@ export function initializeEventListeners() {
             handleUnarchiveAccount(accountId);
         }
     });
-    // --- FIM DA ALTERAÇÃO ---
     
     document.getElementById('recurring-list').addEventListener('click', (e) => {
         const eventTarget = e.target.closest('.action-btn[data-recurring-id]');
@@ -709,6 +730,32 @@ export function initializeEventListeners() {
 
 
 // --- Funções "Handler" para Lógica de Eventos ---
+
+// --- INÍCIO DA ALTERAÇÃO ---
+async function handlePermanentReset(e) {
+    const button = e.target;
+    button.disabled = true;
+    button.textContent = 'APAGANDO DADOS...';
+
+    try {
+        showNotification('Iniciando a exclusão permanente dos seus dados. Por favor, aguarde.', 'info');
+        await performSystemReset(modals._resetOptions, state.currentUser.uid);
+        
+        showNotification('Seus dados foram apagados com sucesso! O sistema será reiniciado.', 'success');
+        
+        setTimeout(() => {
+            // Recarrega a página para refletir o estado zerado.
+            // O usuário continuará logado, mas sem dados.
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        showNotification(`Erro ao apagar os dados: ${error.message}`, 'error');
+        button.disabled = false;
+        button.textContent = 'Confirmar Exclusão Permanente';
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 async function handlePortfolioFilterChange(e) {
     const portfolioId = e.target.value;
