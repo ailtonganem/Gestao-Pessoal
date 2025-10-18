@@ -16,9 +16,7 @@ const composicaoChartCanvas = document.getElementById('composicao-chart');
 const patrimonioChartCanvas = document.getElementById('patrimonio-chart');
 const proventosMonthlyChartCanvas = document.getElementById('proventos-monthly-chart');
 const debtEvolutionChartCanvas = document.getElementById('debt-evolution-chart');
-// --- INÍCIO DA ALTERAÇÃO ---
 const debtCompositionChartCanvas = document.getElementById('debt-composition-chart');
-// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Renderiza o gráfico de despesas por categoria (tipo 'pie').
@@ -453,7 +451,6 @@ export function renderDebtEvolutionChart(chartData) {
     state.setDebtEvolutionChart(newChart);
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Renderiza o gráfico de composição das dívidas por tipo (tipo 'doughnut').
  * @param {object} chartData - Objeto com { labels, data }.
@@ -467,7 +464,6 @@ export function renderDebtCompositionChart(chartData) {
         if(debtCompositionChartCanvas) {
             const ctx = debtCompositionChartCanvas.getContext('2d');
             ctx.clearRect(0, 0, debtCompositionChartCanvas.width, debtCompositionChartCanvas.height);
-            // Opcional: Desenhar texto "Sem dados"
         }
         state.setDebtCompositionChart(null);
         return;
@@ -506,4 +502,3 @@ export function renderDebtCompositionChart(chartData) {
 
     state.setDebtCompositionChart(newChart);
 }
-// --- FIM DA ALTERAÇÃO ---
