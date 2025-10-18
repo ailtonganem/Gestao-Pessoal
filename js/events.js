@@ -555,7 +555,6 @@ export function initializeEventListeners() {
     document.querySelector('.close-pay-debt-modal-button').addEventListener('click', closePayDebtModal);
     document.querySelector('.close-debt-details-modal-button').addEventListener('click', debtsUI.closeDebtDetailsModal);
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     const debtTabsContainer = document.getElementById('debt-tabs-container');
     if (debtTabsContainer) {
         debtTabsContainer.addEventListener('click', (e) => {
@@ -581,7 +580,6 @@ export function initializeEventListeners() {
             }
         });
     }
-    // --- FIM DA ALTERAÇÃO ---
 
     const categoryContainer = document.getElementById('category-lists-container');
     categoryContainer.addEventListener('click', (e) => {
@@ -800,6 +798,14 @@ async function handleAddDebt(e) {
     try {
         await debts.addDebt(debtData);
         showNotification("Dívida adicionada com sucesso!");
+        
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const recurringMessage = await debts.createRecurringTransactionForDebt(debtData);
+        if (recurringMessage) {
+            showNotification(recurringMessage);
+        }
+        // --- FIM DA ALTERAÇÃO ---
+
         form.reset();
         await debtsUI.loadDebtsPage();
     } catch (error) {
