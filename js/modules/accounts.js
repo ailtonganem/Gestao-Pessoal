@@ -34,7 +34,7 @@ async function addAccount(accountData) {
             ...accountData,
             currentBalance: accountData.initialBalance, // Saldo atual começa com o saldo inicial
             createdAt: Timestamp.now(),
-            status: 'active' // --- INÍCIO DA ALTERAÇÃO ---
+            status: 'active' 
         };
         return await addDoc(accountsRef, dataToSave);
     } catch (error) {
@@ -52,11 +52,12 @@ async function getAccounts(userId) {
     try {
         const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
         // --- INÍCIO DA ALTERAÇÃO ---
-        // A consulta agora filtra por status 'active' para ocultar as arquivadas.
+        // A consulta agora filtra por status 'not-in' ['archived'].
+        // Isso inclui documentos com status 'active' e também documentos antigos que não possuem o campo 'status'.
         const q = query(
             accountsRef,
             where("userId", "==", userId),
-            where("status", "==", "active"),
+            where("status", "not-in", ["archived"]),
             orderBy("name")
         );
         // --- FIM DA ALTERAÇÃO ---
@@ -91,7 +92,7 @@ async function updateAccount(accountId, updatedData) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
+
 /**
  * Arquiva uma conta mudando seu status para 'archived'.
  * @param {string} accountId - O ID do documento da conta.
@@ -121,7 +122,7 @@ async function unarchiveAccount(accountId) {
         throw new Error("Não foi possível reativar a conta.");
     }
 }
-// --- FIM DA ALTERAÇÃO ---
+
 
 /**
  * Exclui uma conta permanentemente.
@@ -151,5 +152,34 @@ function updateBalanceInBatch(batch, accountId, amount, transactionType) {
     batch.update(accountRef, { currentBalance: increment(amountToUpdate) });
 }
 
+/**
+ * Busca todas as contas arquivadas de um usuário.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Array<object>>} Uma lista de objetos de conta arquivada.
+ */
+async function getArchivedAccounts(userId) {
+    try {
+        const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+        const q = query(
+            accountsRef,
+            where("userId", "==", userId),
+            where("status", "==", "archived"),
+            orderBy("name")
+        );
+        const querySnapshot = await getDocs(q);
+        const accounts = [];
+        querySnapshot.forEach((doc) => {
+            accounts.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        return accounts;
+    } catch (error) {
+        console.error("Erro ao buscar contas arquivadas:", error);
+        throw new Error("Não foi possível carregar as contas arquivadas.");
+    }
+}
 
-export { addAccount, getAccounts, updateAccount, deleteAccount, archiveAccount, unarchiveAccount, updateBalanceInBatch };
+
+export { addAccount, getAccounts, updateAccount, deleteAccount, archiveAccount, unarchiveAccount, updateBalanceInBatch, getArchivedAccounts };
