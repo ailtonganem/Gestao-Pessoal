@@ -13,9 +13,8 @@ import { getRecurringTransactions } from '../recurring.js';
 import { getAllUsers } from '../admin.js';
 import * as charts from './charts.js';
 import { populateDashboardCustomization } from '../../app.js';
-// INÍCIO DA ALTERAÇÃO
 import * as accounts from '../accounts.js';
-// FIM DA ALTERAÇÃO
+
 
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
@@ -393,8 +392,6 @@ export async function openManagementModal() {
     managementModal.style.display = 'flex';
     
     try {
-        // --- INÍCIO DA ALTERAÇÃO ---
-        // Carrega todas as listas, incluindo a nova de contas arquivadas
         await Promise.all([
             (async () => {
                 const recurringTxs = await getRecurringTransactions(state.currentUser.uid);
@@ -403,9 +400,10 @@ export async function openManagementModal() {
             })(),
             render.renderBudgetList(),
             render.renderAccountList(),
-            loadAndRenderArchivedAccounts() // Nova função
+            // --- INÍCIO DA ALTERAÇÃO ---
+            loadAndRenderArchivedAccounts()
+            // --- FIM DA ALTERAÇÃO ---
         ]);
-        // --- FIM DA ALTERAÇÃO ---
     } catch (error) {
         showNotification(error.message, 'error');
     }
