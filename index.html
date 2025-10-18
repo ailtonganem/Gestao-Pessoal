@@ -73,9 +73,7 @@
                 <a href="#" id="nav-dashboard-button" class="header-icon-button" title="Dashboard">📊</a>
                 <a href="#" id="nav-investments-button" class="header-icon-button" title="Meus Investimentos">📈</a>
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <a href="#" id="nav-debts-button" class="header-icon-button" title="Minhas Dívidas">🧾</a>
-                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
                 <a href="#" id="nav-management-button" class="header-icon-button" title="Gerenciamento Financeiro">📒</a>
@@ -750,7 +748,6 @@
             </main>
         </div>
         
-        <!-- INÍCIO DA ALTERAÇÃO -->
         <!-- Contêiner da Página de Dívidas -->
         <div id="debts-container" style="display: none;">
             <main>
@@ -798,7 +795,6 @@
                 </section>
             </main>
         </div>
-        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
@@ -996,6 +992,9 @@
                 <button class="tab-link active" data-tab="theme-settings-tab">Aparência</button>
                 <button class="tab-link" data-tab="dashboard-customization-tab">Personalizar Dashboard</button>
                 <button id="admin-tab-button" class="tab-link" data-tab="user-management-tab" style="display: none;">Gerenciar Usuários</button>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <button id="admin-advanced-tab-button" class="tab-link" data-tab="advanced-admin-tab" style="display: none;">Administração</button>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
             <div id="settings-content">
                 <div id="theme-settings-tab" class="tab-content active">
@@ -1027,6 +1026,57 @@
                         <ul id="user-list"></ul>
                     </section>
                 </div>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <div id="advanced-admin-tab" class="tab-content">
+                    <section>
+                        <h3>Resetar Dados do Sistema</h3>
+                        <p class="subtitle reset-warning"><strong>ATENÇÃO:</strong> Esta é uma operação perigosa e irreversível. Todos os dados selecionados serão permanentemente excluídos do banco de dados.</p>
+                        
+                        <div id="reset-options-container">
+                            <h4>Selecione os dados para apagar:</h4>
+                            <ul class="reset-options-list">
+                                <li>
+                                    <input type="checkbox" id="reset-all" name="reset-all">
+                                    <label for="reset-all"><strong>(Selecionar Tudo)</strong></label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-transactions" name="reset-option" data-collection="transactions">
+                                    <label for="reset-transactions">Transações e Transferências</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-accounts" name="reset-option" data-collection="accounts">
+                                    <label for="reset-accounts">Contas</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-cards" name="reset-option" data-collection="creditCards">
+                                    <label for="reset-cards">Cartões de Crédito</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-invoices" name="reset-option" data-collection="invoices">
+                                    <label for="reset-invoices">Faturas de Cartão</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-portfolios" name="reset-option" data-collection="portfolios">
+                                    <label for="reset-portfolios">Carteiras e Ativos de Investimento</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-recurring" name="reset-option" data-collection="recurring">
+                                    <label for="reset-recurring">Transações Recorrentes</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-budgets" name="reset-option" data-collection="budgets">
+                                    <label for="reset-budgets">Orçamentos</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="reset-categories" name="reset-option" data-collection="categories">
+                                    <label for="reset-categories">Categorias Personalizadas</label>
+                                </li>
+                            </ul>
+                        </div>
+                        <button id="initiate-reset-button" class="button-danger" style="width: 100%; margin-top: 1rem;">Iniciar Reset do Sistema</button>
+                    </section>
+                </div>
+                <!-- FIM DA ALTERAÇÃO -->
             </div>
         </div>
     </div>
@@ -1179,6 +1229,25 @@
             </div>
         </div>
     </div>
+    
+    <!-- INÍCIO DA ALTERAÇÃO -->
+    <div id="reset-confirmation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-reset-confirmation-modal-button">&times;</span>
+            <h2>Confirmação de Reset Permanente</h2>
+            <p class="reset-warning"><strong>ATENÇÃO MÁXIMA!</strong> Esta ação é <strong>IRREVERSÍVEL</strong>.</p>
+            <p class="subtitle">Os seguintes dados serão <strong>permanentemente excluídos</strong> de todo o sistema:</p>
+            <ul id="reset-summary-list">
+                <!-- Itens a serem excluídos serão listados aqui -->
+            </ul>
+            <div class="form-control" style="margin-top: 1.5rem;">
+                <label for="reset-confirmation-input">Para confirmar, digite <strong>RESETAR SISTEMA</strong> no campo abaixo:</label>
+                <input type="text" id="reset-confirmation-input" autocomplete="off">
+            </div>
+            <button id="confirm-permanent-reset-button" class="button-danger" disabled style="width: 100%; margin-top: 1rem;">Confirmar Reset Permanente</button>
+        </div>
+    </div>
+    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="edit-recurring-modal" class="modal">
         <div class="modal-content">
