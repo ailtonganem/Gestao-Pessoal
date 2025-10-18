@@ -57,9 +57,7 @@ const proventoPaymentDateInput = document.getElementById('provento-payment-date'
 const proventoAccountSelect = document.getElementById('provento-account');
 const proventoAccountWrapper = document.getElementById('provento-account-wrapper');
 
-// --- INÍCIO DA ALTERAÇÃO ---
 const assetDetailView = document.getElementById('asset-detail-view');
-// --- FIM DA ALTERAÇÃO ---
 
 // Modais de Edição
 const editPortfolioModal = document.getElementById('edit-portfolio-modal');
@@ -142,7 +140,6 @@ export async function refreshMovementsView() {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Exibe a nova página de detalhes completa para um ativo específico.
  * @param {string} assetId - O ID do ativo a ser exibido.
@@ -185,7 +182,6 @@ export async function showAssetDetailView(assetId) {
         showNotification(error.message, "error");
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 // --- Novas Funções de Orquestração do Dashboard ---
 
@@ -223,15 +219,16 @@ export async function updateInvestmentDashboard(portfolioId) {
             assetsToDisplay = await assets.getAssets(portfolioId);
             assetsToDisplay.forEach(asset => asset.portfolioId = portfolioId);
         }
-
-        const tickers = assetsToDisplay.map(asset => asset.ticker);
-        const quotes = await getQuotes(tickers);
+        
+        // --- INÍCIO DA ALTERAÇÃO ---
+        const savedQuotes = await quotes.getSavedQuotes(state.currentUser.uid);
 
         assetsToDisplay.forEach(asset => {
-            const currentPrice = quotes[asset.ticker] || (asset.quantity > 0 ? asset.averagePrice : 0);
+            const currentPrice = savedQuotes[asset.ticker]?.currentPrice || (asset.quantity > 0 ? asset.averagePrice : 0);
             asset.currentValue = currentPrice * asset.quantity;
             asset.currentPrice = currentPrice;
         });
+        // --- FIM DA ALTERAÇÃO ---
         
         const movementPromises = assetsToDisplay.map(async (asset) => {
             const assetMovements = await movements.getMovements(asset.portfolioId, asset.id);
@@ -248,12 +245,14 @@ export async function updateInvestmentDashboard(portfolioId) {
 
         const totalPatrimonio = assetsToDisplay.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
         
+        // --- INÍCIO DA ALTERAÇÃO ---
         const composicaoData = assetsToDisplay.reduce((acc, asset) => {
             const key = asset.type || 'Outro';
             if (!acc[key]) acc[key] = 0;
             acc[key] += asset.currentValue || 0;
             return acc;
         }, {});
+        // --- FIM DA ALTERAÇÃO ---
 
         const proventosMes = allMovementsFlat
             .filter(m => m.type === 'provento' && m.date.getMonth() === currentMonth && m.date.getFullYear() === currentYear)
@@ -585,7 +584,6 @@ function renderAssets(assetsToRender, portfolioTotalValue, portfolioTotalCost) {
     });
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 function renderAssetDetailPlaceholders(ticker, name) {
     document.getElementById('detail-asset-ticker').textContent = ticker;
     document.getElementById('detail-asset-name').textContent = name;
@@ -699,7 +697,6 @@ function renderAssetDetailProventos(proventos, averagePrice) {
     tableHtml += '</ul>';
     containerEl.innerHTML = tableHtml;
 }
-// --- FIM DA ALTERAÇÃO ---
 
 export function openMovementModal(assetId) {
     const asset = _currentPortfolioAssets.find(a => a.id === assetId);
@@ -812,7 +809,6 @@ export function closeEditMovementModal() {
     editMovementModal.style.display = 'none';
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 export async function openUpdateQuotesModal() {
     const listEl = document.getElementById('update-quotes-list');
     listEl.innerHTML = '<li>Carregando ativos...</li>';
@@ -854,4 +850,3 @@ export async function openUpdateQuotesModal() {
 export function closeUpdateQuotesModal() {
     updateQuotesModal.style.display = 'none';
 }
-// --- FIM DA ALTERAÇÃO ---
