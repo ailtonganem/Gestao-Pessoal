@@ -18,12 +18,13 @@ import * as admin from './modules/admin.js';
 import * as app from './app.js';
 import * as accounts from './modules/accounts.js'; 
 import * as transfers from './modules/transfers.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import * as debts from './modules/debts.js';
+// --- FIM DA ALTERAÇÃO ---
 import { getDescriptionSuggestions } from './modules/autocomplete.js';
 import * as investmentsUI from './modules/investments/ui.js';
 import * as movements from './modules/investments/movements.js';
-// --- INÍCIO DA ALTERAÇÃO ---
 import { performSystemReset } from './modules/admin/systemReset.js';
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Módulos de UI ---
@@ -33,6 +34,9 @@ import * as render from './modules/ui/render.js';
 import { showNotification } from './modules/ui/notifications.js';
 import * as proventosUI from './modules/proventos/ui.js';
 import * as transactionsInvestmentUI from './modules/transactions-investment/ui.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import * as debtsUI from './modules/debts/ui.js';
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const loginForm = document.querySelector('#login-form form');
@@ -61,6 +65,11 @@ const portfolioFilterSelect = document.getElementById('portfolio-filter-select')
 const backToInvestmentDashboardBtn = document.getElementById('back-to-investment-dashboard-btn');
 const goToPortfoliosManagementBtn = document.getElementById('go-to-portfolios-management-btn');
 const transactionsInvestmentList = document.getElementById('transactions-investment-list');
+// --- INÍCIO DA ALTERAÇÃO ---
+const addDebtForm = document.getElementById('add-debt-form');
+const debtList = document.getElementById('debt-list');
+const payDebtInstallmentForm = document.getElementById('pay-debt-installment-form');
+// --- FIM DA ALTERAÇÃO ---
 
 
 // Formulários de Edição de Investimentos
@@ -134,6 +143,14 @@ export function initializeEventListeners() {
         views.showProventosView();
         await proventosUI.loadProventosPage(); 
     });
+    
+    // --- INÍCIO DA ALTERAÇÃO ---
+    document.getElementById('nav-debts-button').addEventListener('click', async (e) => {
+        e.preventDefault();
+        views.showDebtsView();
+        await debtsUI.loadDebtsPage();
+    });
+    // --- FIM DA ALTERAÇÃO ---
 
     document.getElementById('nav-transactions-investment-button').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -517,7 +534,6 @@ export function initializeEventListeners() {
         modals.closeSettingsModal();
     });
 
-    // --- INÍCIO DA ALTERAÇÃO ---
     // Listeners da "Zona de Perigo"
     document.getElementById('reset-all').addEventListener('change', (e) => {
         document.querySelectorAll('input[name="reset-option"]').forEach(checkbox => {
@@ -535,12 +551,26 @@ export function initializeEventListeners() {
     });
 
     document.getElementById('confirm-permanent-reset-button').addEventListener('click', handlePermanentReset);
-    // --- FIM DA ALTERAÇÃO ---
 
     addAccountForm.addEventListener('submit', handleAddAccount);
     addCategoryForm.addEventListener('submit', handleAddCategory);
     setBudgetForm.addEventListener('submit', handleSetBudget);
     addRecurringForm.addEventListener('submit', handleAddRecurring);
+
+    // --- INÍCIO DA ALTERAÇÃO ---
+    // Listeners do Módulo de Dívidas
+    addDebtForm.addEventListener('submit', handleAddDebt);
+    payDebtInstallmentForm.addEventListener('submit', handlePayDebtInstallment);
+    document.querySelector('.close-pay-debt-modal-button').addEventListener('click', closePayDebtModal);
+
+    debtList.addEventListener('click', (e) => {
+        const payButton = e.target.closest('.pay-installment-btn');
+        if (payButton) {
+            const debtId = payButton.dataset.debtId;
+            openPayDebtModal(debtId);
+        }
+    });
+    // --- FIM DA ALTERAÇÃO ---
 
     const categoryContainer = document.getElementById('category-lists-container');
     categoryContainer.addEventListener('click', (e) => {
@@ -732,6 +762,99 @@ export function initializeEventListeners() {
 // --- Funções "Handler" para Lógica de Eventos ---
 
 // --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Manipula o envio do formulário de adicionar dívida.
+ */
+async function handleAddDebt(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const debtData = {
+        description: form['debt-description'].value,
+        totalAmount: parseFloat(form['debt-total-amount'].value),
+        installmentAmount: parseFloat(form['debt-installment-amount'].value),
+        startDate: form['debt-start-date'].value,
+        category: form['debt-category'].value,
+        userId: state.currentUser.uid,
+    };
+
+    try {
+        await debts.addDebt(debtData);
+        showNotification("Dívida adicionada com sucesso!");
+        form.reset();
+        await debtsUI.loadDebtsPage();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+/**
+ * Abre o modal para pagamento de parcela da dívida.
+ * @param {string} debtId - O ID da dívida a ser paga.
+ */
+function openPayDebtModal(debtId) {
+    const debt = state.userDebts.find(d => d.id === debtId);
+    if (!debt) {
+        showNotification("Dívida não encontrada.", "error");
+        return;
+    }
+
+    const modal = document.getElementById('pay-debt-installment-modal');
+    modal.querySelector('#pay-debt-id').value = debt.id;
+    modal.querySelector('#pay-debt-description').textContent = debt.description;
+    modal.querySelector('#pay-debt-amount').value = render.formatCurrency(debt.installmentAmount);
+    modal.querySelector('#pay-debt-payment-date').value = new Date().toISOString().split('T')[0];
+    
+    render.populateAccountSelects(); // Garante que as contas estão atualizadas
+    modal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de pagamento de parcela da dívida.
+ */
+function closePayDebtModal() {
+    const modal = document.getElementById('pay-debt-installment-modal');
+    payDebtInstallmentForm.reset();
+    modal.style.display = 'none';
+}
+
+/**
+ * Manipula a confirmação do pagamento da parcela da dívida.
+ */
+async function handlePayDebtInstallment(e) {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    const debtId = form['pay-debt-id'].value;
+    const debt = state.userDebts.find(d => d.id === debtId);
+
+    const paymentDetails = {
+        accountId: form['pay-debt-account-select'].value,
+        paymentDate: form['pay-debt-payment-date'].value,
+    };
+
+    try {
+        if (!paymentDetails.accountId) throw new Error("Selecione uma conta para o pagamento.");
+        
+        await debts.payDebtInstallment(debt, paymentDetails);
+        showNotification("Parcela paga com sucesso!");
+        closePayDebtModal();
+        await debtsUI.loadDebtsPage();
+        await app.loadUserAccounts(); // Recarrega os saldos das contas
+    } catch (error) {
+        showNotification(error.message, 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
 async function handlePermanentReset(e) {
     const button = e.target;
     button.disabled = true;
@@ -755,7 +878,6 @@ async function handlePermanentReset(e) {
         button.textContent = 'Confirmar Exclusão Permanente';
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 async function handlePortfolioFilterChange(e) {
     const portfolioId = e.target.value;
