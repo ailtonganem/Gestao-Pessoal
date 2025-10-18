@@ -748,7 +748,6 @@
             </main>
         </div>
         
-        <!-- INÍCIO DA ALTERAÇÃO -->
         <!-- Contêiner da Página de Dívidas -->
         <div id="debts-container" style="display: none;">
             <main>
@@ -770,12 +769,23 @@
                     </ul>
                 </section>
 
+                <!-- INÍCIO DA ALTERAÇÃO -->
                 <section class="investment-card full-width">
                     <h3>Adicionar Nova Dívida</h3>
                     <form id="add-debt-form">
                         <div class="form-control">
                             <label for="debt-description">Descrição</label>
                             <input type="text" id="debt-description" placeholder="Ex: Financiamento Veículo, Empréstimo Pessoal" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-type">Tipo de Dívida</label>
+                            <select id="debt-type" required>
+                                <option value="financing">Financiamento</option>
+                                <option value="personal_loan">Empréstimo Pessoal</option>
+                                <option value="payroll_loan">Empréstimo Consignado</option>
+                                <option value="credit_card_installment">Parcelamento de Fatura</option>
+                                <option value="other">Outro</option>
+                            </select>
                         </div>
                         <div class="form-control">
                             <label for="debt-total-amount">Valor Total da Dívida (R$)</label>
@@ -786,6 +796,14 @@
                             <input type="number" id="debt-installment-amount" placeholder="650.00" step="0.01" required>
                         </div>
                         <div class="form-control">
+                            <label for="debt-total-installments">Total de Parcelas</label>
+                            <input type="number" id="debt-total-installments" placeholder="48" min="1" step="1" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-due-day">Dia do Vencimento da Parcela (1-31)</label>
+                            <input type="number" id="debt-due-day" min="1" max="31" placeholder="10" required>
+                        </div>
+                        <div class="form-control">
                             <label for="debt-start-date">Data da Primeira Parcela</label>
                             <input type="date" id="debt-start-date" required>
                         </div>
@@ -793,12 +811,20 @@
                             <label for="debt-category">Categoria da Despesa</label>
                             <select id="debt-category" required></select>
                         </div>
+                         <div class="form-control">
+                            <label for="debt-payment-method">Forma de Pagamento da Parcela</label>
+                            <select id="debt-payment-method" required>
+                                <option value="account_debit">Débito em Conta</option>
+                                <option value="payroll">Desconto em Folha</option>
+                                <option value="manual">Manual (Boleto)</option>
+                            </select>
+                        </div>
                         <button type="submit">Adicionar Dívida</button>
                     </form>
                 </section>
+                <!-- FIM DA ALTERAÇÃO -->
             </main>
         </div>
-        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
@@ -1346,7 +1372,6 @@
         </div>
     </div>
     
-    <!-- INÍCIO DA ALTERAÇÃO -->
     <div id="pay-debt-installment-modal" class="modal">
         <div class="modal-content">
             <span class="close-pay-debt-modal-button">&times;</span>
@@ -1370,7 +1395,6 @@
             </form>
         </div>
     </div>
-    <!-- FIM DA ALTERAÇÃO -->
 
     <div id="advance-payment-modal" class="modal">
         <div class="modal-content">
