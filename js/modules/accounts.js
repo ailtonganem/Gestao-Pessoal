@@ -55,7 +55,8 @@ async function getAccounts(userId) {
             accountsRef,
             where("userId", "==", userId),
             where("type", "!=", "investment"), // Filtra para não incluir contas do tipo 'investment'
-            orderBy("name")
+            orderBy("type"), // Primeira ordenação DEVE ser no campo do filtro de desigualdade
+            orderBy("name")  // Segunda ordenação para manter a ordem alfabética
         );
         // --- FIM DA ALTERAÇÃO ---
         const querySnapshot = await getDocs(q);
