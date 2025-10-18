@@ -29,9 +29,7 @@ import {
     getDoc,
     limit,
     startAfter,
-    // INÍCIO DA ALTERAÇÃO
     collectionGroup
-    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 /**
@@ -89,8 +87,8 @@ async function addTransaction(transactionData, cardData = null) {
                     isSplit: false, // Parcelamentos não são divididos
                     splits: null,
                     tags: transactionData.tags, // As tags se aplicam a todas as parcelas
-                    cardId: transactionData.cardId, // Adiciona o ID do cartão para referência
-                    userId: transactionData.userId
+                    cardId: transactionData.cardId,
+                    userId: transactionData.userId // Garante que o userId seja salvo
                 };
                 
                 const newTransactionRef = doc(invoiceTransactionsRef);
@@ -112,9 +110,10 @@ async function addTransaction(transactionData, cardData = null) {
                 isSplit: transactionData.isSplit,
                 splits: transactionData.splits,
                 tags: transactionData.tags,
-                cardId: transactionData.cardId, // Adiciona o ID do cartão para referência
-                userId: transactionData.userId
+                cardId: transactionData.cardId,
+                userId: transactionData.userId // Garante que o userId seja salvo
             };
+
             const newTransactionRef = doc(invoiceTransactionsRef);
             batch.set(newTransactionRef, newTransactionInInvoice);
             batch.update(invoiceRef, { totalAmount: increment(transactionData.amount) });
@@ -361,7 +360,6 @@ async function deleteInvestmentTransaction(transactionId, isCorrection = false) 
 }
 
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Busca e unifica transações diretas e de cartão de crédito para um usuário, com filtros e paginação.
  * @param {string} userId - O ID do usuário.
@@ -451,6 +449,5 @@ export async function getUnifiedTransactions(userId, options = {}) {
         throw new Error("Não foi possível buscar o histórico unificado.");
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 export { addTransaction, getTransactions, deleteTransaction, updateTransaction, deleteInvestmentTransaction };
