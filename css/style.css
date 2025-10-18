@@ -114,6 +114,11 @@ button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
     cursor: pointer; padding: 0; text-decoration: underline;
 }
 
+/* --- INÍCIO DA ALTERAÇÃO --- */
+.button-danger { background-color: var(--error-color); }
+.button-danger:hover { background-color: #c0392b; }
+/* --- FIM DA ALTERAÇÃO --- */
+
 
 /* Estilos para os links e subtítulos */
 p { margin-top: 1.5rem; }
@@ -567,7 +572,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     border: 1px solid var(--border-color);
 }
 
-/* --- INÍCIO DA ALTERAÇÃO --- */
 /* Estilos para a Página de Dívidas */
 .debts-header {
     display: flex;
@@ -586,7 +590,6 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
     list-style-type: none;
     padding: 0;
 }
-/* --- FIM DA ALTERAÇÃO --- */
 
 /* Estilos para a lista de Próximas Faturas */
 #upcoming-invoices-list {
@@ -646,7 +649,8 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 }
 @keyframes modalOpen { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
-.close-button, .close-card-modal-button, .close-settings-modal-button, .close-management-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button {
+/* --- INÍCIO DA ALTERAÇÃO --- */
+.close-button, .close-card-modal-button, .close-settings-modal-button, .close-management-modal-button, .close-edit-recurring-modal-button, .close-edit-invoice-tx-modal-button, .close-pay-invoice-modal-button, .close-advance-payment-modal-button, .close-edit-transfer-modal-button, .close-edit-card-modal-button, .close-split-modal-button, .close-asset-movement-modal-button, .close-provento-modal-button, .close-edit-portfolio-modal-button, .close-edit-asset-modal-button, .close-edit-movement-modal-button, .close-update-quotes-modal-button, .close-reset-confirmation-modal-button {
     position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 2rem;
     font-weight: bold; cursor: pointer; line-height: 1;
 }
@@ -666,9 +670,11 @@ body.dark-mode .summary-card.balance { color: #2c3e50; }
 .close-edit-portfolio-modal-button:hover, .close-edit-portfolio-modal-button:focus,
 .close-edit-asset-modal-button:hover, .close-edit-asset-modal-button:focus,
 .close-edit-movement-modal-button:hover, .close-edit-movement-modal-button:focus,
-.close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus {
+.close-update-quotes-modal-button:hover, .close-update-quotes-modal-button:focus,
+.close-reset-confirmation-modal-button:hover, .close-reset-confirmation-modal-button:focus {
     color: var(--text-color);
 }
+/* --- FIM DA ALTERAÇÃO --- */
 
 /* Estilos específicos para os modais de Configurações e Gerenciamento */
 #settings-modal .modal-content,
@@ -998,3 +1004,54 @@ body.dark-mode .subcategory-container { background-color: rgba(0,0,0,0.1); }
 .quote-update-item .form-control input {
     padding: 0.5rem;
 }
+
+/* --- INÍCIO DA ALTERAÇÃO --- */
+/* Estilos para a Aba de Administração e Reset */
+.reset-warning {
+    background-color: rgba(231, 76, 60, 0.1);
+    border: 1px solid var(--error-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: var(--error-color);
+}
+.reset-warning strong {
+    color: var(--error-color);
+}
+
+.reset-options-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.reset-options-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.reset-options-list li input[type="checkbox"] {
+    width: auto;
+    flex-shrink: 0;
+}
+
+#reset-summary-list {
+    list-style-type: '⚠️ ';
+    padding-left: 2rem;
+    margin: 1rem 0;
+    text-align: left;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+#reset-summary-list li {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+/* --- FIM DA ALTERAÇÃO --- */
