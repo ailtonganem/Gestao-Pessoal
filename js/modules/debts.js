@@ -139,7 +139,6 @@ async function payDebtInstallment(debt, paymentDetails) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Calcula a evolução do saldo devedor total nos últimos 12 meses.
  * @param {string} userId - O ID do usuário.
@@ -181,5 +180,40 @@ async function getDebtEvolutionData(userId, allUserTransactions) {
     }
 }
 
-export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData };
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Agrega o saldo devedor por tipo de dívida para o gráfico de composição.
+ * @param {Array<object>} userDebts - A lista de dívidas do usuário.
+ * @returns {object} Objeto com labels e data para o gráfico.
+ */
+function getDebtCompositionData(userDebts) {
+    const composition = userDebts
+        .filter(d => d.status === 'active')
+        .reduce((acc, debt) => {
+            const balance = debt.totalAmount - (debt.amountPaid || 0);
+            const type = debt.type || 'other'; // Agrupa dívidas sem tipo como 'Outro'
+
+            if (!acc[type]) {
+                acc[type] = 0;
+            }
+            acc[type] += balance;
+            return acc;
+        }, {});
+
+    const typeTranslations = {
+        financing: 'Financiamento',
+        personal_loan: 'Empréstimo Pessoal',
+        payroll_loan: 'Empréstimo Consignado',
+        credit_card_installment: 'Parcelamento de Fatura',
+        other: 'Outro'
+    };
+
+    const labels = Object.keys(composition).map(key => typeTranslations[key] || 'Desconhecido');
+    const data = Object.values(composition);
+
+    return { labels, data };
+}
+
+
+export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData, getDebtCompositionData };
 // --- FIM DA ALTERAÇÃO ---
