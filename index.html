@@ -73,6 +73,9 @@
                 <a href="#" id="nav-dashboard-button" class="header-icon-button" title="Dashboard">📊</a>
                 <a href="#" id="nav-investments-button" class="header-icon-button" title="Meus Investimentos">📈</a>
                 <a href="#" id="nav-proventos-button" class="header-icon-button" title="Proventos">💰</a>
+                <!-- INÍCIO DA ALTERAÇÃO -->
+                <a href="#" id="nav-debts-button" class="header-icon-button" title="Minhas Dívidas">🧾</a>
+                <!-- FIM DA ALTERAÇÃO -->
                 <a href="#" id="nav-transactions-investment-button" class="header-icon-button" title="Transações de Investimentos">🔁</a>
                 <a href="#" id="nav-cards-button" class="header-icon-button" title="Gerenciar Cartões">💳</a>
                 <a href="#" id="nav-management-button" class="header-icon-button" title="Gerenciamento Financeiro">📒</a>
@@ -746,6 +749,56 @@
                 </section>
             </main>
         </div>
+        
+        <!-- INÍCIO DA ALTERAÇÃO -->
+        <!-- Contêiner da Página de Dívidas -->
+        <div id="debts-container" style="display: none;">
+            <main>
+                <div class="debts-header">
+                    <h2>Minhas Dívidas</h2>
+                </div>
+                
+                <section id="debts-summary-cards" class="summary-section">
+                    <!-- Cards de resumo (Saldo Devedor Total, etc.) serão renderizados aqui -->
+                    <div class="summary-card"><p>Carregando...</p></div>
+                </section>
+
+                <section class="investment-card full-width">
+                    <h3>Dívidas Ativas</h3>
+                    <ul id="debt-list">
+                        <li>Carregando dívidas...</li>
+                    </ul>
+                </section>
+
+                <section class="investment-card full-width">
+                    <h3>Adicionar Nova Dívida</h3>
+                    <form id="add-debt-form">
+                        <div class="form-control">
+                            <label for="debt-description">Descrição</label>
+                            <input type="text" id="debt-description" placeholder="Ex: Financiamento Veículo, Empréstimo Pessoal" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-total-amount">Valor Total da Dívida (R$)</label>
+                            <input type="number" id="debt-total-amount" placeholder="25000.00" step="0.01" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-installment-amount">Valor da Parcela (R$)</label>
+                            <input type="number" id="debt-installment-amount" placeholder="650.00" step="0.01" required>
+                        </div>
+                        <div class="form-control">
+                            <label for="debt-start-date">Data da Primeira Parcela</label>
+                            <input type="date" id="debt-start-date" required>
+                        </div>
+                         <div class="form-control">
+                            <label for="debt-category">Categoria da Despesa</label>
+                            <select id="debt-category" required></select>
+                        </div>
+                        <button type="submit">Adicionar Dívida</button>
+                    </form>
+                </section>
+            </main>
+        </div>
+        <!-- FIM DA ALTERAÇÃO -->
     </div>
 
 
@@ -987,9 +1040,7 @@
                 <button class="tab-link" data-tab="category-management-tab">Minhas Categorias</button>
                 <button class="tab-link" data-tab="budget-management-tab">Orçamentos</button>
                 <button class="tab-link" data-tab="recurring-management-tab">Recorrências</button>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <button class="tab-link" data-tab="archived-items-tab">Itens Arquivados</button>
-                <!-- FIM DA ALTERAÇÃO -->
             </div>
             <div id="management-content">
                 <div id="account-management-tab" class="tab-content active">
@@ -1116,7 +1167,6 @@
                         <ul id="recurring-list"></ul>
                     </section>
                 </div>
-                <!-- INÍCIO DA ALTERAÇÃO -->
                 <div id="archived-items-tab" class="tab-content">
                     <section>
                         <h3>Contas Arquivadas</h3>
@@ -1126,7 +1176,6 @@
                         </ul>
                     </section>
                 </div>
-                <!-- FIM DA ALTERAÇÃO -->
             </div>
         </div>
     </div>
