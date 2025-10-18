@@ -33,6 +33,7 @@ async function addDebt(debtData) {
             ...debtData,
             startDate: Timestamp.fromDate(new Date(debtData.startDate + 'T00:00:00')),
             amountPaid: 0,
+            installmentsPaid: 0,
             status: 'active', // 'active' or 'paid'
             createdAt: Timestamp.now()
         };
@@ -89,37 +90,44 @@ async function payDebtInstallment(debt, paymentDetails) {
         const { accountId, paymentDate } = paymentDetails;
         const installmentAmount = debt.installmentAmount;
 
-        // 1. Cria a transação de despesa correspondente ao pagamento
-        const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
-        const newTransactionRef = doc(transactionsRef);
-        const parsedPaymentDate = new Date(paymentDate + 'T00:00:00');
+        // 1. Cria a transação de despesa correspondente ao pagamento, apenas se o método for 'Débito em Conta'.
+        if (debt.paymentMethod === 'account_debit') {
+            if (!accountId) {
+                throw new Error("Uma conta de pagamento deve ser selecionada para este tipo de dívida.");
+            }
+            const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+            const newTransactionRef = doc(transactionsRef);
+            const parsedPaymentDate = new Date(paymentDate + 'T00:00:00');
 
-        const paymentTransactionData = {
-            description: `Pagamento Parcela - ${debt.description}`,
-            amount: installmentAmount,
-            type: 'expense',
-            category: debt.category,
-            paymentMethod: 'debit',
-            userId: debt.userId,
-            accountId: accountId,
-            date: Timestamp.fromDate(parsedPaymentDate),
-            createdAt: Timestamp.now()
-        };
-        batch.set(newTransactionRef, paymentTransactionData);
-        
-        // 2. Debita o valor do saldo da conta selecionada
-        updateBalanceInBatch(batch, accountId, installmentAmount, 'expense');
+            const paymentTransactionData = {
+                description: `Pagamento Parcela - ${debt.description}`,
+                amount: installmentAmount,
+                type: 'expense',
+                category: debt.category,
+                paymentMethod: 'debit',
+                userId: debt.userId,
+                accountId: accountId,
+                date: Timestamp.fromDate(parsedPaymentDate),
+                createdAt: Timestamp.now()
+            };
+            batch.set(newTransactionRef, paymentTransactionData);
+            
+            // 2. Debita o valor do saldo da conta selecionada
+            updateBalanceInBatch(batch, accountId, installmentAmount, 'expense');
+        }
 
-        // 3. Atualiza o valor pago na dívida
+        // 3. Atualiza os valores pagos na dívida
         const debtRef = doc(db, COLLECTIONS.DEBTS, debt.id);
-        const newAmountPaid = debt.amountPaid + installmentAmount;
+        const newAmountPaid = (debt.amountPaid || 0) + installmentAmount;
+        const newInstallmentsPaid = (debt.installmentsPaid || 0) + 1;
         
         const debtUpdateData = {
-            amountPaid: increment(installmentAmount)
+            amountPaid: increment(installmentAmount),
+            installmentsPaid: increment(1)
         };
 
         // 4. Verifica se a dívida foi quitada e atualiza o status
-        if (newAmountPaid >= debt.totalAmount) {
+        if (newInstallmentsPaid >= debt.totalInstallments || newAmountPaid >= debt.totalAmount) {
             debtUpdateData.status = 'paid';
         }
 
