@@ -145,7 +145,6 @@ export function renderTransactionList(transactionsToRender, append = false) {
                        </div>`
                     : '';
                 
-                // --- INÍCIO DA ALTERAÇÃO ---
                 let sourceName;
                 if (transaction.paymentMethod === 'credit_card') {
                     const card = state.userCreditCards.find(c => c.id === transaction.cardId);
@@ -154,7 +153,6 @@ export function renderTransactionList(transactionsToRender, append = false) {
                     const account = state.userAccounts.find(acc => acc.id === transaction.accountId);
                     sourceName = account ? account.name : 'Conta não informada';
                 }
-                // --- FIM DA ALTERAÇÃO ---
 
                 li.innerHTML = `
                     <div style="text-align: left; flex-grow: 1;">
@@ -412,13 +410,42 @@ export function renderAccountList() {
     state.userAccounts.forEach(account => {
         const li = document.createElement('li');
         li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
+        // --- INÍCIO DA ALTERAÇÃO ---
         li.innerHTML = `
             <span>${account.name}: ${formatCurrency(account.currentBalance)}</span>
-            <button class="action-btn delete-btn" data-account-id="${account.id}" title="Excluir conta">&times;</button>
+            <button class="action-btn archive-btn" data-account-id="${account.id}" title="Arquivar conta">📥</button>
         `;
+        // --- FIM DA ALTERAÇÃO ---
         accountList.appendChild(li);
     });
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Renderiza a lista de contas arquivadas na aba correspondente.
+ * @param {Array<object>} archivedAccounts - A lista de contas arquivadas.
+ */
+export function renderArchivedAccountList(archivedAccounts) {
+    const listEl = document.getElementById('archived-account-list');
+    listEl.innerHTML = '';
+
+    if (archivedAccounts.length === 0) {
+        listEl.innerHTML = '<li>Nenhuma conta arquivada.</li>';
+        return;
+    }
+
+    archivedAccounts.forEach(account => {
+        const li = document.createElement('li');
+        li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--background-color);';
+        li.innerHTML = `
+            <span>${account.name}</span>
+            <button class="action-btn unarchive-btn" data-account-id="${account.id}" title="Reativar conta">🔄</button>
+        `;
+        listEl.appendChild(li);
+    });
+}
+// --- FIM DA ALTERAÇÃO ---
+
 
 /** Renderiza as listas de categorias e subcategorias de forma aninhada. */
 export function renderCategoryManagementList() {
