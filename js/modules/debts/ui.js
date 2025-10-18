@@ -9,9 +9,7 @@ import * as debts from '../debts.js';
 import { showNotification } from '../ui/notifications.js';
 import { formatCurrency } from '../ui/utils.js';
 import { populateCategorySelects } from '../ui/render.js';
-// --- INÍCIO DA ALTERAÇÃO ---
 import { renderDebtEvolutionChart, renderDebtCompositionChart } from '../ui/charts.js';
-// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM ---
 const debtListEl = document.getElementById('debt-list');
@@ -44,14 +42,12 @@ export async function loadDebtsPage() {
         renderDebtsSummary(userDebts);
         renderDebtsList(userDebts);
 
-        // --- INÍCIO DA ALTERAÇÃO ---
         // Gera e renderiza os gráficos
         const evolutionData = await debts.getDebtEvolutionData(state.currentUser.uid, state.allTransactions);
         renderDebtEvolutionChart(evolutionData);
         
         const compositionData = debts.getDebtCompositionData(userDebts);
         renderDebtCompositionChart(compositionData);
-        // --- FIM DA ALTERAÇÃO ---
 
     } catch (error) {
         showNotification(error.message, 'error');
