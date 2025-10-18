@@ -15,7 +15,6 @@ const debtListEl = document.getElementById('debt-list');
 const totalDebtBalanceEl = document.getElementById('total-debt-balance');
 const debtCategorySelect = document.getElementById('debt-category');
 
-// --- INÍCIO DA ALTERAÇÃO ---
 // Novos elementos do DOM
 const nextDueDateEl = document.getElementById('next-due-date');
 const totalPaidThisMonthEl = document.getElementById('total-paid-this-month');
@@ -25,6 +24,9 @@ const debtDetailsBalanceEl = document.getElementById('debt-details-balance');
 const debtDetailsProgressEl = document.getElementById('debt-details-progress');
 const debtDetailsInfoGridEl = document.getElementById('debt-details-info-grid');
 const debtDetailsPaymentListEl = document.getElementById('debt-details-payment-list');
+
+// --- INÍCIO DA ALTERAÇÃO ---
+const paidDebtListEl = document.getElementById('paid-debt-list');
 // --- FIM DA ALTERAÇÃO ---
 
 
@@ -54,18 +56,18 @@ export async function loadDebtsPage() {
  */
 function renderLoadingPlaceholders() {
     debtListEl.innerHTML = '<li>Carregando dívidas...</li>';
-    totalDebtBalanceEl.textContent = 'Calculando...';
     // --- INÍCIO DA ALTERAÇÃO ---
+    paidDebtListEl.innerHTML = '<li>Carregando histórico...</li>';
+    // --- FIM DA ALTERAÇÃO ---
+    totalDebtBalanceEl.textContent = 'Calculando...';
     nextDueDateEl.textContent = '...';
     totalPaidThisMonthEl.textContent = '...';
-    // --- FIM DA ALTERAÇÃO ---
 }
 
 /**
  * Popula o select de categorias no formulário de adicionar dívida.
  */
 function populateDebtCategorySelect() {
-    // Reutiliza a função de renderização de categorias, filtrando por 'expense'.
     populateCategorySelects('expense', debtCategorySelect);
 }
 
@@ -76,11 +78,9 @@ function populateDebtCategorySelect() {
 function renderDebtsSummary(userDebts) {
     const activeDebts = userDebts.filter(debt => debt.status === 'active');
     
-    // Calcula Saldo Devedor Total
     const totalBalance = activeDebts.reduce((sum, debt) => sum + (debt.totalAmount - debt.amountPaid), 0);
     totalDebtBalanceEl.textContent = formatCurrency(totalBalance);
 
-    // Calcula Próximo Vencimento
     const upcomingPayments = activeDebts.map(debt => {
         const nextPaymentDate = new Date(debt.startDate);
         nextPaymentDate.setMonth(nextPaymentDate.getMonth() + (debt.installmentsPaid || 0));
@@ -94,7 +94,6 @@ function renderDebtsSummary(userDebts) {
         nextDueDateEl.textContent = 'N/A';
     }
     
-    // Calcula Total Pago no Mês
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const paidThisMonth = state.allTransactions
@@ -108,35 +107,53 @@ function renderDebtsSummary(userDebts) {
     totalPaidThisMonthEl.textContent = formatCurrency(paidThisMonth);
 }
 
+// --- INÍCIO DA ALTERAÇÃO: Refatoração da renderDebtsList ---
 /**
- * Renderiza a lista de dívidas com suas barras de progresso e botões de ação.
- * @param {Array<object>} userDebts - A lista de dívidas a serem exibidas.
+ * Renderiza as listas de dívidas ativas e quitadas em suas respectivas abas.
+ * @param {Array<object>} userDebts - A lista completa de dívidas do usuário.
  */
 function renderDebtsList(userDebts) {
-    debtListEl.innerHTML = '';
+    const activeDebts = userDebts.filter(debt => debt.status !== 'paid');
+    const paidDebts = userDebts.filter(debt => debt.status === 'paid');
 
-    if (userDebts.length === 0) {
-        debtListEl.innerHTML = '<li>Nenhuma dívida cadastrada. Adicione uma no formulário abaixo.</li>';
-        return;
+    debtListEl.innerHTML = '';
+    paidDebtListEl.innerHTML = '';
+
+    if (activeDebts.length === 0) {
+        debtListEl.innerHTML = '<li>Nenhuma dívida ativa no momento.</li>';
+    } else {
+        activeDebts.forEach(debt => {
+            debtListEl.innerHTML += createDebtListItemHTML(debt);
+        });
     }
 
-    userDebts.forEach(debt => {
-        const li = document.createElement('li');
-        li.className = `debt-item ${debt.status === 'paid' ? 'paid' : ''}`;
-        
-        const remainingBalance = debt.totalAmount - (debt.amountPaid || 0);
-        const percentage = debt.totalAmount > 0 ? ((debt.amountPaid || 0) / debt.totalAmount) * 100 : 0;
-        const cappedPercentage = Math.min(percentage, 100);
+    if (paidDebts.length === 0) {
+        paidDebtListEl.innerHTML = '<li>Nenhuma dívida quitada encontrada.</li>';
+    } else {
+        paidDebts.forEach(debt => {
+            paidDebtListEl.innerHTML += createDebtListItemHTML(debt);
+        });
+    }
+}
 
-        // --- INÍCIO DA ALTERAÇÃO: Adiciona botão de detalhes ---
-        const actionsHtml = debt.status === 'active'
-            ? `<button class="button-secondary details-btn" data-debt-id="${debt.id}">Detalhes</button>
-               <button class="button-primary pay-installment-btn" data-debt-id="${debt.id}">Pagar Parcela</button>`
-            : `<button class="button-secondary details-btn" data-debt-id="${debt.id}">Detalhes</button>
-               <span class="status-badge paid">Quitado!</span>`;
-        // --- FIM DA ALTERAÇÃO ---
+/**
+ * Cria o HTML para um item da lista de dívidas.
+ * @param {object} debt - O objeto da dívida.
+ * @returns {string} O HTML do elemento <li>.
+ */
+function createDebtListItemHTML(debt) {
+    const remainingBalance = debt.totalAmount - (debt.amountPaid || 0);
+    const percentage = debt.totalAmount > 0 ? ((debt.amountPaid || 0) / debt.totalAmount) * 100 : 0;
+    const cappedPercentage = Math.min(percentage, 100);
 
-        li.innerHTML = `
+    const actionsHtml = debt.status === 'active'
+        ? `<button class="button-secondary details-btn" data-debt-id="${debt.id}">Detalhes</button>
+           <button class="button-primary pay-installment-btn" data-debt-id="${debt.id}">Pagar Parcela</button>`
+        : `<button class="button-secondary details-btn" data-debt-id="${debt.id}">Detalhes</button>
+           <span class="status-badge paid">Quitado!</span>`;
+
+    return `
+        <li class="debt-item ${debt.status === 'paid' ? 'paid' : ''}">
             <div class="debt-item-header">
                 <span>${debt.description}</span>
                 <span class="debt-item-values">
@@ -146,19 +163,46 @@ function renderDebtsList(userDebts) {
             <div class="progress-bar-container">
                 <div class="progress-bar safe" style="width: ${cappedPercentage}%; background-color: var(--secondary-color);">${Math.round(percentage)}%</div>
             </div>
-            <div class="debt-item-details" style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.9rem;">
+            <div class="debt-item-details">
                 <span>Parcela: <strong>${formatCurrency(debt.installmentAmount)}</strong></span>
                 <span>Saldo Devedor: <strong>${formatCurrency(remainingBalance)}</strong></span>
             </div>
             <div class="debt-item-actions">
                 ${actionsHtml}
             </div>
-        `;
-        debtListEl.appendChild(li);
-    });
+        </li>
+    `;
 }
 
-// --- INÍCIO DA ALTERAÇÃO: Funções para o Modal de Detalhes ---
+/**
+ * Gerencia a troca de abas entre "Ativas" e "Quitadas".
+ * @param {string} tabId - O ID da aba a ser ativada.
+ */
+export function switchDebtTab(tabId) {
+    // Esconde todos os conteúdos
+    document.querySelectorAll('.debt-tab-content').forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+    });
+
+    // Remove a classe 'active' de todos os botões
+    document.querySelectorAll('#debt-tabs-container .tab-link').forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Mostra o conteúdo da aba selecionada e ativa o botão
+    const activeContent = document.getElementById(`${tabId}-content`);
+    const activeButton = document.querySelector(`#debt-tabs-container .tab-link[data-debt-tab="${tabId}"]`);
+
+    if (activeContent) {
+        activeContent.style.display = 'block';
+        activeContent.classList.add('active');
+    }
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Abre o modal de detalhes de uma dívida específica.
@@ -220,7 +264,7 @@ function renderDebtPaymentHistory(debt) {
     debtDetailsPaymentListEl.innerHTML = '';
     const paymentTransactions = state.allTransactions.filter(t => 
         t.description === `Pagamento Parcela - ${debt.description}`
-    ).sort((a, b) => b.date - a.date); // Ordena do mais recente para o mais antigo
+    ).sort((a, b) => b.date - a.date);
 
     if (paymentTransactions.length === 0) {
         debtDetailsPaymentListEl.innerHTML = '<li>Nenhum pagamento registrado.</li>';
@@ -237,4 +281,3 @@ function renderDebtPaymentHistory(debt) {
         debtDetailsPaymentListEl.appendChild(li);
     });
 }
-// --- FIM DA ALTERAÇÃO ---
