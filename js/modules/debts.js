@@ -17,7 +17,10 @@ import {
     writeBatch,
     Timestamp,
     orderBy,
-    increment
+    increment,
+    // --- INÍCIO DA ALTERAÇÃO ---
+    runTransaction
+    // --- FIM DA ALTERAÇÃO ---
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { updateBalanceInBatch } from './accounts.js';
 import { addRecurringTransaction } from './recurring.js';
@@ -30,16 +33,44 @@ import { addRecurringTransaction } from './recurring.js';
 async function addDebt(debtData) {
     try {
         const debtsRef = collection(db, COLLECTIONS.DEBTS);
-        const dataToSave = {
-            ...debtData,
-            startDate: Timestamp.fromDate(new Date(debtData.startDate + 'T00:00:00')),
-            contractDate: Timestamp.fromDate(new Date(debtData.contractDate + 'T00:00:00')),
-            interestRate: debtData.interestRate || 0,
-            amountPaid: 0,
-            installmentsPaid: 0,
-            status: 'active', // 'active' or 'paid'
-            createdAt: Timestamp.now()
-        };
+        
+        // --- INÍCIO DA ALTERAÇÃO: Lógica para diferentes modelos de dívida ---
+        let dataToSave;
+
+        if (debtData.type === 'personal_loan') {
+            // Modelo de Juros Rotativo (baseado na planilha)
+            dataToSave = {
+                description: debtData.description,
+                creditor: debtData.creditor,
+                type: debtData.type,
+                contractDate: Timestamp.fromDate(new Date(debtData.contractDate + 'T00:00:00')),
+                initialAmount: debtData.totalAmount, // Valor Original
+                currentBalance: debtData.totalAmount, // Saldo devedor inicial
+                interestRate: debtData.interestRate || 0, // Taxa de contrato (se houver)
+                paymentMethod: debtData.paymentMethod,
+                category: debtData.category,
+                userId: debtData.userId,
+                debtModel: 'revolving_interest', // Identificador do modelo
+                status: 'active',
+                installmentsPaid: 0,
+                createdAt: Timestamp.now()
+            };
+        } else {
+            // Modelo de Parcelas Fixas (legado)
+            dataToSave = {
+                ...debtData,
+                startDate: Timestamp.fromDate(new Date(debtData.startDate + 'T00:00:00')),
+                contractDate: Timestamp.fromDate(new Date(debtData.contractDate + 'T00:00:00')),
+                interestRate: debtData.interestRate || 0,
+                amountPaid: 0,
+                installmentsPaid: 0,
+                status: 'active',
+                debtModel: 'fixed_installments', // Identificador do modelo
+                createdAt: Timestamp.now()
+            };
+        }
+        // --- FIM DA ALTERAÇÃO ---
+
         await addDoc(debtsRef, dataToSave);
     } catch (error) {
         console.error("Erro ao adicionar dívida:", error);
@@ -58,7 +89,7 @@ async function getDebts(userId) {
         const q = query(
             debtsRef,
             where("userId", "==", userId),
-            orderBy("status"), // Mostra ativas primeiro
+            orderBy("status"), 
             orderBy("createdAt", "desc")
         );
 
@@ -69,7 +100,8 @@ async function getDebts(userId) {
             debts.push({
                 id: doc.id,
                 ...data,
-                startDate: data.startDate.toDate(),
+                // Garante compatibilidade com datas que podem não existir no modelo novo
+                startDate: data.startDate ? data.startDate.toDate() : null,
                 contractDate: data.contractDate ? data.contractDate.toDate() : null
             });
         });
@@ -81,11 +113,9 @@ async function getDebts(userId) {
 }
 
 /**
- * Registra o pagamento de uma parcela de uma dívida.
+ * Registra o pagamento de uma parcela de uma dívida de parcelas fixas.
  * @param {object} debt - O objeto completo da dívida.
  * @param {object} paymentDetails - Detalhes do pagamento.
- * @param {string} paymentDetails.accountId - ID da conta usada para o pagamento.
- * @param {string} paymentDetails.paymentDate - Data do pagamento.
  * @returns {Promise<void>}
  */
 async function payDebtInstallment(debt, paymentDetails) {
@@ -140,12 +170,80 @@ async function payDebtInstallment(debt, paymentDetails) {
     }
 }
 
+// --- INÍCIO DA ALTERAÇÃO: NOVA FUNÇÃO DE PAGAMENTO ---
 /**
- * Calcula a evolução do saldo devedor total nos últimos 12 meses.
- * @param {string} userId - O ID do usuário.
- * @param {Array<object>} allUserTransactions - Todas as transações do usuário para evitar nova busca.
- * @returns {Promise<object>} Objeto com labels e data para o gráfico.
+ * Registra o pagamento de uma parcela de uma dívida de juros rotativo.
+ * @param {string} debtId - O ID da dívida.
+ * @param {object} paymentData - Dados do pagamento, incluindo taxa SELIC.
+ * @returns {Promise<void>}
  */
+async function payRevolvingDebtInstallment(debtId, paymentData) {
+    const { paymentAmount, selicRate, paymentDate, accountId } = paymentData;
+    const debtRef = doc(db, COLLECTIONS.DEBTS, debtId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const debtSnap = await transaction.get(debtRef);
+            if (!debtSnap.exists()) {
+                throw new Error("Dívida não encontrada.");
+            }
+            const debtData = debtSnap.data();
+
+            // Cálculos baseados na planilha
+            const currentBalance = debtData.currentBalance;
+            const interestValue = currentBalance * (selicRate / 100);
+            const totalBalanceWithInterest = currentBalance + interestValue;
+            const newBalance = totalBalanceWithInterest - paymentAmount;
+
+            // Atualiza o documento principal da dívida
+            transaction.update(debtRef, {
+                currentBalance: newBalance,
+                installmentsPaid: increment(1)
+            });
+
+            // Cria o registro detalhado da parcela na subcoleção
+            const installmentRef = doc(collection(debtRef, 'installments'));
+            const installmentData = {
+                installmentNumber: (debtData.installmentsPaid || 0) + 1,
+                initialBalanceForPeriod: currentBalance,
+                selicRate: selicRate,
+                interestValue: interestValue,
+                totalBalanceWithInterest: totalBalanceWithInterest,
+                paymentAmount: paymentAmount,
+                finalBalance: newBalance,
+                paymentDate: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+                createdAt: Timestamp.now()
+            };
+            transaction.set(installmentRef, installmentData);
+
+            // Cria a transação financeira de despesa (se houver conta)
+            if (accountId) {
+                const financialTransactionRef = doc(collection(db, COLLECTIONS.TRANSACTIONS));
+                const financialTransactionData = {
+                    description: `Pagamento Parcela - ${debtData.description}`,
+                    amount: paymentAmount,
+                    type: 'expense',
+                    category: debtData.category,
+                    paymentMethod: 'debit',
+                    userId: debtData.userId,
+                    accountId: accountId,
+                    date: Timestamp.fromDate(new Date(paymentDate + 'T00:00:00')),
+                    createdAt: Timestamp.now()
+                };
+                transaction.set(financialTransactionRef, financialTransactionData);
+
+                // Debita o valor da conta
+                const accountRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+                transaction.update(accountRef, { currentBalance: increment(-paymentAmount) });
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao registrar pagamento de parcela rotativa:", error);
+        throw new Error("Ocorreu um erro ao registrar o pagamento da parcela.");
+    }
+}
+// --- FIM DA ALTERAÇÃO ---
+
 async function getDebtEvolutionData(userId, allUserTransactions) {
     try {
         const allDebts = await getDebts(userId);
@@ -164,7 +262,7 @@ async function getDebtEvolutionData(userId, allUserTransactions) {
 
             const totalDebtPrincipal = allDebts
                 .filter(d => d.contractDate <= endOfMonth)
-                .reduce((sum, d) => sum + d.totalAmount, 0);
+                .reduce((sum, d) => sum + (d.initialAmount || d.totalAmount), 0); // Suporta ambos modelos
 
             const totalPaidUpToMonth = debtPayments
                 .filter(p => p.date <= endOfMonth)
@@ -181,16 +279,13 @@ async function getDebtEvolutionData(userId, allUserTransactions) {
     }
 }
 
-/**
- * Agrega o saldo devedor por tipo de dívida para o gráfico de composição.
- * @param {Array<object>} userDebts - A lista de dívidas do usuário.
- * @returns {object} Objeto com labels e data para o gráfico.
- */
 function getDebtCompositionData(userDebts) {
     const composition = userDebts
         .filter(d => d.status === 'active')
         .reduce((acc, debt) => {
-            const balance = debt.totalAmount - (debt.amountPaid || 0);
+            const balance = debt.debtModel === 'revolving_interest' 
+                ? debt.currentBalance 
+                : debt.totalAmount - (debt.amountPaid || 0);
             const type = debt.type || 'other'; 
 
             if (!acc[type]) {
@@ -214,29 +309,27 @@ function getDebtCompositionData(userDebts) {
     return { labels, data };
 }
 
-/**
- * Cria uma transação recorrente associada a uma dívida, se aplicável.
- * @param {object} debtData - Os dados da dívida que acabou de ser criada.
- * @returns {Promise<void>}
- */
 async function createRecurringTransactionForDebt(debtData) {
     if (debtData.paymentMethod === 'account_debit' || debtData.paymentMethod === 'payroll') {
         try {
-            const recurringData = {
-                description: `Recorrência - Pagamento Parcela - ${debtData.description}`,
-                amount: debtData.installmentAmount,
-                dayOfMonth: debtData.dueDay,
-                type: 'expense',
-                category: debtData.category,
-                paymentMethod: 'account_debit', 
-                accountId: null, 
-                cardId: null,
-                userId: debtData.userId,
-            };
-            
-            if (confirm("Deseja criar uma transação recorrente automática para o pagamento desta dívida?")) {
-                await addRecurringTransaction(recurringData);
-                return "Recorrência para a dívida criada com sucesso!";
+            // Só cria recorrência para o modelo de parcelas fixas por enquanto
+            if(debtData.debtModel === 'fixed_installments') {
+                const recurringData = {
+                    description: `Recorrência - Pagamento Parcela - ${debtData.description}`,
+                    amount: debtData.installmentAmount,
+                    dayOfMonth: debtData.dueDay,
+                    type: 'expense',
+                    category: debtData.category,
+                    paymentMethod: 'account_debit', 
+                    accountId: null, 
+                    cardId: null,
+                    userId: debtData.userId,
+                };
+                
+                if (confirm("Deseja criar uma transação recorrente automática para o pagamento desta dívida?")) {
+                    await addRecurringTransaction(recurringData);
+                    return "Recorrência para a dívida criada com sucesso!";
+                }
             }
         } catch (error) {
             console.error("Erro ao criar recorrência para a dívida:", error);
@@ -246,4 +339,4 @@ async function createRecurringTransactionForDebt(debtData) {
     return null;
 }
 
-export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData, getDebtCompositionData, createRecurringTransactionForDebt };
+export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData, getDebtCompositionData, createRecurringTransactionForDebt, payRevolvingDebtInstallment };
