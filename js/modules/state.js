@@ -34,9 +34,7 @@ export let composicaoChart = null; // Instância do gráfico de composição da 
 export let patrimonioChart = null; // Instância do gráfico de evolução do patrimônio
 export let proventosMonthlyChart = null; // Instância do gráfico mensal de proventos
 export let debtEvolutionChart = null; // Instância do gráfico de evolução de dívidas
-// --- INÍCIO DA ALTERAÇÃO ---
 export let debtCompositionChart = null; // Instância do gráfico de composição de dívidas
-// --- FIM DA ALTERAÇÃO ---
 export let lastTransactionDoc = null; // Armazena o último documento da página de transações
 export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
 export let selectedPortfolioForAssetsView = null; // Armazena a carteira selecionada para visualização de ativos
@@ -148,11 +146,9 @@ export function setDebtEvolutionChart(chartInstance) {
     debtEvolutionChart = chartInstance;
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 export function setDebtCompositionChart(chartInstance) {
     debtCompositionChart = chartInstance;
 }
-// --- FIM DA ALTERAÇÃO ---
 
 export function setSelectedAssetForMovementsView(asset) {
     selectedAssetForMovementsView = asset;
