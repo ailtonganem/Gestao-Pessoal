@@ -1239,7 +1239,6 @@ async function handleAddAccount(e) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 async function handleArchiveAccount(accountId) {
     const account = state.userAccounts.find(acc => acc.id === accountId);
     if (!account) return;
@@ -1271,7 +1270,6 @@ async function handleUnarchiveAccount(accountId) {
         }
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 async function handleUpdateInvoiceTransaction(e) {
