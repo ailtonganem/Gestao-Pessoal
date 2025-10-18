@@ -32,6 +32,8 @@ async function addDebt(debtData) {
         const dataToSave = {
             ...debtData,
             startDate: Timestamp.fromDate(new Date(debtData.startDate + 'T00:00:00')),
+            contractDate: Timestamp.fromDate(new Date(debtData.contractDate + 'T00:00:00')),
+            interestRate: debtData.interestRate || 0,
             amountPaid: 0,
             installmentsPaid: 0,
             status: 'active', // 'active' or 'paid'
@@ -66,7 +68,8 @@ async function getDebts(userId) {
             debts.push({
                 id: doc.id,
                 ...data,
-                startDate: data.startDate.toDate()
+                startDate: data.startDate.toDate(),
+                contractDate: data.contractDate ? data.contractDate.toDate() : null
             });
         });
         return debts;
