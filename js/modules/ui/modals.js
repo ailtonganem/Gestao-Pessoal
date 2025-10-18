@@ -19,6 +19,9 @@ import * as accounts from '../accounts.js';
 // --- Variáveis de Estado do Módulo ---
 let _currentInvoiceTransactions = []; // Armazena os lançamentos da fatura em visualização
 export let _currentSplits = []; // Armazena os itens da divisão da transação
+// --- INÍCIO DA ALTERAÇÃO ---
+export let _resetOptions = {}; // Armazena as opções de reset selecionadas
+// --- FIM DA ALTERAÇÃO ---
 
 // --- Seleção de Elementos do DOM (Modais e seus conteúdos) ---
 const editModal = document.getElementById('edit-modal');
@@ -32,6 +35,10 @@ const advancePaymentModal = document.getElementById('advance-payment-modal');
 const editTransferModal = document.getElementById('edit-transfer-modal');
 const editCardModal = document.getElementById('edit-card-modal');
 const splitTransactionModal = document.getElementById('split-transaction-modal');
+// --- INÍCIO DA ALTERAÇÃO ---
+const resetConfirmationModal = document.getElementById('reset-confirmation-modal');
+const resetSummaryList = document.getElementById('reset-summary-list');
+// --- FIM DA ALTERAÇÃO ---
 
 // Elementos do Modal de Edição de Transação
 const editTransactionIdInput = document.getElementById('edit-transaction-id');
@@ -364,6 +371,8 @@ export async function openSettingsModal() {
 
     populateDashboardCustomization();
 
+    // A aba 'Zona de Perigo' é visível para todos
+    // A aba de gerenciamento de usuários só é visível para o admin
     if (state.currentUserProfile.role === 'admin') {
         adminTabButton.style.display = 'block';
         document.getElementById('user-list').innerHTML = '<li>Carregando...</li>';
@@ -400,9 +409,7 @@ export async function openManagementModal() {
             })(),
             render.renderBudgetList(),
             render.renderAccountList(),
-            // --- INÍCIO DA ALTERAÇÃO ---
             loadAndRenderArchivedAccounts()
-            // --- FIM DA ALTERAÇÃO ---
         ]);
     } catch (error) {
         showNotification(error.message, 'error');
@@ -434,7 +441,6 @@ export function switchManagementTab(tabId) {
     switchTab(tabId, managementModal);
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 // --- Funções para a Aba de Itens Arquivados ---
 
 /**
@@ -452,7 +458,6 @@ export async function loadAndRenderArchivedAccounts() {
         listEl.innerHTML = '<li>Erro ao carregar contas arquivadas.</li>';
     }
 }
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- Funções para o modal de pagamento de fatura ---
@@ -557,3 +562,44 @@ export function closeEditTransferModal() {
     }
     editTransferModal.style.display = 'none';
 }
+
+// --- INÍCIO DA ALTERAÇÃO ---
+// --- Funções para o Modal de Reset de Dados ---
+
+/**
+ * Abre o modal de confirmação de reset, após validar as seleções.
+ */
+export function openResetConfirmationModal() {
+    const selectedOptions = document.querySelectorAll('input[name="reset-option"]:checked');
+    if (selectedOptions.length === 0) {
+        showNotification("Selecione pelo menos um tipo de dado para apagar.", "error");
+        return;
+    }
+
+    _resetOptions = {};
+    resetSummaryList.innerHTML = '';
+
+    selectedOptions.forEach(checkbox => {
+        const collectionName = checkbox.dataset.collection;
+        const label = checkbox.nextElementSibling.textContent;
+        
+        _resetOptions[collectionName] = true;
+
+        const li = document.createElement('li');
+        li.textContent = label;
+        resetSummaryList.appendChild(li);
+    });
+
+    resetConfirmationModal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de confirmação de reset e limpa seus campos.
+ */
+export function closeResetConfirmationModal() {
+    _resetOptions = {};
+    document.getElementById('reset-confirmation-input').value = '';
+    document.getElementById('confirm-permanent-reset-button').disabled = true;
+    resetConfirmationModal.style.display = 'none';
+}
+// --- FIM DA ALTERAÇÃO ---
