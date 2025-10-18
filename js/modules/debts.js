@@ -20,6 +20,9 @@ import {
     increment
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { updateBalanceInBatch } from './accounts.js';
+// --- INÍCIO DA ALTERAÇÃO ---
+import { addRecurringTransaction } from './recurring.js';
+// --- FIM DA ALTERAÇÃO ---
 
 /**
  * Adiciona uma nova dívida ao Firestore.
@@ -180,7 +183,6 @@ async function getDebtEvolutionData(userId, allUserTransactions) {
     }
 }
 
-// --- INÍCIO DA ALTERAÇÃO ---
 /**
  * Agrega o saldo devedor por tipo de dívida para o gráfico de composição.
  * @param {Array<object>} userDebts - A lista de dívidas do usuário.
@@ -191,7 +193,7 @@ function getDebtCompositionData(userDebts) {
         .filter(d => d.status === 'active')
         .reduce((acc, debt) => {
             const balance = debt.totalAmount - (debt.amountPaid || 0);
-            const type = debt.type || 'other'; // Agrupa dívidas sem tipo como 'Outro'
+            const type = debt.type || 'other'; 
 
             if (!acc[type]) {
                 acc[type] = 0;
@@ -214,6 +216,41 @@ function getDebtCompositionData(userDebts) {
     return { labels, data };
 }
 
+// --- INÍCIO DA ALTERAÇÃO ---
+/**
+ * Cria uma transação recorrente associada a uma dívida, se aplicável.
+ * @param {object} debtData - Os dados da dívida que acabou de ser criada.
+ * @returns {Promise<void>}
+ */
+async function createRecurringTransactionForDebt(debtData) {
+    // Apenas cria recorrência para pagamentos automáticos ou semi-automáticos
+    if (debtData.paymentMethod === 'account_debit' || debtData.paymentMethod === 'payroll') {
+        try {
+            const recurringData = {
+                description: `Recorrência - Pagamento Parcela - ${debtData.description}`,
+                amount: debtData.installmentAmount,
+                dayOfMonth: debtData.dueDay,
+                type: 'expense',
+                category: debtData.category,
+                paymentMethod: 'account_debit', // Mesmo para desconto em folha, lançamos como débito para fins de fluxo de caixa
+                accountId: null, // Será null pois o usuário precisa selecionar a conta de onde o dinheiro "sai" no app
+                cardId: null,
+                userId: debtData.userId,
+            };
+            
+            // Pergunta ao usuário se deseja criar a recorrência
+            if (confirm("Deseja criar uma transação recorrente automática para o pagamento desta dívida?")) {
+                await addRecurringTransaction(recurringData);
+                return "Recorrência para a dívida criada com sucesso!";
+            }
+        } catch (error) {
+            console.error("Erro ao criar recorrência para a dívida:", error);
+            // Não lança um erro fatal, pois a dívida já foi criada. Apenas informa o usuário.
+            return "A dívida foi salva, mas ocorreu um erro ao tentar criar a recorrência automática.";
+        }
+    }
+    return null; // Nenhuma ação necessária
+}
 
-export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData, getDebtCompositionData };
+export { addDebt, getDebts, payDebtInstallment, getDebtEvolutionData, getDebtCompositionData, createRecurringTransactionForDebt };
 // --- FIM DA ALTERAÇÃO ---
