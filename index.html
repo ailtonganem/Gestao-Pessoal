@@ -769,9 +769,17 @@
                         <p id="total-paid-this-month">R$ 0,00</p>
                     </div>
                 </section>
+                
+                <!-- INÍCIO DA ALTERAÇÃO: ADICIONADO GRÁFICO DE EVOLUÇÃO -->
+                <section class="investment-card full-width">
+                    <h3>Evolução do Saldo Devedor</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="debt-evolution-chart"></canvas>
+                    </div>
+                </section>
+                <!-- FIM DA ALTERAÇÃO -->
 
                 <section class="investment-card full-width">
-                    <!-- INÍCIO DA ALTERAÇÃO: ESTRUTURA DE ABAS -->
                     <div id="debt-tabs-container" class="modal-tabs" style="margin-bottom: 1.5rem;">
                         <button class="tab-link active" data-debt-tab="active-debts">Ativas</button>
                         <button class="tab-link" data-debt-tab="paid-debts">Quitadas</button>
@@ -787,7 +795,6 @@
                             <li>Nenhuma dívida quitada.</li>
                         </ul>
                     </div>
-                    <!-- FIM DA ALTERAÇÃO -->
                 </section>
 
                 <section class="investment-card full-width">
