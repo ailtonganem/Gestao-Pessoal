@@ -17,26 +17,33 @@ import {
     orderBy,
     doc,
     deleteDoc,
-    updateDoc
+    updateDoc,
+    // INÍCIO DA ALTERAÇÃO
+    writeBatch
+    // FIM DA ALTERAÇÃO
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { getAssets } from './assets.js';
 
 /**
- * Adiciona uma nova carteira de investimentos para o usuário.
+ * Adiciona uma nova carteira de investimentos para o usuário e uma conta de investimento associada.
  * @param {object} portfolioData - Dados da nova carteira.
  * @param {string} portfolioData.name - Nome da carteira.
  * @param {string} [portfolioData.description] - Descrição opcional.
  * @param {string} portfolioData.userId - ID do usuário.
  * @param {string} portfolioData.ownershipType - 'own' ou 'third-party'.
- * @returns {Promise<DocumentReference>}
+ * @returns {Promise<void>}
  */
 export async function addPortfolio(portfolioData) {
     if (!portfolioData.name || portfolioData.name.trim() === '') {
         throw new Error("O nome da carteira é obrigatório.");
     }
 
+    const batch = writeBatch(db);
+
     try {
+        // 1. Prepara a criação da carteira
         const portfoliosRef = collection(db, COLLECTIONS.INVESTMENT_PORTFOLIOS);
+        const newPortfolioRef = doc(portfoliosRef); // Gera a referência para a nova carteira
         
         const dataToSave = {
             userId: portfolioData.userId,
@@ -47,11 +54,28 @@ export async function addPortfolio(portfolioData) {
             currentValue: 0,
             createdAt: Timestamp.now()
         };
+        batch.set(newPortfolioRef, dataToSave);
+
+        // 2. Prepara a criação da conta de investimento associada
+        const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
+        const newAccountRef = doc(accountsRef); // Gera a referência para a nova conta
         
-        return await addDoc(portfoliosRef, dataToSave);
+        const accountData = {
+            name: `Caixa - ${portfolioData.name.trim()}`,
+            initialBalance: 0,
+            currentBalance: 0,
+            type: 'investment', // Novo tipo para identificar a conta
+            portfolioId: newPortfolioRef.id, // Vincula a conta à carteira
+            userId: portfolioData.userId,
+            createdAt: Timestamp.now()
+        };
+        batch.set(newAccountRef, accountData);
+        
+        // 3. Executa as duas operações atomicamente
+        await batch.commit();
 
     } catch (error) {
-        console.error("Erro ao adicionar carteira:", error);
+        console.error("Erro ao adicionar carteira e conta de investimento:", error);
         throw new Error("Não foi possível criar a nova carteira.");
     }
 }
@@ -114,7 +138,7 @@ export async function updatePortfolio(portfolioId, updatedData) {
 export async function deletePortfolio(portfolioId) {
     try {
         // Futuramente: Adicionar lógica para excluir subcoleções (ativos, movimentos)
-        // antes de excluir o documento principal da carteira.
+        // e a conta de investimento associada antes de excluir o documento principal da carteira.
         const portfolioDocRef = doc(db, COLLECTIONS.INVESTMENT_PORTFOLIOS, portfolioId);
         await deleteDoc(portfolioDocRef);
     } catch (error) {
@@ -133,7 +157,6 @@ export async function getAllUserAssets(userId) {
     try {
         const allUserPortfolios = await getPortfolios(userId);
         
-        // --- INÍCIO DA ALTERAÇÃO ---
         // Mapeia cada carteira para uma promessa que busca seus ativos,
         // sem filtrar por tipo de carteira.
         const allAssetsPromises = allUserPortfolios.map(async (p) => {
@@ -144,7 +167,6 @@ export async function getAllUserAssets(userId) {
                 portfolioId: p.id 
             }));
         });
-        // --- FIM DA ALTERAÇÃO ---
 
         const assetsByPortfolio = await Promise.all(allAssetsPromises);
         
