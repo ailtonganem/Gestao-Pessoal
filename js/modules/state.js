@@ -19,6 +19,9 @@ export let filteredTransactions = []; // Contém as transações após a aplica�
 export let userRecurringTransactions = [];
 export let userAccounts = [];
 export let userPortfolios = []; // Armazena as carteiras de investimento do usuário
+// INÍCIO DA ALTERAÇÃO
+export let investmentAccounts = []; // Armazena as contas de investimento separadamente
+// FIM DA ALTERAÇÃO
 
 
 // --- Estado da Interface (UI State) ---
@@ -30,9 +33,7 @@ export let invoiceSpendingChart = null; // Instância do gráfico de gastos da f
 export let rentabilidadeChart = null; // Instância do gráfico de rentabilidade dos investimentos
 export let composicaoChart = null; // Instância do gráfico de composição da carteira
 export let patrimonioChart = null; // Instância do gráfico de evolução do patrimônio
-// INÍCIO DA ALTERAÇÃO
 export let proventosMonthlyChart = null; // Instância do gráfico mensal de proventos
-// FIM DA ALTERAÇÃO
 export let lastTransactionDoc = null; // Armazena o último documento da página de transações
 export let hasMoreTransactions = true; // Flag para indicar se há mais transações para carregar
 export let selectedPortfolioForAssetsView = null; // Armazena a carteira selecionada para visualização de ativos
@@ -81,6 +82,12 @@ export function setUserAccounts(accounts) {
     userAccounts = accounts;
 }
 
+// INÍCIO DA ALTERAÇÃO
+export function setInvestmentAccounts(accounts) {
+    investmentAccounts = accounts;
+}
+// FIM DA ALTERAÇÃO
+
 export function setUserPortfolios(portfolios) {
     userPortfolios = portfolios;
 }
@@ -128,11 +135,9 @@ export function setPatrimonioChart(chartInstance) {
     patrimonioChart = chartInstance;
 }
 
-// INÍCIO DA ALTERAÇÃO
 export function setProventosMonthlyChart(chartInstance) {
     proventosMonthlyChart = chartInstance;
 }
-// FIM DA ALTERAÇÃO
 
 export function setSelectedAssetForMovementsView(asset) {
     selectedAssetForMovementsView = asset;
